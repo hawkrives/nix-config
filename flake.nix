@@ -31,7 +31,10 @@
     in darwin.lib.darwinSystem {
       modules = [
         lix-module.nixosModules.default
-        (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix { inherit username; })
+        (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix { 
+          inherit username;
+          hostname = "Techcyte-XMG7K2VM6F";
+        })
         home-manager.darwinModules.home-manager
         {
           home-manager.useGlobalPkgs = true;

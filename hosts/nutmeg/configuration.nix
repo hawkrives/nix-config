@@ -105,9 +105,9 @@
       wget
       certbot
       # for python
-      # poetry
       packwiz # for meloncraft-modpack
       uv
+      nix-output-monitor
     ];
   };
 

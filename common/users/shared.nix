@@ -23,7 +23,7 @@
   };
 
   home.sessionVariables = {
-    EDITOR = "nvim";
+    EDITOR = "hx";
   };
 
   programs.dircolors.enable = true;
@@ -66,5 +66,5 @@
     *.sqlite diff=sqlite3
   '';
 
-  home.sessionPath = [ "$HOME/go/bin" "$HOME/bin" "$HOME/.local/bin" "/opt/homebrew/bin" ];
+  home.sessionPath = [ "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/bin" "$HOME/.local/bin" "/opt/homebrew/bin" ];
 }

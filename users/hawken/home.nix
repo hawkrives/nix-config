@@ -14,6 +14,7 @@
     broot
     colima
     curl
+    delta
     difftastic
     direnv
     dive
@@ -28,7 +29,6 @@
     gh
     git
     git-absorb
-    git-delta
     glab # gitlab cl
     graphviz
     gron
@@ -46,8 +46,6 @@
     mariadb
     mise
     mosh
-    neovim
-    nixfmt
     nushell
     parallel
     procs

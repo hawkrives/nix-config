@@ -1,4 +1,4 @@
-{ username, hostname, nextdnsProfile }:
+{ username, hostname }:
 { config, pkgs, ... }: {
   imports = [ ../../common/hosts/darwin.nix ];
 
@@ -25,8 +25,8 @@
     menuExtraClock.ShowAMPM = false;
 
     # Use scroll gesture with the Ctrl (^) modifier key to zoom. The default is false.
-    universalaccess.closeViewScrollWheelToggle = true;
-    universalaccess.reduceMotion = true;
+    # universalaccess.closeViewScrollWheelToggle = true;
+    # universalaccess.reduceMotion = true;
   };
 
   system.keyboard.enableKeyMapping = true;
@@ -39,9 +39,10 @@
 
   system.keyboard.remapCapsLockToEscape = true;
 
-  home.packages = with pkgs; [
-    container-diff
-    docker-credential-helper-ecr
+  environment.systemPackages = with pkgs; [
+    amazon-ecr-credential-helper
+    nix-output-monitor
+    nh
   ];
 
   homebrew = {
@@ -57,8 +58,9 @@
     ];
 
     brews = [
+      "container-diff"
     ];
-    
+
     caskArgs.appdir = "~/Applications";
     casks = [
       "font-blex-mono-nerd-font"
@@ -89,15 +91,15 @@
       "yattee"
       "zed"
     ];
-    
+
     masApps = {
       "Acorn 7" = 1547371478;
       "AWS Extend Switch Roles" = 1592710340;
-      "Bike Outliner" = 1588292384;
+      # "Bike Outliner" = 1588292384;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
-      "Lungo" = 1263070803 # caffeine;
-      "Notchmeister" = 1599169747;
+      "Lungo" = 1263070803; # caffeine
+      # "Notchmeister" = 1599169747;
       "Numbers" = 409203825;
       "Pages" = 409201541;
       "Paste" = 967805235;

@@ -1,6 +1,6 @@
 { config, pkgs, ... }: {
   environment.systemPackages = with pkgs; [ vim ];
-  environment.shells = with pkgs; [ bashInteractive ];
+  environment.shells = with pkgs; [ bashInteractive fish ];
 
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
@@ -8,6 +8,7 @@
   nix.settings.experimental-features = "nix-command flakes repl-flake";
 
   programs.zsh.enable = true;  # default shell on catalina
+  programs.fish.enable = true;
 
   # Enable sudo authentication with Touch ID
   security.pam.enableSudoTouchIdAuth = true;
