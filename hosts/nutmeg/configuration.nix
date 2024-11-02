@@ -43,7 +43,6 @@
   };
 
   # Enable man pages
-  environment.systemPackages = [ pkgs.man-pages ];
   documentation = {
     dev.enable = true;
     man.generateCaches = true;
@@ -117,6 +116,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    man-pages # enable man pages
     vim
     fish
     fishPlugins.pure
