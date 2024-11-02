@@ -1,11 +1,14 @@
 all:
 	darwin-rebuild switch --flake .#`hostname`
 
-paulsmith-HJ6D3J627M:
-	darwin-rebuild switch --flake .#$@
+Techcyte-XMG7K2VM6F:
+	/run/current-system/sw/bin/darwin-rebuild build --flake .#$@
 
-venus:
-	darwin-rebuild switch --flake .#$@
+potato-bunny:
+	nixos-rebuild switch --flake .#$@
+
+nutmeg:
+	nixos-rebuid switch --flake .#$@
 
 update-unstable:
 	nix flake lock --update-input nixpkgs-unstable

@@ -1,4 +1,0 @@
-#!/bin/sh
-code=$1
-status=$2
-echo "Stopping hellod on $(hostname): $code $status"
