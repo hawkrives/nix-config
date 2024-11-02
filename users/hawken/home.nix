@@ -24,12 +24,12 @@
     fd
     ffmpeg
     fish
-    fx # tui json viewe
+    fx # tui json viewer
     fzf
     gh
     git
     git-absorb
-    glab # gitlab cl
+    glab # gitlab cli
     graphviz
     gron
     helix
@@ -46,6 +46,7 @@
     mariadb
     mise
     mosh
+    unstable-pkgs.nixos-generators
     nushell
     parallel
     procs

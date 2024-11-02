@@ -20,7 +20,15 @@
     lix-module.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
-  outputs = inputs@{ nixpkgs, darwin, home-manager, nixos-hardware, tsnsrv, lix-module, ... }: {
+  outputs = inputs@{
+    darwin,
+    home-manager,
+    lix-module,
+    nixos-hardware,
+    nixpkgs,
+    tsnsrv,
+    ...
+  }: {
     nixpkgs.config.allowUnfree = true;
 
     # Build darwin flake using:
@@ -31,7 +39,7 @@
     in darwin.lib.darwinSystem {
       modules = [
         lix-module.nixosModules.default
-        (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix { 
+        (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix {
           inherit username;
           hostname = "Techcyte-XMG7K2VM6F";
         })
@@ -56,5 +64,17 @@
         lix-module.nixosModules.default
       ];
     };
+
+    # Build linux flake using:
+    # $ nixos-rebuild build --flake .#pmx
+    nixosConfigurations.pmx-sonarr = let
+    in nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ./hosts/pmx-sonarr/configuration.nix
+        lix-module.nixosModules.default
+      ];
+    };
+
   };
 }
