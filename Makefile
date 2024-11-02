@@ -8,8 +8,8 @@ potato-bunny:
 	nixos-rebuild switch --flake .#$@
 
 nutmeg:
-	nixos-rebuid switch --flake .#$@
-	nh os build .#$@
+	nixos-rebuild switch --flake .#$@
+	# nh os build .#$@
 
 update-unstable:
 	nix flake lock --update-input nixpkgs-unstable
