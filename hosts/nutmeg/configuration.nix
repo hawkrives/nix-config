@@ -139,7 +139,7 @@
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   programs.fish.enable = true;
-  programs.mosh.enable = true;
+  # programs.mosh.enable = true;
 
   # List services that you want to enable:
   services.openssh.enable = true;

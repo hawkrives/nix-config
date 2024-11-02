@@ -45,7 +45,6 @@
     lnav
     mariadb
     mise
-    mosh
     unstable-pkgs.nixos-generators
     nushell
     parallel
