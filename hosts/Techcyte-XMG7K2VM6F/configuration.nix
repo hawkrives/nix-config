@@ -81,6 +81,7 @@
       "mullvadvpn"
       "nova"
       "plexamp"
+      "remote-desktop-manager"
       "sublime-merge"
       "sublime-text"
       "telegram-desktop"
