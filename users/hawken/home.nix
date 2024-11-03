@@ -65,6 +65,7 @@
     unstable-pkgs.go
     unstable-pkgs.jujutsu
     unstable-pkgs.neovim
+    uv
     visidata
     watch
     wget
