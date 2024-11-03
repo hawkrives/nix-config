@@ -12,7 +12,7 @@
     dock.mru-spaces = false;
     dock.mouse-over-hilite-stack = true;
     dock.showhidden = true;
-    dock.slow-motion-allowed = true;
+    # dock.slow-motion-allowed = true;
 
     smb.NetBIOSName = hostname;
     # screencapture.location = "~/Pictures/screenshots";
