@@ -81,10 +81,29 @@
   programs.git = {
     enable = true;
     aliases = {
+      # View abbreviated SHA, description, and history graph of the latest 20 commits.
+      l = "log --pretty=oneline -n 20 --graph --abbrev-commit";
+
+      # View the current working tree status using the short format.
+      s = "status -s";
+
+      # Show the diff between the latest commit and the current state.
+      d = "!git diff-index --quiet HEAD -- || clear; git --no-pager diff --patch-with-stat";
+
+      # `git di $number` shows the diff between the state `$number` revisions ago and the current state.
+      di = "!d() { git diff --patch-with-stat HEAD~$1; }; git diff-index --quiet HEAD -- || clear; d";
+
       co = "checkout";
       st = "status";
       ci = "commit";
       br = "branch";
+
+      tags = "tag -l";
+      branches = "branch --all";
+      remotes = "remote --verbose";
+
+      # Remove branches that have already been merged with main; a.k.a. ‘delete merged’
+	    dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d";
       
       # "git lol" is a log alias. It shows a pretty graph of the last 25 commits.
       lol = "!git --no-pager log --graph --decorate --abbrev-commit --all --date=local -25 --pretty=short";
@@ -102,12 +121,7 @@
       # use space to toggle them, then hitting enter finishes adding/staging
       # them. This is great for selecting some files to stage. I use this one
       # every day, it makes my workflow just a little better :)
-      fza = "\"!git ls-files -m -o --exclude-standard | fzf -m --print0 | xargs -0 git add\"";
-
-      # "git gone" deletes local branches that don't exist in the remote. I just
-      # saw in this thread that git remote prune origin might do the same thing,
-      # I need to test that.
-      gone = "\"!f() { git fetch --all --prune; git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D; }; f\"";
+      fza = "!git ls-files -m -o --exclude-standard | fzf -m --print0 | xargs -0 git add";
 
       # "git root" is part of an alias "gr" which runs "cd $(git root)". That
       # takes you to the project root, and "cd -" will take you back to your
@@ -119,7 +133,7 @@
       diverges = "!sh -c 'git rev-list --boundary $1...$2 | grep \"^-\" | cut -c2-'";
 
       # "git dlog" shows a detailed commit log.
-      dlog = "\"!f() { GIT_EXTERNAL_DIFF=difft git log -p --ext-diff $@; }; f\"";
+      dlog = "!f() { GIT_EXTERNAL_DIFF=difft git log -p --ext-diff $@; }; f";
     };
     extraConfig = {
       init.defaultBranch = "main";
