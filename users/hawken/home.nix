@@ -27,7 +27,6 @@
     fx # tui json viewer
     fzf
     gh
-    git
     git-absorb
     glab # gitlab cli
     graphviz
