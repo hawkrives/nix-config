@@ -7,7 +7,7 @@
 
   home.packages = with pkgs; [
     atuin
-    awscli
+    awscli2
     bacon
     bartib
     bat
