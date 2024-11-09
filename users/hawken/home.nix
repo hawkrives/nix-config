@@ -71,6 +71,7 @@
     xh
     xsv
     xz
+    yazi # directory viewer
     yq
     yt-dlp
     zellij
