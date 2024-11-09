@@ -74,7 +74,7 @@
     yazi # directory viewer
     yq
     yt-dlp
-    zellij
+    zellij # multiplexer
     zstd
   ];
 
