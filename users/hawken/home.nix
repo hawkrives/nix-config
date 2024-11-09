@@ -93,6 +93,20 @@
       # `git di $number` shows the diff between the state `$number` revisions ago and the current state.
       di = "!d() { git diff --patch-with-stat HEAD~$1; }; git diff-index --quiet HEAD -- || clear; d";
 
+      # Difftastic aliases, so `git dlog` is `git log` with difftastic and so on.
+      dlog = "-c diff.external=difft log --ext-diff";
+      dshow = "-c diff.external=difft show --ext-diff";
+      ddiff = "-c diff.external=difft diff";
+
+      # `git log` with patches shown with difftastic.
+      dl = "-c diff.external=difft log -p --ext-diff";
+
+      # Show the most recent commit with difftastic.
+      ds = "-c diff.external=difft show --ext-diff";
+
+      # `git diff` with difftastic.
+      dft = "-c diff.external=difft diff";
+
       co = "checkout";
       st = "status";
       ci = "commit";
@@ -133,11 +147,68 @@
       diverges = "!sh -c 'git rev-list --boundary $1...$2 | grep \"^-\" | cut -c2-'";
 
       # "git dlog" shows a detailed commit log.
-      dlog = "!f() { GIT_EXTERNAL_DIFF=difft git log -p --ext-diff $@; }; f";
+      detlog = "!f() { GIT_EXTERNAL_DIFF=difft git log -p --ext-diff $@; }; f";
     };
+
+    ignores = [
+      ".DS_Store"
+      "*~"
+      "/.idea/"
+      "/.vscode/"
+      ".mise.toml"
+    ];
+
+    attributes = [
+      "*.sqlite diff=sqlite3"
+      "*.java merge=mergiraf"
+      "*.rs merge=mergiraf"
+      "*.go merge=mergiraf"
+      "*.js merge=mergiraf"
+      "*.jsx merge=mergiraf"
+      "*.json merge=mergiraf"
+      "*.yml merge=mergiraf"
+      "*.yaml merge=mergiraf"
+      "*.html merge=mergiraf"
+      "*.htm merge=mergiraf"
+      "*.xhtml merge=mergiraf"
+      "*.xml merge=mergiraf"
+      "*.c merge=mergiraf"
+      "*.h merge=mergiraf"
+      "*.cpp merge=mergiraf"
+      "*.hpp merge=mergiraf"
+      "*.cs merge=mergiraf"
+    ];
+
     extraConfig = {
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
+      push.default = "current";
+      rerere.enabled = true;
+      safe.bareRepository = "explicit";
+
+      core = {
+        # Treat spaces before tabs and all kinds of trailing whitespace as an error.
+        # [default] trailing-space: looks for spaces at the end of a line
+        # [default] space-before-tab: looks for spaces before tabs at the beginning of a line
+        whitespace = "space-before-tab,-indent-with-non-tab,trailing-space";
+    
+        # Make `git rebase` safer on macOS.
+        # More info: <http://www.git-tower.com/blog/make-git-rebase-safe-on-osx/>
+        trustctime = false;
+    
+        # Prevent showing files whose names contain non-ASCII symbols as unversioned.
+        # http://michael-kuehnel.de/git/2014/11/21/git-mac-osx-and-german-umlaute.html
+        precomposeunicode = false;
+    
+        # Speed up commands involving untracked files such as `git status`.
+        # https://git-scm.com/docs/git-update-index#_untracked_cache
+        untrackedCache = true;
+      };
+
+      "merge \"mergiraf\"" = {
+        name = "mergiraf";
+        driver = "mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P";
+      };
     };
   };
 
