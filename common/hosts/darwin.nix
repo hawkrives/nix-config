@@ -10,6 +10,9 @@
   programs.zsh.enable = true;  # default shell on catalina
   programs.fish.enable = true;
 
+  # enable dragging windows from anywhere anywhere while holding the control and command keys
+  system.defaults.NSGlobalDomain.NSWindowShouldDragOnGesture = true;
+
   # Enable sudo authentication with Touch ID
   security.pam.enableSudoTouchIdAuth = true;
 
