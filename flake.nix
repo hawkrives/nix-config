@@ -2,23 +2,22 @@
   description = "NixOS (and nix-darwin) configuration";
 
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     darwin.url = "github:LnL7/nix-darwin";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
 
     tsnsrv.url = "github:boinkor-net/tsnsrv";
-    tsnsrv.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    tsnsrv.inputs.nixpkgs.follows = "nixpkgs";
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
     home-manager.url = "github:nix-community/home-manager/release-24.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.91.1.tar.gz";
-    lix-module.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-3.tar.gz";
+    lix-module.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{
@@ -27,6 +26,7 @@
     lix-module,
     nixos-hardware,
     nixpkgs,
+    nixpkgs-unstable,
     tsnsrv,
     ...
   }: {
@@ -68,14 +68,14 @@
 
     # Build linux flake using:
     # $ nixos-rebuild build --flake .#pmx
-    nixosConfigurations.pmx-sonarr = let
-    in nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        ./hosts/pmx-sonarr/configuration.nix
-        lix-module.nixosModules.default
-      ];
-    };
+    # nixosConfigurations.pmx-sonarr = let
+    # in nixpkgs.lib.nixosSystem {
+    #   system = "x86_64-linux";
+    #   modules = [
+    #     ./hosts/pmx-sonarr/configuration.nix
+    #     lix-module.nixosModules.default
+    #   ];
+    # };
 
   };
 }
