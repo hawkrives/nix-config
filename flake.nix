@@ -2,7 +2,8 @@
   description = "NixOS (and nix-darwin) configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     darwin.url = "github:LnL7/nix-darwin";
@@ -30,7 +31,6 @@
     tsnsrv,
     ...
   }: {
-    nixpkgs.config.allowUnfree = true;
 
     # Build darwin flake using:
     # $ darwin-rebuild build --flake .#techcyted
@@ -59,7 +59,6 @@
     # $ nixos-rebuild build --flake .#nutmeg
     nixosConfigurations.nutmeg = let
       system = "x86_64-linux";
-      pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
     in nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
@@ -67,7 +66,10 @@
         lix-module.nixosModules.default
       ];
       specialArgs = {
-        inherit pkgs-unstable;
+        pkgs-unstable = import nixpkgs-unstable {
+          config.allowUnfree = true;
+          inherit system;
+        };
       };
     };
 
