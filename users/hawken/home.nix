@@ -39,11 +39,11 @@
     jless
     jq
     lazydocker
-    lazygit
+    unstable-pkgs.lazygit
     lima
     lnav
     mariadb
-    mise
+    unstable-pkgs.mise
     unstable-pkgs.nixos-generators
     nushell
     parallel
