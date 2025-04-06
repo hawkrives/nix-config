@@ -98,12 +98,12 @@
       pkgs.bat
       pkgs.tokei
       pkgs.soupault
-      pkgs.bottom
+      pkgs-unstable.bottom
       pkgs.wget
       pkgs.certbot
       pkgs.packwiz # for meloncraft-modpack
-      pkgs.uv # for python
-      pkgs.mise
+      pkgs-unstable.uv # for python
+      pkgs-unstable.mise
     ];
   };
 
