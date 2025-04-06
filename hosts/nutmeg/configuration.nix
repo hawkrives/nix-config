@@ -59,10 +59,10 @@
     packages = [
       pkgs.nix-output-monitor
       pkgs.du-dust
-      pkgs.neovim
+      pkgs-unstable.neovim
       pkgs.lsof
-      pkgs.lnav
-      pkgs.helix
+      pkgs-unstable.lnav
+      pkgs-unstable.helix
       pkgs.freeze # code screenshot
       pkgs.delta
       pkgs.htmlq
