@@ -2,7 +2,7 @@
 # your system. Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, nixpkgs-unstable, inputs, tsnsrv, ... }:
+{ config, pkgs, pkgs-unstable, inputs, tsnsrv, ... }:
 
 {
   imports =
@@ -56,54 +56,54 @@
     description = "Natsume";
     extraGroups = [ "wheel" ];
     shell = pkgs.fish;
-    packages = with pkgs; [
-      nix-output-monitor
-      du-dust
-      neovim
-      lsof
-      lnav
-      helix
-      freeze # code screenshot
-      delta
-      htmlq
-      graphviz
-      shellcheck
-      gron
-      rlwrap
-      dogdns
-      git
-      rtx
-      tree
-      broot
-      yq
-      gh
-      dive
-      lazygit
-      lazydocker
-      rustup
-      nushell
-      glab
-      zoxide
-      hyperfine
-      tmux
-      ripgrep
-      unzip
-      fd
-      htop
-      jq
-      xh
-      watch
-      xsv
-      pv
-      bat
-      tokei
-      soupault
-      bottom
-      wget
-      certbot
-      packwiz # for meloncraft-modpack
-      uv # for python
-      mise
+    packages = [
+      pkgs.nix-output-monitor
+      pkgs.du-dust
+      pkgs.neovim
+      pkgs.lsof
+      pkgs.lnav
+      pkgs.helix
+      pkgs.freeze # code screenshot
+      pkgs.delta
+      pkgs.htmlq
+      pkgs.graphviz
+      pkgs.shellcheck
+      pkgs.gron
+      pkgs.rlwrap
+      pkgs.dogdns
+      pkgs.git
+      pkgs.rtx
+      pkgs.tree
+      pkgs.broot
+      pkgs.yq
+      pkgs.gh
+      pkgs.dive
+      pkgs-unstable.lazygit
+      pkgs.lazydocker
+      pkgs.rustup
+      pkgs.nushell
+      pkgs.glab
+      pkgs.zoxide
+      pkgs.hyperfine
+      pkgs.tmux
+      pkgs.ripgrep
+      pkgs.unzip
+      pkgs.fd
+      pkgs.htop
+      pkgs.jq
+      pkgs.xh
+      pkgs.watch
+      pkgs.xsv
+      pkgs.pv
+      pkgs.bat
+      pkgs.tokei
+      pkgs.soupault
+      pkgs.bottom
+      pkgs.wget
+      pkgs.certbot
+      pkgs.packwiz # for meloncraft-modpack
+      pkgs.uv # for python
+      pkgs.mise
     ];
   };
 

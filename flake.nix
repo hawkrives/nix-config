@@ -58,12 +58,17 @@
     # Build linux flake using:
     # $ nixos-rebuild build --flake .#nutmeg
     nixosConfigurations.nutmeg = let
-    in nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
+      pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
+    in nixpkgs.lib.nixosSystem {
+      inherit system;
       modules = [
         ./hosts/nutmeg/configuration.nix
         lix-module.nixosModules.default
       ];
+      specialArgs = {
+        inherit pkgs-unstable;
+      };
     };
 
     # Build linux flake using:
