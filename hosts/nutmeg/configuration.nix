@@ -186,6 +186,11 @@
   #   options = "--delete-older-than 10d";
   # };
 
+  services.veilid = {
+    enable = true;
+    openFirewall = true;
+  };
+
   programs.nh = {
     enable = true;
     clean.enable = true;
