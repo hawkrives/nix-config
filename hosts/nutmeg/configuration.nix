@@ -57,6 +57,7 @@
     extraGroups = [ "wheel" ];
     shell = pkgs.fish;
     packages = [
+      pkgs-unstable.ghostty.terminfo
       pkgs.nix-output-monitor
       pkgs.du-dust
       pkgs-unstable.neovim
