@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 let
   nfsOptions = [
@@ -13,6 +13,7 @@ let
 
 in {
   services.plex.enable = true;
+  services.plex.package = pkgs-unstable.plex;
   services.plex.group = "servarr";
   services.plex.openFirewall = true;
 
