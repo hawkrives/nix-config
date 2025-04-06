@@ -166,11 +166,11 @@
   powerManagement.powertop.enable = true;
 
   # cockpit for remote management
-  services.cockpit = {
-    enable = true;
-    openFirewall = true;
-    port = 9090;
-  };
+  # services.cockpit = {
+  #   enable = true;
+  #   openFirewall = true;
+  #   port = 9090;
+  # };
 
   # system.autoUpgrade = {
   #   enable = false;
