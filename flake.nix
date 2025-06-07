@@ -2,8 +2,8 @@
   description = "NixOS (and nix-darwin) configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
-    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     darwin.url = "github:LnL7/nix-darwin";
@@ -14,10 +14,10 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    home-manager.url = "github:nix-community/home-manager/release-24.05";
+    home-manager.url = "github:nix-community/home-manager/release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-3.tar.gz";
+    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.0.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -43,6 +43,27 @@
         (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix {
           inherit username;
           hostname = "Techcyte-XMG7K2VM6F";
+        })
+        home-manager.darwinModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.${username} = import ./users/${username}/home.nix ({
+            unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
+          });
+        }
+      ];
+    };
+
+    darwinConfigurations."Techcyte-DGQJV434PF" = let
+      username = "hawken.rives";
+      system = "aarch64-darwin";
+    in darwin.lib.darwinSystem {
+      modules = [
+        lix-module.nixosModules.default
+        (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
+          inherit username;
+          hostname = "Techcyte-DGQJV434PF";
         })
         home-manager.darwinModules.home-manager
         {
