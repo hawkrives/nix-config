@@ -94,7 +94,6 @@
       pkgs.jq
       pkgs.xh
       pkgs.watch
-      pkgs.xsv
       pkgs.pv
       pkgs.bat
       pkgs.tokei

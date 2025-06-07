@@ -69,7 +69,6 @@
     watch
     wget
     xh
-    xsv
     xz
     yazi # directory viewer
     yq
