@@ -10,6 +10,8 @@
   networking.hostName = hostname;
   networking.computerName = hostname;
 
+  system.primaryUser = username;
+
   system.defaults = {
     dock.autohide = true;
     dock.mru-spaces = false;
