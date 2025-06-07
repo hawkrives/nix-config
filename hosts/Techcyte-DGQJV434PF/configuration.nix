@@ -91,7 +91,7 @@
     ];
 
     masApps = {
-      "Acorn 7" = 1547371478;
+      # "Acorn 7" = 1547371478;
       "AWS Extend Switch Roles" = 1592710340;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
