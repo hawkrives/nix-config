@@ -4,6 +4,9 @@
 
   nix.settings.trusted-users = [ "root" username ];
 
+  # something went wrong during setup and this is 350 instead of 30000
+  ids.gids.nixbld = 350;
+
   networking.hostName = hostname;
   networking.computerName = hostname;
 
