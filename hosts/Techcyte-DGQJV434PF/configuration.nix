@@ -57,7 +57,7 @@
     };
 
     taps = [
-      "homebrew/cask-fonts"
+      # "homebrew/cask-fonts"
     ];
 
     brews = [
