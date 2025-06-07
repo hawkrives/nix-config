@@ -2,9 +2,6 @@
   environment.systemPackages = with pkgs; [ vim ];
   environment.shells = with pkgs; [ bashInteractive fish ];
 
-  # Auto upgrade nix package and the daemon service.
-  services.nix-daemon.enable = true;
-
   nix.settings.experimental-features = "nix-command flakes repl-flake";
 
   programs.zsh.enable = true;  # default shell on catalina
@@ -14,7 +11,7 @@
   system.defaults.NSGlobalDomain.NSWindowShouldDragOnGesture = true;
 
   # Enable sudo authentication with Touch ID
-  security.pam.enableSudoTouchIdAuth = true;
+  security.pam.services.sudo_local.touchIdAuth = true;
 
   # Set Git commit hash for darwin-version.
   #system.configurationRevision = self.rev or self.dirtyRev or null;
