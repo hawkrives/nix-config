@@ -1,5 +1,5 @@
 {
-  description = "NixOS (and nix-darwin) configuration";
+  description = "NixOS (and nix-darwin) configuration for Hawken";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
@@ -69,7 +69,7 @@
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
-          home-manager.users.${username} = import ./users/${username}/home.nix ({
+          home-manager.users.${username} = import ./users/hawken/home.nix ({
             unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
           });
         }
