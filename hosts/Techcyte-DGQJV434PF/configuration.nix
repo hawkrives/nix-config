@@ -74,6 +74,7 @@
       "bike"
       "docker"
       "firefox"
+      "ghostty"
       "gitup"
       "google-chrome"
       "handbrake"
