@@ -1,10 +1,13 @@
-[tasks.all]
+[tasks.current-host]
 run = "darwin-rebuild switch --flake .#$(hostname)"
 
 [tasks.update]
 run = "nix flake update"
 
-[tasks.Techcyte-XMG7K2VM6F]
+# [tasks.Techcyte-XMG7K2VM6F]
+# run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
+
+[tasks.Techcyte-DGQJV434PF]
 run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
 
 [tasks.potato-bunny]
