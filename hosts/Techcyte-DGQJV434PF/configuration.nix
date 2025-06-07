@@ -80,7 +80,7 @@
       "jetbrains-toolbox"
       "kaleidoscope"
       "mimestream"
-      "mullvadvpn"
+      "mullvad-vpn"
       "nova"
       "plexamp"
       "sublime-merge"
