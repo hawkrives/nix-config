@@ -2,7 +2,7 @@
   environment.systemPackages = with pkgs; [ vim ];
   environment.shells = with pkgs; [ bashInteractive fish ];
 
-  nix.settings.experimental-features = "nix-command flakes repl-flake";
+  nix.settings.experimental-features = "nix-command flakes";
 
   programs.zsh.enable = true;  # default shell on catalina
   programs.fish.enable = true;
