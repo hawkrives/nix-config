@@ -101,7 +101,6 @@
       "Lungo" = 1263070803; # caffeine
       "Numbers" = 409203825;
       "Pages" = 409201541;
-      "Paste" = 967805235;
       "Photomator" = 1444636541;
       "Pixelmator" = 1289583905;
       "The Unarchiver" = 425424353;
