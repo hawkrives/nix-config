@@ -87,6 +87,7 @@
       "plexamp"
       "sublime-merge"
       "sublime-text"
+      "tailscale"
       "visual-studio-code"
       "vlc"
       "zed"
@@ -103,7 +104,6 @@
       "Paste" = 967805235;
       "Photomator" = 1444636541;
       "Pixelmator" = 1289583905;
-      "Tailscale" = 1475387142;
       "The Unarchiver" = 425424353;
       "WireGuard" = 1451685025;
     };
