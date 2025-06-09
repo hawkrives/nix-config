@@ -48,6 +48,7 @@
     amazon-ecr-credential-helper
     nix-output-monitor
     nh
+    unison-ucm
   ];
 
   homebrew = {

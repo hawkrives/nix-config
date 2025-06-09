@@ -19,6 +19,9 @@
 
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.0.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
+
+    unison-lang.url = "github:ceedubs/unison-nix";
+    unison-lang.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{
@@ -29,6 +32,7 @@
     nixpkgs,
     nixpkgs-unstable,
     tsnsrv,
+    unison-lang,
     ...
   }: {
 
@@ -58,6 +62,11 @@
     darwinConfigurations."Techcyte-DGQJV434PF" = let
       username = "hawken.rives";
       system = "aarch64-darwin";
+
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ unison-lang.overlay ];
+      };
     in darwin.lib.darwinSystem {
       modules = [
         lix-module.nixosModules.default
