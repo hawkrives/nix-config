@@ -105,6 +105,7 @@
       "Pixelmator" = 1289583905;
       "The Unarchiver" = 425424353;
       "WireGuard" = 1451685025;
+      "Things" = 904280696;
     };
   };
 
