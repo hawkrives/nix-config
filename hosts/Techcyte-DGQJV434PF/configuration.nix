@@ -81,6 +81,7 @@
       "handbrake"
       "jetbrains-toolbox"
       "kaleidoscope"
+      "keepingyouawake"
       "mimestream"
       "mullvad-vpn"
       "nova"
@@ -98,7 +99,6 @@
       "AWS Extend Switch Roles" = 1592710340;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
-      "Lungo" = 1263070803; # caffeine
       "Numbers" = 409203825;
       "Pages" = 409201541;
       "Photomator" = 1444636541;
