@@ -106,8 +106,8 @@
       "Pixelmator" = 1289583905;
       "Soulver 3" = 1508732804;
       "The Unarchiver" = 425424353;
-      "WireGuard" = 1451685025;
       "Things" = 904280696;
+      "WireGuard" = 1451685025;
     };
   };
 
