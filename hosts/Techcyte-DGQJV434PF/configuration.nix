@@ -100,6 +100,7 @@
       "AWS Extend Switch Roles" = 1592710340;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
+      "Nautik" = 1672838783;
       "Numbers" = 409203825;
       "Pages" = 409201541;
       "Photomator" = 1444636541;
