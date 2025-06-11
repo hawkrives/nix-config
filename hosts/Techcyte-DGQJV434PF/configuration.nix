@@ -13,7 +13,7 @@
   system.primaryUser = username;
 
   system.defaults = {
-    dock.autohide = true;
+    dock.autohide = false;
     dock.mru-spaces = false;
     dock.mouse-over-hilite-stack = true;
     dock.showhidden = true;
