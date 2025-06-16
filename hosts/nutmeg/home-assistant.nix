@@ -12,6 +12,10 @@
   networking.firewall.allowedTCPPorts = [ 8123 5353 21063 21064 5580 ];
   networking.firewall.allowedUDPPorts = [ 5353 21063 21064 5580 ];
 
+  hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = true;
+  environment.systemPackages = [ pkgs.bluez ];
+
   virtualisation.oci-containers.containers.homeassistant = {
     image = "ghcr.io/home-assistant/home-assistant:stable";
     autoStart = true;
