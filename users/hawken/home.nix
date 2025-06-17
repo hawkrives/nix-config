@@ -43,6 +43,7 @@
     lima
     lnav
     mariadb
+    mergiraf
     unstable-pkgs.mise
     unstable-pkgs.nixos-generators
     nushell
