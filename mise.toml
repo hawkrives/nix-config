@@ -1,5 +1,5 @@
 [tasks.current-host]
-run = 'nh darwin switch . --hostname "Techcyte-DGQJV434PF"'
+run = 'mise run "$(hostname)"'
 
 [tasks.update]
 run = "nix flake update"
@@ -8,10 +8,13 @@ run = "nix flake update"
 # run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
 
 [tasks.Techcyte-DGQJV434PF]
-run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
+# run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
+run = 'nh darwin switch . --hostname "$MISE_TASK_NAME"'
 
 [tasks.potato-bunny]
-run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
+# run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
+run = 'nh os switch . --hostname "$MISE_TASK_NAME"'
 
 [tasks.nutmeg]
-run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
+# run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
+run = 'nh os switch . --hostname "$MISE_TASK_NAME"'
