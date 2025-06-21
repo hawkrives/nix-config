@@ -91,6 +91,7 @@
       "sublime-text"
       "tailscale"
       "visual-studio-code"
+      "virtualbuddy"
       "vlc"
       "zed"
     ];
