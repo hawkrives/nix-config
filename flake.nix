@@ -22,6 +22,8 @@
 
     unison-lang.url = "github:ceedubs/unison-nix";
     unison-lang.inputs.nixpkgs.follows = "nixpkgs";
+
+    flox.url = "github:flox/flox/v1.5.0";
   };
 
   outputs = inputs@{
@@ -33,6 +35,7 @@
     nixpkgs-unstable,
     tsnsrv,
     unison-lang,
+    flox,
     ...
   }: {
 
@@ -73,6 +76,7 @@
         (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
           inherit username;
           hostname = "Techcyte-DGQJV434PF";
+          flox = flox;
         })
         home-manager.darwinModules.home-manager
         {

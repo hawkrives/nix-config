@@ -1,8 +1,10 @@
-{ username, hostname }:
+{ username, hostname, flox }:
 { config, pkgs, ... }: {
   imports = [ ../../common/hosts/darwin.nix ];
 
   nix.settings.trusted-users = [ "root" username ];
+  nix.settings.extra-trusted-substituters = ["https://cache.flox.dev"];
+  nix.settings.extra-trusted-public-keys = ["flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="];
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
@@ -49,6 +51,7 @@
     nix-output-monitor
     nh
     unison-ucm
+    flox.packages.${pkgs.system}.default
   ];
 
   homebrew = {
