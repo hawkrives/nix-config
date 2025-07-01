@@ -89,6 +89,8 @@
       "mimestream"
       "mullvad-vpn"
       "nova"
+      "obs"
+      "obs-backgroundremoval"
       "plexamp"
       "sublime-merge"
       "sublime-text"
