@@ -57,6 +57,7 @@
     rlwrap
     rustup
     shellcheck
+    skim
     sqlite
     tmux
     tokei
