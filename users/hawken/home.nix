@@ -76,6 +76,7 @@
     yq
     yt-dlp
     zellij # multiplexer
+    zoxide
     zstd
   ];
 
