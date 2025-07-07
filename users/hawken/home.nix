@@ -64,6 +64,7 @@
     tree
     trippy
     unstable-pkgs.jujutsu
+    unstable-pkgs.jjui
     unstable-pkgs.neovim
     uv
     visidata
@@ -119,7 +120,7 @@
 
       # Remove branches that have already been merged with main; a.k.a. ‘delete merged’
 	    dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d";
-      
+
       # "git lol" is a log alias. It shows a pretty graph of the last 25 commits.
       lol = "!git --no-pager log --graph --decorate --abbrev-commit --all --date=local -25 --pretty=short";
 
@@ -131,7 +132,7 @@
 
       # "git rb" shows recent branches, sorted by most recent commit.
       rb = "!git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short) %(objectname:short) %(committerdate:format:%F)' | column -t | sort -k3";
-      
+
       # "git fza" (aliased to "ga") shows all unstaged files in fzf and you can
       # use space to toggle them, then hitting enter finishes adding/staging
       # them. This is great for selecting some files to stage. I use this one
@@ -192,15 +193,15 @@
         # [default] trailing-space: looks for spaces at the end of a line
         # [default] space-before-tab: looks for spaces before tabs at the beginning of a line
         whitespace = "space-before-tab,-indent-with-non-tab,trailing-space";
-    
+
         # Make `git rebase` safer on macOS.
         # More info: <http://www.git-tower.com/blog/make-git-rebase-safe-on-osx/>
         trustctime = false;
-    
+
         # Prevent showing files whose names contain non-ASCII symbols as unversioned.
         # http://michael-kuehnel.de/git/2014/11/21/git-mac-osx-and-german-umlaute.html
         precomposeunicode = false;
-    
+
         # Speed up commands involving untracked files such as `git status`.
         # https://git-scm.com/docs/git-update-index#_untracked_cache
         untrackedCache = true;
