@@ -63,7 +63,6 @@
     tokei
     tree
     trippy
-    unstable-pkgs.go
     unstable-pkgs.jujutsu
     unstable-pkgs.neovim
     uv
