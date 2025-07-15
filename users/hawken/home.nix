@@ -83,7 +83,7 @@
     unstable-pkgs.bash-language-server
     unstable-pkgs.docker-language-server
     unstable-pkgs.typescript-language-server
-    unstable-pkgs.systemd-language-server
+    # unstable-pkgs.systemd-language-server
     unstable-pkgs.yaml-language-server
   ];
 
