@@ -17,7 +17,7 @@
     home-manager.url = "github:nix-community/home-manager/release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.1.tar.gz";
+    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.2-1.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
 
     unison-lang.url = "github:ceedubs/unison-nix";
