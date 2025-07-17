@@ -81,7 +81,9 @@
     zstd
     # language servers for helix
     unstable-pkgs.bash-language-server
-    unstable-pkgs.docker-language-server
+    unstable-pkgs.docker-language-server  # official from Docker, Inc
+    unstable-pkgs.dockerfile-language-server-nodejs  # for helix
+    unstable-pkgs.docker-compose-language-service
     unstable-pkgs.typescript-language-server
     # unstable-pkgs.systemd-language-server
     unstable-pkgs.yaml-language-server
