@@ -12,10 +12,16 @@ let
   ];
 
 in {
-  services.plex.enable = true;
-  services.plex.package = pkgs-unstable.plex;
-  services.plex.group = "servarr";
-  services.plex.openFirewall = true;
+  services.plex = {
+    enable = true;
+    package = pkgs-unstable.plex;
+    group = "servarr";
+    openFirewall = true;
+  };
+
+  services.tautulli = {
+    enable = true;
+  };
 
   users.groups.servarr = { gid = 1050; };
   users.users.servarr = {
@@ -88,6 +94,4 @@ in {
     device = "plex-nas:/volume1/app-plex";
     options = nfsOptions;
   };
-
-  services.tautulli.enable = true;
 }
