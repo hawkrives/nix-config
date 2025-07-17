@@ -53,12 +53,6 @@ in {
     "192.168.1.194" = ["plex-nas"];
   };
 
-  fileSystems."/var/lib/plex/media" = {
-    fsType = "nfs";
-    device = "plex-nas:/volume1/media";
-    options = nfsOptions ++ [ "ro" ];
-  };
-
   fileSystems."/var/lib/plex/media-shows" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-shows";
@@ -87,12 +81,6 @@ in {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-movies";
     options = nfsOptions ++ [ "ro" ];
-  };
-
-  fileSystems."/var/lib/plex/media-versions" = {
-    fsType = "nfs";
-    device = "plex-nas:/volume1/media-versions";
-    options = nfsOptions;
   };
 
   fileSystems."/var/lib/plex/backup" = {
