@@ -40,8 +40,8 @@ in {
       path = pkgs.fetchFromGitHub {
         owner = "ZeroQI";
         repo = "Hama.bundle";
-        rev = "bb684a2299d06b1377b4d3e1c81dff417ce4e9de";
-        sha256 = "PtW8I2iloD3SohPPo12zDSsFg9rskNj1W15bg0DA/BY=";
+        rev = "02f2025d6ffcceb973a2e3f72ec98b60ba9a60bd";
+        sha256 = "";
       };
     })
   ];
@@ -50,8 +50,8 @@ in {
     (pkgs.fetchFromGitHub {
       owner = "ZeroQI";
       repo = "Absolute-Series-Scanner";
-      rev = "7121c1d744fcbb3ef58bf5fcb0d157b847e7cfd5";
-      sha256 = "EIXOP4Rhmfw5VYSLANFZoIyYIJ4Gmm67g66xdthLwwU=";
+      rev = "f41cd58eb72480c677ec6c9efec9de6adbad16ff";
+      sha256 = "";
     })
   ];
 
