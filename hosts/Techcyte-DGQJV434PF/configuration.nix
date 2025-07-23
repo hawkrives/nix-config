@@ -1,4 +1,4 @@
-{ username, hostname, flox }:
+{ username, hostname, flox, unstable-pkgs }:
 { config, pkgs, ... }: {
   imports = [ ../../common/hosts/darwin.nix ];
 
@@ -52,6 +52,7 @@
     nh
     unison-ucm
     flox.packages.${pkgs.system}.default
+    unstable-pkgs.attic-client
   ];
 
   homebrew = {
