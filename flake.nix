@@ -77,6 +77,7 @@
           inherit username;
           hostname = "Techcyte-DGQJV434PF";
           flox = flox;
+          unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
         })
         home-manager.darwinModules.home-manager
         {
