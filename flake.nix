@@ -24,6 +24,7 @@
     unison-lang.inputs.nixpkgs.follows = "nixpkgs";
 
     flox.url = "github:flox/flox/v1.5.0";
+    nil.url = "github:oxalica/nil/2025-06-13";
   };
 
   outputs = inputs@{
