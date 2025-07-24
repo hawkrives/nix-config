@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ config, ... }:
 
 {
   # The state version is required and should stay at the version you
@@ -19,7 +19,10 @@
 
   programs.bash = {
     enable = true;
-    historyControl = [ "ignoredups" "ignorespace" ];
+    historyControl = [
+      "ignoredups"
+      "ignorespace"
+    ];
   };
 
   home.sessionVariables = {
@@ -58,13 +61,19 @@
   };
 
   home.file."${config.xdg.configHome}/git/ignore".text = ''
-  .DS_Store
-  .idea
+    .DS_Store
+    .idea
   '';
 
   home.file.".gitattributes".text = ''
     *.sqlite diff=sqlite3
   '';
 
-  home.sessionPath = [ "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/bin" "$HOME/.local/bin" "/opt/homebrew/bin" ];
+  home.sessionPath = [
+    "$HOME/.cargo/bin"
+    "$HOME/go/bin"
+    "$HOME/bin"
+    "$HOME/.local/bin"
+    "/opt/homebrew/bin"
+  ];
 }

@@ -1,4 +1,11 @@
-{ config, pkgs, modulesPath, lib, system, ... }:
+{
+  config,
+  pkgs,
+  modulesPath,
+  lib,
+  system,
+  ...
+}:
 
 {
   imports = [
@@ -19,8 +26,14 @@
     boot.growPartition = lib.mkDefault true;
 
     # Allow remote updates with flakes and non-root users
-    nix.settings.trusted-users = [ "root" "@wheel" ];
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    nix.settings.trusted-users = [
+      "root"
+      "@wheel"
+    ];
+    nix.settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
 
     # Enable mDNS for `hostname.local` addresses
     services.avahi.enable = true;
@@ -32,7 +45,7 @@
 
     # Some sane packages we need on every system
     environment.systemPackages = with pkgs; [
-      vim  # for emergencies
+      vim # for emergencies
       git # for pulling nix flakes
       python3 # for ansible
     ];
@@ -52,8 +65,11 @@
     users.users.user = {
       isNormalUser = true;
       description = "User";
-      extraGroups = [ "networkmanager" "wheel" ];
-      openssh.authorizedKeys.keys = [ 
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+      ];
+      openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHahUhNRZXYsUYYWqI7AUDwJ8a2EQ7y66fFC0MoSJRi+ techcyted"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO5cvA90dd+syRxeLBrQEdwBGmM4kC4pZBcbnya1g5sw nutmeg"
       ];

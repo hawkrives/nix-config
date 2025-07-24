@@ -2,18 +2,21 @@
 # your system. Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, pkgs-unstable, inputs, tsnsrv, ... }:
+{
+  pkgs,
+  pkgs-unstable,
+  ...
+}:
 
 {
-  imports =
-    [
-      ./adguard.nix
-      ./audit.nix
-      ./hardware-configuration.nix
-      ./home-assistant.nix
-      ./plex.nix
-      ./tailscale.nix
-    ];
+  imports = [
+    ./adguard.nix
+    ./audit.nix
+    ./hardware-configuration.nix
+    ./home-assistant.nix
+    ./plex.nix
+    ./tailscale.nix
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -46,7 +49,7 @@
   documentation = {
     dev.enable = true;
     man.generateCaches = true;
-    nixos.includeAllModules = true;                                         
+    nixos.includeAllModules = true;
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
@@ -109,8 +112,14 @@
 
   nixpkgs.config.allowUnfree = true;
   # nix.package = pkgs.nixUnstable;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.allowed-users = [ "root" "natsume" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+  nix.settings.allowed-users = [
+    "root"
+    "natsume"
+  ];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -124,15 +133,31 @@
   ];
 
   fileSystems."/mnt/reddit" = {
-      device = "192.168.1.194:/volume1/project-reddit-data";
-      fsType = "nfs";
-      options = [ "nfsvers=4.2" "noatime" "x-systemd.automount" "noauto" "x-systemd.idle-timeout=60" "x-systemd.device-timeout=5s" "x-systemd.mount-timeout=5s"];
+    device = "192.168.1.194:/volume1/project-reddit-data";
+    fsType = "nfs";
+    options = [
+      "nfsvers=4.2"
+      "noatime"
+      "x-systemd.automount"
+      "noauto"
+      "x-systemd.idle-timeout=60"
+      "x-systemd.device-timeout=5s"
+      "x-systemd.mount-timeout=5s"
+    ];
   };
 
   fileSystems."/mnt/stories" = {
-      device = "192.168.1.194:/volume1/project-story-archive";
-      fsType = "nfs";
-      options = [ "nfsvers=4.1" "noatime" "x-systemd.automount" "noauto" "x-systemd.idle-timeout=60" "x-systemd.device-timeout=5s" "x-systemd.mount-timeout=5s"];
+    device = "192.168.1.194:/volume1/project-story-archive";
+    fsType = "nfs";
+    options = [
+      "nfsvers=4.1"
+      "noatime"
+      "x-systemd.automount"
+      "noauto"
+      "x-systemd.idle-timeout=60"
+      "x-systemd.device-timeout=5s"
+      "x-systemd.mount-timeout=5s"
+    ];
   };
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -159,7 +184,11 @@
   networking.nftables.enable = true;
   networking.firewall.enable = true;
 
-  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
+  networking.firewall.allowedTCPPorts = [
+    22
+    80
+    443
+  ];
 
   # power management for lower idle power draw
   powerManagement.powertop.enable = true;

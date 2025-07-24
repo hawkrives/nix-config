@@ -1,7 +1,9 @@
 { pkgs, config, ... }:
 
 {
-  users.groups.homeassistant = { gid = 10010; };
+  users.groups.homeassistant = {
+    gid = 10010;
+  };
   users.users.homeassistant = {
     uid = 10010;
     group = "homeassistant";
@@ -9,8 +11,19 @@
     isNormalUser = true;
   };
 
-  networking.firewall.allowedTCPPorts = [ 8123 5353 21063 21064 5580 ];
-  networking.firewall.allowedUDPPorts = [ 5353 21063 21064 5580 ];
+  networking.firewall.allowedTCPPorts = [
+    8123
+    5353
+    21063
+    21064
+    5580
+  ];
+  networking.firewall.allowedUDPPorts = [
+    5353
+    21063
+    21064
+    5580
+  ];
 
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
@@ -28,13 +41,15 @@
       "io.containers.autoupdate" = "registry";
     };
     environment.TZ = "America/New_York";
-    extraOptions = [ 
-      "--network=host" 
+    extraOptions = [
+      "--network=host"
       "--pull=newer"
     ];
   };
 
-  users.groups.homeassistant-matter = { gid = 10011; };
+  users.groups.homeassistant-matter = {
+    gid = 10011;
+  };
   users.users.homeassistant-matter = {
     uid = 10011;
     group = "homeassistant-matter";
@@ -56,7 +71,7 @@
     environment.TZ = "America/New_York";
     extraOptions = [
       "--pull=newer"
-      "--network=host" 
+      "--network=host"
       "--security-opt=apparmor=unconfined"
     ];
   };

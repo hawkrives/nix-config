@@ -1,4 +1,4 @@
-{ unstable-pkgs }:
+{ unstable-pkgs, nil }:
 
 { pkgs, config, ... }:
 
@@ -45,6 +45,7 @@
     mariadb
     mergiraf
     unstable-pkgs.mise
+    nil.nil
     unstable-pkgs.nixos-generators
     nushell
     parallel
@@ -81,8 +82,8 @@
     zstd
     # language servers for helix
     unstable-pkgs.bash-language-server
-    unstable-pkgs.docker-language-server  # official from Docker, Inc
-    unstable-pkgs.dockerfile-language-server-nodejs  # for helix
+    unstable-pkgs.docker-language-server # official from Docker, Inc
+    unstable-pkgs.dockerfile-language-server-nodejs # for helix
     unstable-pkgs.docker-compose-language-service
     unstable-pkgs.typescript-language-server
     # unstable-pkgs.systemd-language-server
@@ -128,7 +129,7 @@
       remotes = "remote --verbose";
 
       # Remove branches that have already been merged with main; a.k.a. ‘delete merged’
-	    dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d";
+      dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d";
 
       # "git lol" is a log alias. It shows a pretty graph of the last 25 commits.
       lol = "!git --no-pager log --graph --decorate --abbrev-commit --all --date=local -25 --pretty=short";
@@ -223,6 +224,9 @@
     };
   };
 
-  home.sessionPath =
-    [ "$HOME/go/bin" "$HOME/bin" "$HOME/.local/bin" ];
+  home.sessionPath = [
+    "$HOME/go/bin"
+    "$HOME/bin"
+    "$HOME/.local/bin"
+  ];
 }
