@@ -20,9 +20,6 @@
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.2-1.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
 
-    unison-lang.url = "github:ceedubs/unison-nix";
-    unison-lang.inputs.nixpkgs.follows = "nixpkgs";
-
     nil.url = "github:oxalica/nil/2025-06-13";
   };
 
@@ -34,7 +31,6 @@
     nixpkgs,
     nixpkgs-unstable,
     tsnsrv,
-    unison-lang,
     ...
   }: {
 
@@ -67,7 +63,6 @@
 
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ unison-lang.overlay ];
       };
     in darwin.lib.darwinSystem {
       modules = [
