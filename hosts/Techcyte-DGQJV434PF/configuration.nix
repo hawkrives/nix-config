@@ -5,6 +5,9 @@
   nix.settings.trusted-users = [ "root" username ];
   nix.settings.extra-trusted-substituters = ["https://cache.flox.dev"];
   nix.settings.extra-trusted-public-keys = ["flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="];
+  nix.settings.substituters = ["https://attic.services.hub.techcyte.com/cache" "https://cache.nixos.org"];
+  nix.settings.trusted-public-keys = ["cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU=" "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="];
+  nix.settings.netrc-file = "/Users/${username}/.netrc";
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
