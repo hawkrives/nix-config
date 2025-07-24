@@ -56,6 +56,7 @@
     unison-ucm
     flox.packages.${pkgs.system}.default
     unstable-pkgs.attic-client
+    unstable-pkgs.devenv
   ];
 
   homebrew = {
