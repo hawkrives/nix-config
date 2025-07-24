@@ -2,12 +2,28 @@
 { config, pkgs, ... }: {
   imports = [ ../../common/hosts/darwin.nix ];
 
-  nix.settings.trusted-users = [ "root" username ];
+  # @admin is required for nix-builder
+  nix.settings.trusted-users = [ "root" username "@admin" ];
   nix.settings.extra-trusted-substituters = ["https://cache.flox.dev"];
   nix.settings.extra-trusted-public-keys = ["flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="];
   nix.settings.substituters = ["https://attic.services.hub.techcyte.com/cache" "https://cache.nixos.org"];
   nix.settings.trusted-public-keys = ["cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU=" "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="];
   nix.settings.netrc-file = "/Users/${username}/.netrc";
+  # https://nixcademy.com/posts/macos-linux-builder/
+  nix.linux-builder = {
+    enable = true;
+    ephemeral = true;
+    maxJobs = 4;
+    config = {
+      virtualisation = {
+        darwin-builder = {
+          diskSize = 40 * 1024;
+          memorySize = 8 * 1024;
+        };
+        cores = 6;
+      };
+    };
+  };
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
@@ -58,6 +74,8 @@
     unstable-pkgs.attic-client
     unstable-pkgs.devenv
   ];
+
+
 
   homebrew = {
     enable = true;
