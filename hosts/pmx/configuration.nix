@@ -1,8 +1,16 @@
-{ username, hostname, nextdnsProfile }:
-{ config, pkgs, ... }: {
+{
+  username,
+  hostname,
+  nextdnsProfile,
+}:
+{ config, pkgs, ... }:
+{
   imports = [ ../../common/hosts/darwin.nix ];
 
-  nix.settings.trusted-users = [ "root" username ];
+  nix.settings.trusted-users = [
+    "root"
+    username
+  ];
 
   networking.hostName = hostname;
   networking.computerName = hostname;

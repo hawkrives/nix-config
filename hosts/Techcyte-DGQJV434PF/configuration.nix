@@ -1,11 +1,26 @@
-{ username, hostname, unstable-pkgs }:
-{ config, pkgs, ... }: {
+{
+  username,
+  hostname,
+  unstable-pkgs,
+}:
+{ config, pkgs, ... }:
+{
   imports = [ ../../common/hosts/darwin.nix ];
 
   # @admin is required for nix-builder
-  nix.settings.trusted-users = [ "root" username "@admin" ];
-  nix.settings.substituters = ["https://attic.services.hub.techcyte.com/cache" "https://cache.nixos.org"];
-  nix.settings.trusted-public-keys = ["cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU=" "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="];
+  nix.settings.trusted-users = [
+    "root"
+    username
+    "@admin"
+  ];
+  nix.settings.substituters = [
+    "https://attic.services.hub.techcyte.com/cache"
+    "https://cache.nixos.org"
+  ];
+  nix.settings.trusted-public-keys = [
+    "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+  ];
   nix.settings.netrc-file = "/Users/${username}/.netrc";
   # https://nixcademy.com/posts/macos-linux-builder/
   nix.linux-builder = {
@@ -70,8 +85,6 @@
     unstable-pkgs.attic-client
     unstable-pkgs.devenv
   ];
-
-
 
   homebrew = {
     enable = true;

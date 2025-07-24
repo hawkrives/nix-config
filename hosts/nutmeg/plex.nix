@@ -11,7 +11,8 @@ let
     "x-systemd.mount-timeout=5s"
   ];
 
-in {
+in
+{
   services.plex = {
     enable = true;
     package = pkgs-unstable.plex;
@@ -23,7 +24,9 @@ in {
     enable = true;
   };
 
-  users.groups.servarr = { gid = 1050; };
+  users.groups.servarr = {
+    gid = 1050;
+  };
   users.users.servarr = {
     uid = 1036;
     isNormalUser = true;
@@ -56,7 +59,7 @@ in {
   ];
 
   networking.hosts = {
-    "192.168.1.194" = ["plex-nas"];
+    "192.168.1.194" = [ "plex-nas" ];
   };
 
   fileSystems."/var/lib/plex/media-shows" = {

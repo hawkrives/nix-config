@@ -23,94 +23,102 @@
     nil.url = "github:oxalica/nil/2025-06-13";
   };
 
-  outputs = inputs@{
-    darwin,
-    home-manager,
-    lix-module,
-    nixos-hardware,
-    nixpkgs,
-    nixpkgs-unstable,
-    tsnsrv,
-    ...
-  }: {
+  outputs =
+    inputs@{
+      darwin,
+      home-manager,
+      lix-module,
+      nixos-hardware,
+      nixpkgs,
+      nixpkgs-unstable,
+      tsnsrv,
+      nil,
+      ...
+    }:
+    {
 
-    # Build darwin flake using:
-    # $ darwin-rebuild build --flake .#techcyted
-    darwinConfigurations."Techcyte-XMG7K2VM6F" = let
-      username = "hawken";
-      system = "aarch64-darwin";
-    in darwin.lib.darwinSystem {
-      modules = [
-        lix-module.nixosModules.default
-        (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix {
-          inherit username;
-          hostname = "Techcyte-XMG7K2VM6F";
-        })
-        home-manager.darwinModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.${username} = import ./users/${username}/home.nix ({
-            unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
-          });
-        }
-      ];
-    };
-
-    darwinConfigurations."Techcyte-DGQJV434PF" = let
-      username = "hawken.rives";
-      system = "aarch64-darwin";
-
-      pkgs = import nixpkgs {
-        inherit system;
-      };
-    in darwin.lib.darwinSystem {
-      modules = [
-        lix-module.nixosModules.default
-        (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
-          inherit username;
-          hostname = "Techcyte-DGQJV434PF";
-          unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
-        })
-        home-manager.darwinModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.${username} = import ./users/hawken/home.nix ({
-            unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
-          });
-        }
-      ];
-    };
-
-    # Build linux flake using:
-    # $ nixos-rebuild build --flake .#nutmeg
-    nixosConfigurations.nutmeg = let
-      system = "x86_64-linux";
-    in nixpkgs.lib.nixosSystem {
-      inherit system;
-      modules = [
-        ./hosts/nutmeg/configuration.nix
-        lix-module.nixosModules.default
-      ];
-      specialArgs = {
-        pkgs-unstable = import nixpkgs-unstable {
-          config.allowUnfree = true;
-          inherit system;
+      # Build darwin flake using:
+      # $ darwin-rebuild build --flake .#techcyted
+      darwinConfigurations."Techcyte-XMG7K2VM6F" =
+        let
+          username = "hawken";
+          system = "aarch64-darwin";
+        in
+        darwin.lib.darwinSystem {
+          modules = [
+            lix-module.nixosModules.default
+            (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix {
+              inherit username;
+              hostname = "Techcyte-XMG7K2VM6F";
+            })
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${username} = import ./users/${username}/home.nix ({
+                unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
+              });
+            }
+          ];
         };
-      };
+
+      darwinConfigurations."Techcyte-DGQJV434PF" =
+        let
+          username = "hawken.rives";
+          system = "aarch64-darwin";
+
+          # pkgs = import nixpkgs { inherit system; };
+        in
+        darwin.lib.darwinSystem {
+          modules = [
+            lix-module.nixosModules.default
+            (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
+              inherit username;
+              hostname = "Techcyte-DGQJV434PF";
+              unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
+            })
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${username} = import ./users/hawken/home.nix ({
+                unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
+                nil = nil.packages.${system};
+              });
+            }
+          ];
+        };
+
+      # Build linux flake using:
+      # $ nixos-rebuild build --flake .#nutmeg
+      nixosConfigurations.nutmeg =
+        let
+          system = "x86_64-linux";
+        in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./hosts/nutmeg/configuration.nix
+            lix-module.nixosModules.default
+          ];
+          specialArgs = {
+            pkgs-unstable = import nixpkgs-unstable {
+              config.allowUnfree = true;
+              inherit system;
+            };
+          };
+        };
+
+      # Build linux flake using:
+      # $ nixos-rebuild build --flake .#pmx
+      # nixosConfigurations.pmx-sonarr = let
+      # in nixpkgs.lib.nixosSystem {
+      #   system = "x86_64-linux";
+      #   modules = [
+      #     ./hosts/pmx-sonarr/configuration.nix
+      #     lix-module.nixosModules.default
+      #   ];
+      # };
+
     };
-
-    # Build linux flake using:
-    # $ nixos-rebuild build --flake .#pmx
-    # nixosConfigurations.pmx-sonarr = let
-    # in nixpkgs.lib.nixosSystem {
-    #   system = "x86_64-linux";
-    #   modules = [
-    #     ./hosts/pmx-sonarr/configuration.nix
-    #     lix-module.nixosModules.default
-    #   ];
-    # };
-
-  };
 }

@@ -1,4 +1,4 @@
-{ pkgs, tsnsrv, ... }:
+{ ... }:
 
 {
   services.tailscale = {

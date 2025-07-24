@@ -1,10 +1,14 @@
-{ config, pkgs, ... }: {
+{ pkgs, ... }:
+{
   environment.systemPackages = with pkgs; [ vim ];
-  environment.shells = with pkgs; [ bashInteractive fish ];
+  environment.shells = with pkgs; [
+    bashInteractive
+    fish
+  ];
 
   nix.settings.experimental-features = "nix-command flakes";
 
-  programs.zsh.enable = true;  # default shell on catalina
+  programs.zsh.enable = true; # default shell on catalina
   programs.fish.enable = true;
 
   # enable dragging windows from anywhere anywhere while holding the control and command keys
