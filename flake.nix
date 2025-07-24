@@ -23,7 +23,6 @@
     unison-lang.url = "github:ceedubs/unison-nix";
     unison-lang.inputs.nixpkgs.follows = "nixpkgs";
 
-    flox.url = "github:flox/flox/v1.6.0";
     nil.url = "github:oxalica/nil/2025-06-13";
   };
 
@@ -36,7 +35,6 @@
     nixpkgs-unstable,
     tsnsrv,
     unison-lang,
-    flox,
     ...
   }: {
 
@@ -77,7 +75,6 @@
         (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
           inherit username;
           hostname = "Techcyte-DGQJV434PF";
-          flox = flox;
           unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
         })
         home-manager.darwinModules.home-manager
