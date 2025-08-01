@@ -96,10 +96,12 @@
 
     taps = [
       # "homebrew/cask-fonts"
+      "d12frosted/homebrew-emacs-plus"  # for emacs-plus
     ];
 
     brews = [
       "container-diff"
+      { name = "emacs-plus"; args = ["with-savchenkovaleriy-big-sur-3d-icon" "with-no-frame-refocus" "with-native-comp"]; }
     ];
 
     caskArgs.appdir = "~/Applications";
