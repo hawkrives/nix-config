@@ -47,7 +47,7 @@
   system.primaryUser = username;
 
   system.defaults = {
-    dock.autohide = false;
+    dock.autohide = true;
     dock.mru-spaces = false;
     dock.mouse-over-hilite-stack = true;
     dock.showhidden = true;
@@ -96,12 +96,19 @@
 
     taps = [
       # "homebrew/cask-fonts"
-      "d12frosted/homebrew-emacs-plus"  # for emacs-plus
+      "d12frosted/homebrew-emacs-plus" # for emacs-plus
     ];
 
     brews = [
       "container-diff"
-      { name = "emacs-plus"; args = ["with-savchenkovaleriy-big-sur-3d-icon" "with-no-frame-refocus" "with-native-comp"]; }
+      {
+        name = "emacs-plus";
+        args = [
+          "with-savchenkovaleriy-big-sur-3d-icon"
+          "with-no-frame-refocus"
+          "with-native-comp"
+        ];
+      }
     ];
 
     caskArgs.appdir = "~/Applications";
@@ -140,6 +147,7 @@
       "AWS Extend Switch Roles" = 1592710340;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
+      "Muse" = 1501563902;
       "Nautik" = 1672838783;
       "Numbers" = 409203825;
       "Pages" = 409201541;
