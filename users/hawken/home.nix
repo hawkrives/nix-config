@@ -169,6 +169,7 @@
       "/.idea/"
       "/.vscode/"
       ".mise.toml"
+      ".serena/"
     ];
 
     attributes = [
