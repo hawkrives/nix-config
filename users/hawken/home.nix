@@ -68,6 +68,7 @@
     unstable-pkgs.jujutsu
     unstable-pkgs.jjui
     unstable-pkgs.neovim
+    unstable-pkgs.nix-visualize
     uv
     visidata
     watch
