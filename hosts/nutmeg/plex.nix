@@ -44,7 +44,7 @@ in
         owner = "ZeroQI";
         repo = "Hama.bundle";
         rev = "02f2025d6ffcceb973a2e3f72ec98b60ba9a60bd";
-        sha256 = "";
+        sha256 = "xXgmPrRJkBtXW1REYnxb1w5U1a8R79UllUWrcfCnuk4=";
       };
     })
   ];
@@ -54,7 +54,7 @@ in
       owner = "ZeroQI";
       repo = "Absolute-Series-Scanner";
       rev = "f41cd58eb72480c677ec6c9efec9de6adbad16ff";
-      sha256 = "";
+      sha256 = "XE1yHsJQo9o46NlE5ToIhK4EXONFKjANtKY3dpTs9HE=";
     })
   ];
 
