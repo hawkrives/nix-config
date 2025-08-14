@@ -30,6 +30,12 @@
   ];
   boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
 
+  # the bluetooth driver is insecure... but I want bluetooth readings from the house,
+  # so we have to continue running it.
+  nixpkgs.config.permittedInsecurePackages = [
+    "broadcom-sta-6.30.223.271-57-6.12.41"
+  ];
+
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/a049e035-2542-472e-ad90-4e0353d26185";
     fsType = "ext4";
