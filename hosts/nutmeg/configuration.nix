@@ -126,6 +126,7 @@
     fishPlugins.pure
     sqlite
     sqlite-interactive
+    isd  # TUI to work with systemd units
   ];
 
   fileSystems."/mnt/reddit" = {
