@@ -30,4 +30,9 @@
     home = "/Users/${username}";
     shell = pkgs.bashInteractive;
   };
+
+  services.glance = {
+    enable = true;
+    openFirewall = true;
+  };
 }
