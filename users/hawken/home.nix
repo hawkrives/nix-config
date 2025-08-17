@@ -1,4 +1,4 @@
-{ unstable-pkgs, nil }:
+{ unstable-pkgs, nil, alejandra }:
 
 { pkgs, config, ... }:
 
@@ -6,6 +6,7 @@
   imports = [ ../../common/users/shared.nix ];
 
   home.packages = with pkgs; [
+    alejandra.alejandra
     atuin
     awscli2
     bacon

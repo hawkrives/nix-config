@@ -21,6 +21,9 @@
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
 
     nil.url = "github:oxalica/nil/2025-06-13";
+
+    alejandra.url = "github:kamadorueda/alejandra?ref=4.0.0";
+    alejandra.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -33,6 +36,7 @@
       nixpkgs-unstable,
       tsnsrv,
       nil,
+      alejandra,
       ...
     }:
     {
@@ -84,6 +88,7 @@
               home-manager.users.${username} = import ./users/hawken/home.nix ({
                 unstable-pkgs = (import inputs.nixpkgs-unstable { inherit system; });
                 nil = nil.packages.${system};
+                alejandra = alejandra.packages.${system};
               });
             }
           ];
