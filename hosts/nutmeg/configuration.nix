@@ -218,6 +218,15 @@
     flake = "/etc/nixos/";
   };
 
+  services.freeradius = {
+    enable = true;
+    debug = true;
+  # Define a user for the client to connect with
+    configDir = pkgs.writeTextDir "users" ''
+      testuser Cleartext-Password := "testpassword"
+    '';
+  };
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
