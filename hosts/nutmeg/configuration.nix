@@ -131,33 +131,33 @@
     isd  # TUI to work with systemd units
   ];
 
-  fileSystems."/mnt/reddit" = {
-    device = "192.168.1.194:/volume1/project-reddit-data";
-    fsType = "nfs";
-    options = [
-      "nfsvers=4.2"
-      "noatime"
-      "x-systemd.automount"
-      "noauto"
-      "x-systemd.idle-timeout=60"
-      "x-systemd.device-timeout=5s"
-      "x-systemd.mount-timeout=5s"
-    ];
-  };
+  # fileSystems."/mnt/reddit" = {
+  #   device = "192.168.1.194:/volume1/project-reddit-data";
+  #   fsType = "nfs";
+  #   options = [
+  #     "nfsvers=4.2"
+  #     "noatime"
+  #     "x-systemd.automount"
+  #     "noauto"
+  #     "x-systemd.idle-timeout=60"
+  #     "x-systemd.device-timeout=5s"
+  #     "x-systemd.mount-timeout=5s"
+  #   ];
+  # };
 
-  fileSystems."/mnt/stories" = {
-    device = "192.168.1.194:/volume1/project-story-archive";
-    fsType = "nfs";
-    options = [
-      "nfsvers=4.1"
-      "noatime"
-      "x-systemd.automount"
-      "noauto"
-      "x-systemd.idle-timeout=60"
-      "x-systemd.device-timeout=5s"
-      "x-systemd.mount-timeout=5s"
-    ];
-  };
+  # fileSystems."/mnt/stories" = {
+  #   device = "192.168.1.194:/volume1/project-story-archive";
+  #   fsType = "nfs";
+  #   options = [
+  #     "nfsvers=4.1"
+  #     "noatime"
+  #     "x-systemd.automount"
+  #     "noauto"
+  #     "x-systemd.idle-timeout=60"
+  #     "x-systemd.device-timeout=5s"
+  #     "x-systemd.mount-timeout=5s"
+  #   ];
+  # };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
