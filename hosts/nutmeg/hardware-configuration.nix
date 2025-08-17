@@ -30,6 +30,14 @@
   ];
   boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
 
+  # reduce IO cache, this should reduce latency when 2 processes try to read a lot from the disk
+  # from <https://github.com/tchfoo/raspi-dotfiles/blob/8fd846f740385c92aa5f849944a2cd1a02d7d841/modules/system.nix>
+  boot.kernel.sysctl = {
+    "vm.dirty_background_ratio" = 10;
+    "vm.dirty_ratio" = 40;
+    "vm.vfs_cache_pressure" = 10;
+  };
+
   # the bluetooth driver is insecure... but I want bluetooth readings from the house,
   # so we have to continue running it.
   nixpkgs.config.permittedInsecurePackages = [
