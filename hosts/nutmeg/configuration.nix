@@ -107,6 +107,8 @@
       pkgs.packwiz # for meloncraft-modpack
       pkgs-unstable.uv # for python
       pkgs-unstable.mise
+      pkgs-unstable.jujutsu
+      pkgs-unstable.jjui
     ];
   };
 
