@@ -15,7 +15,7 @@ in
 {
   services.plex = {
     enable = true;
-    package = pkgs-unstable.plex;
+    package = pkgs.plex;
     group = "servarr";
     openFirewall = true;
   };
