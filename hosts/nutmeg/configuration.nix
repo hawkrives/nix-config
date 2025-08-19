@@ -76,7 +76,7 @@
       pkgs.rtx
       pkgs.tree
       pkgs.broot
-      pkgs.yq
+      pkgs.yq-go
       pkgs.gh
       pkgs.dive
       pkgs-unstable.lazygit
