@@ -81,7 +81,7 @@
     xh
     xz
     yazi # directory viewer
-    yq
+    yq-go
     yt-dlp
     zellij # multiplexer
     zoxide
