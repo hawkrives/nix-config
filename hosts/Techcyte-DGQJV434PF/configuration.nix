@@ -18,12 +18,15 @@
   nix.settings.substituters = [
     "https://attic.services.hub.techcyte.com/cache"
     "https://cache.nixos.org"
+    "https://cache.lix.systems"
   ];
   nix.settings.trusted-public-keys = [
     "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    "cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="
   ];
   nix.settings.netrc-file = "/Users/${username}/.netrc";
+
   # https://nixcademy.com/posts/macos-linux-builder/
   nix.linux-builder = {
     enable = true;
