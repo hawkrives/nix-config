@@ -1,13 +1,9 @@
 {
-  config,
   pkgs,
   modulesPath,
   lib,
-  system,
   ...
-}:
-
-{
+}: {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
   ];
@@ -21,7 +17,7 @@
 
     # Use the boot drive for grub
     boot.loader.grub.enable = lib.mkDefault true;
-    boot.loader.grub.devices = [ "nodev" ];
+    boot.loader.grub.devices = ["nodev"];
 
     boot.growPartition = lib.mkDefault true;
 

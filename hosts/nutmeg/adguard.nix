@@ -1,9 +1,6 @@
-{ ... }:
-
-let
+{...}: let
   port = 5380;
-in
-{
+in {
   # it's OK to open :53, because the router won't allow unexpected connections
   # from the internet to the machines
   networking.firewall.allowedTCPPorts = [
@@ -20,6 +17,6 @@ in
     mutableSettings = true;
     port = port;
     # settings.http.address = "0.0.0.0:${toString port}";
-    settings.dns.bind_hosts = [ "0.0.0.0" ];
+    settings.dns.bind_hosts = ["0.0.0.0"];
   };
 }

@@ -1,6 +1,4 @@
-{ pkgs, pkgs-unstable, ... }:
-
-let
+{pkgs, ...}: let
   nfsOptions = [
     "nfsvers=4.1"
     "noatime"
@@ -10,9 +8,7 @@ let
     "x-systemd.device-timeout=5s"
     "x-systemd.mount-timeout=5s"
   ];
-
-in
-{
+in {
   services.plex = {
     enable = true;
     package = pkgs.plex;
@@ -35,7 +31,7 @@ in
   };
 
   # for mount=type=cifs
-  environment.systemPackages = [ pkgs.cifs-utils ];
+  environment.systemPackages = [pkgs.cifs-utils];
 
   services.plex.extraPlugins = [
     (builtins.path {
@@ -59,37 +55,37 @@ in
   ];
 
   networking.hosts = {
-    "192.168.1.194" = [ "plex-nas" ];
+    "192.168.1.194" = ["plex-nas"];
   };
 
   fileSystems."/var/lib/plex/media-shows" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-shows";
-    options = nfsOptions ++ [ "ro" ];
+    options = nfsOptions ++ ["ro"];
   };
 
   fileSystems."/var/lib/plex/media-channels" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-channels";
-    options = nfsOptions ++ [ "ro" ];
+    options = nfsOptions ++ ["ro"];
   };
 
   fileSystems."/var/lib/plex/media-photos" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-photos";
-    options = nfsOptions ++ [ "ro" ];
+    options = nfsOptions ++ ["ro"];
   };
 
   fileSystems."/var/lib/plex/media-music" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-music";
-    options = nfsOptions ++ [ "ro" ];
+    options = nfsOptions ++ ["ro"];
   };
 
   fileSystems."/var/lib/plex/media-movies" = {
     fsType = "nfs";
     device = "plex-nas:/volume1/media-movies";
-    options = nfsOptions ++ [ "ro" ];
+    options = nfsOptions ++ ["ro"];
   };
 
   fileSystems."/var/lib/plex/backup" = {

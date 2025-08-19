@@ -1,6 +1,5 @@
-{ pkgs, ... }:
-{
-  environment.systemPackages = with pkgs; [ vim ];
+{pkgs, ...}: {
+  environment.systemPackages = with pkgs; [vim];
   environment.shells = with pkgs; [
     bashInteractive
     fish

@@ -1,6 +1,8 @@
-{ pkgs, config, ... }:
-
 {
+  pkgs,
+  config,
+  ...
+}: {
   users.groups.homeassistant = {
     gid = 10010;
   };
@@ -27,7 +29,7 @@
 
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
-  environment.systemPackages = [ pkgs.bluez ];
+  environment.systemPackages = [pkgs.bluez];
 
   virtualisation.oci-containers.containers.homeassistant = {
     image = "ghcr.io/home-assistant/home-assistant:stable";

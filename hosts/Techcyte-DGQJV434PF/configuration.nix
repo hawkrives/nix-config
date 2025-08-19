@@ -2,10 +2,12 @@
   username,
   hostname,
   unstable-pkgs,
-}:
-{ config, pkgs, ... }:
-{
-  imports = [ ../../common/hosts/darwin.nix ];
+}: {
+  config,
+  pkgs,
+  ...
+}: {
+  imports = [../../common/hosts/darwin.nix];
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = [
