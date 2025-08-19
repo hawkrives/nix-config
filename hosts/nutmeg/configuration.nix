@@ -110,11 +110,6 @@
   };
 
   nixpkgs.config.allowUnfree = true;
-  # nix.package = pkgs.nixUnstable;
-  nix.settings.experimental-features = ["nix-command" "flakes"];
-  nix.settings.allowed-users = ["root" "natsume"];
-  nix.settings.extra-substituters = ["https://cache.lix.systems"];
-  nix.settings.extra-trusted-public-keys = ["cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -208,12 +203,7 @@
     openFirewall = true;
   };
 
-  programs.nh = {
-    enable = true;
-    clean.enable = true;
-    clean.extraArgs = "--keep-since 4d --keep 3";
-    flake = "/etc/nixos/";
-  };
+  programs.nh.flake = "/home/natsume/nix-config#nutmeg";
 
   services.freeradius = {
     enable = true;

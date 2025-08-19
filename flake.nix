@@ -97,6 +97,7 @@
       nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
+          ./common/hosts/linux.nix
           ./hosts/nutmeg/configuration.nix
           lix-module.nixosModules.default
         ];
