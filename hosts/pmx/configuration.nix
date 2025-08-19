@@ -2,10 +2,12 @@
   username,
   hostname,
   nextdnsProfile,
-}:
-{ config, pkgs, ... }:
-{
-  imports = [ ../../common/hosts/darwin.nix ];
+}: {
+  config,
+  pkgs,
+  ...
+}: {
+  imports = [../../common/hosts/darwin.nix];
 
   nix.settings.trusted-users = [
     "root"

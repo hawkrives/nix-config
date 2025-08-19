@@ -1,14 +1,11 @@
 # Edit this configuration file to define what should be installed on
 # your system. Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-
 {
   pkgs,
   pkgs-unstable,
   ...
-}:
-
-{
+}: {
   imports = [
     ./adguard.nix
     ./audit.nix
@@ -57,7 +54,7 @@
   users.users.natsume = {
     isNormalUser = true;
     description = "Natsume";
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
     packages = [
       pkgs-unstable.ghostty.terminfo
@@ -114,10 +111,10 @@
 
   nixpkgs.config.allowUnfree = true;
   # nix.package = pkgs.nixUnstable;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.allowed-users = [ "root" "natsume" ];
-  nix.settings.extra-substituters = [ "https://cache.lix.systems" ];
-  nix.settings.extra-trusted-public-keys = [ "cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o=" ];
+  nix.settings.experimental-features = ["nix-command" "flakes"];
+  nix.settings.allowed-users = ["root" "natsume"];
+  nix.settings.extra-substituters = ["https://cache.lix.systems"];
+  nix.settings.extra-trusted-public-keys = ["cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -128,7 +125,7 @@
     fishPlugins.pure
     sqlite
     sqlite-interactive
-    isd  # TUI to work with systemd units
+    isd # TUI to work with systemd units
   ];
 
   # fileSystems."/mnt/reddit" = {
@@ -221,7 +218,7 @@
   services.freeradius = {
     enable = true;
     debug = true;
-  # Define a user for the client to connect with
+    # Define a user for the client to connect with
     configDir = pkgs.writeTextDir "users" ''
       testuser Cleartext-Password := "testpassword"
     '';
@@ -234,5 +231,4 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.11"; # Did you read the comment?
-
 }

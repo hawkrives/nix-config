@@ -1,7 +1,12 @@
-{ username, hostname }:
-{ config, pkgs, ... }:
 {
-  imports = [ ../../common/hosts/darwin.nix ];
+  username,
+  hostname,
+}: {
+  config,
+  pkgs,
+  ...
+}: {
+  imports = [../../common/hosts/darwin.nix];
 
   nix.settings.trusted-users = [
     "root"
