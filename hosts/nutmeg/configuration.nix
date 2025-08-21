@@ -16,6 +16,8 @@
     ./home-assistant-matter.nix
     ./plex.nix
     ./tailscale.nix
+    ./syncthing.nix
+    ./paperless.nix
 
     # experimental
     ./freeradius.nix
