@@ -49,7 +49,6 @@
     # support pulling things from lix and flakehub
     extra-substituters = [
       "https://cache.lix.systems"
-      "https://cache.flakehub.com"
     ];
     extra-trusted-public-keys =
       [
