@@ -97,7 +97,6 @@
       pkgs.jq
       pkgs.lazydocker
       pkgs.lima
-      pkgs.lnav
       pkgs.lsof
       pkgs.mariadb
       pkgs.nix-output-monitor
