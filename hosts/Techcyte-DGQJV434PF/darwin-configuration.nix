@@ -1,13 +1,27 @@
 {
-  username,
-  hostname,
-  unstable-pkgs,
-}: {
-  config,
+  inputs,
   pkgs,
+  hostName,
   ...
-}: {
-  imports = [../../common/hosts/darwin.nix];
+}: let
+  username = "hawken.rives";
+  # TODO: fix
+  hostname = hostName;
+in {
+  imports = [
+    inputs.self.nixosModules.host-shared
+    inputs.self.darwinModules.host-shared
+  ];
+
+  boot.binfmt.emulatedSystems = ["x86_64-linux"];
+
+  nixpkgs.hostPlatform = "aarch64-darwin";
+
+  users.users.${username}.home = /Users/hawken.rives;
+
+  # Used for backwards compatibility, please read the changelog before changing.
+  # $ darwin-rebuild changelog
+  system.stateVersion = 4;
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = [
@@ -28,6 +42,7 @@
   nix.settings.netrc-file = "/Users/${username}/.netrc";
 
   # https://nixcademy.com/posts/macos-linux-builder/
+  # TODO: do we still want this? I saw something about setting binfmt...?
   nix.linux-builder = {
     enable = true;
     ephemeral = true;
@@ -78,17 +93,11 @@
   # disable the startup chime
   system.startup.chime = false;
 
-  # The platform the configuration will be used on.
-  nixpkgs.hostPlatform = "aarch64-darwin";
-
   system.keyboard.remapCapsLockToEscape = true;
 
-  environment.systemPackages = with pkgs; [
-    amazon-ecr-credential-helper
-    nix-output-monitor
-    nh
-    unstable-pkgs.attic-client
-    unstable-pkgs.devenv
+  environment.systemPackages = [
+    pkgs.amazon-ecr-credential-helper
+    inputs.unstable-pkgs.attic-client
   ];
 
   homebrew = {
@@ -167,6 +176,7 @@
     };
   };
 
+  # TODO: home-manager
   users.users.${username} = {
     name = "${username}";
     home = "/Users/${username}";
