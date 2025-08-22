@@ -1,6 +1,7 @@
 {
   hostName,
   pkgs,
+  config,
   flake,
   ...
 }: {
@@ -24,12 +25,11 @@
   # Define your hostname. Defaults to the folder this file is in.
   networking.hostName = hostName;
 
-  # on nixos this either isNormalUser or isSystemUser is required to create the user.
-  # TODO: understand this
   users.users.natsume = {
     isNormalUser = true;
     description = "Natsume";
     extraGroups = ["wheel"];
+    shell = pkgs.fish;
   };
 
   # Bootloader.
@@ -37,7 +37,14 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   # TODO: do we need this? what should it be?
-  programs.nh.flake = "/home/natsume/nix-config#nutmeg";
+  programs.nh = {
+    flake = "/home/natsume/nix-config#nutmeg";
+    clean = {
+      enable = true;
+      dates = "weekly";
+      extraArgs = "--keep-since 4d --keep 3";
+    };
+  };
 
   boot.initrd.availableKernelModules = [
     "ahci"
@@ -55,8 +62,9 @@
     "wl"
   ];
 
-  # TODO: fix
-  boot.extraModulePackages = [pkgs.kernelPackages.broadcom_sta];
+  boot.extraModulePackages = [
+    config.boot.kernelPackages.broadcom_sta
+  ];
 
   # reduce IO cache, this should reduce latency when 2 processes try to read a lot from the disk
   # from <https://github.com/tchfoo/raspi-dotfiles/blob/8fd846f740385c92aa5f849944a2cd1a02d7d841/modules/system.nix>
@@ -69,10 +77,7 @@
   # the bluetooth driver is insecure... but I want bluetooth readings from the house,
   # so we have to continue running it.
   nixpkgs.config.permittedInsecurePackages = [
-    "broadcom-sta-6.30.223.271-57-6.12.41"
-    "broadcom-sta-6.30.223.271-57-6.12.42"
-    # TODO: can we just do this?
-    pkgs.boot.kernelPackages.broadcom_sta.name
+    config.boot.kernelPackages.broadcom_sta.name
   ];
 
   fileSystems."/" = {
@@ -94,6 +99,7 @@
   networking.useDHCP = true;
 
   hardware.cpu.intel.updateMicrocode = true;
+  hardware.enableRedistributableFirmware = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

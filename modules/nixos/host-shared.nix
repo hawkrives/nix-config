@@ -1,5 +1,12 @@
-{pkgs, ...}: {
-  # programs.vim.enable = true;
+{
+  pkgs,
+  inputs,
+  perSystem,
+  ...
+}: {
+  imports = [inputs.lix-module.nixosModules.default];
+
+  programs.vim.enable = true;
 
   # Accept agreements for unfree software
   nixpkgs.config.allowUnfree = true;
@@ -7,8 +14,11 @@
   # you can check if host is darwin by using pkgs.stdenv.isDarwin
   environment.systemPackages =
     [
-      pkgs.btop
+      # pkgs.btop
+      perSystem.nixpkgs-unstable.bottom
       pkgs.man-pages # enable man pages
+      # TODO: only install this on the NAS
+      perSystem.nixpkgs-unstable.ghostty.terminfo
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [pkgs.xbar]);
 
@@ -17,12 +27,11 @@
   documentation.man.generateCaches = true;
   documentation.nixos.includeAllModules = true;
 
-  # enable the nice nh tool on nixos systems
-  programs.nh.enable = pkgs.stdenv.isLinux;
-  programs.nh.clean = {
-    enable = pkgs.stdenv.isLinux;
-    dates = "weekly";
-    extraArgs = "--keep-since 4d --keep 3";
+  # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
+  # <https://schmiggolas.dev/posts/2024/nh/>
+  programs.nh = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.nh;
   };
 
   # give me fish everywhere
