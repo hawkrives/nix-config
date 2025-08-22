@@ -2,25 +2,35 @@
   pkgs,
   perSystem,
   ...
-}: {
+}: let
+  p = perSystem.nixpkgs-unstable;
+in {
   programs.helix = {
     enable = true;
     package = perSystem.nixpkgs-unstable.helix;
 
-    # TODO: enable
-    # extraPackages =
-    #   [
-    #     # language servers for helix
-    #     pkgs.bash-language-server
-    #     pkgs.docker-language-server # official from Docker, Inc
-    #     pkgs.dockerfile-language-server-nodejs # for helix
-    #     pkgs.docker-compose-language-service
-    #     pkgs.typescript-language-server
-    #     pkgs.yaml-language-server
-    #   ]
-    #   ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
-    #     pkgs.systemd-language-server
-    #   ]);
+    extraPackages =
+      [
+        # language servers for helix
+        p.bash-language-server
+        p.docker-language-server # official from Docker, Inc
+        p.dockerfile-language-server-nodejs # for helix
+        p.docker-compose-language-service
+        p.typescript-language-server
+        p.yaml-language-server
+        p.gopls
+        p.terraform-ls
+        p.vscode-json-languageserver
+        p.vscode-css-languageserver
+        # p.nodePackages.vscode-html-languageserver
+        p.nil
+        p.ty
+        p.ruff
+        p.taplo # toml
+      ]
+      ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
+        perSystem.systemd-lsp.default
+      ]);
 
     settings = {
       theme = "onedark";
