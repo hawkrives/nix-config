@@ -1,5 +1,8 @@
-{...}: {
-  programs.jj.settings = {
+{perSystem, ...}: {
+  programs.jujutsu.enable = true;
+  programs.jujutsu.package = perSystem.nixpkgs-unstable.jujutsu;
+
+  programs.jujutsu.settings = {
     "$schema" = "https://jj-vcs.github.io/jj/latest/config-schema.json";
 
     user = {
