@@ -33,6 +33,9 @@
 
     systemd-lsp.url = "github:jfryy/systemd-lsp?ref=v2025.07.14";
     systemd-lsp.inputs.nixpkgs.follows = "nixpkgs";
+
+    nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
+    nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   # Load the blueprint
