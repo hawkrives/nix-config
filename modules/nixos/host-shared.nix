@@ -78,20 +78,4 @@
   virtualisation.podman.dockerCompat = true;
   # Required for containers under podman-compose to be able to talk to each other.
   # virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
-
-  # TODO: does this work now? on linux?
-  # system.autoUpgrade = {
-  #   enable = false; # pkgs.stdenv.isLinux
-  #   allowReboot = true;
-  #   persistent = true;
-  #   randomizedDelaySec = "5min";
-  #   rebootWindow = { lower = "01:00"; upper = "06:00"; };
-  # };
-
-  # TODO: does this work now? on linux?
-  # nix.gc = {
-  #   automatic = true;
-  #   randomizedDelaySec = "14m";
-  #   options = "--delete-older-than 10d";
-  # };
 }
