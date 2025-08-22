@@ -20,7 +20,7 @@
     userEmail = "hawken.rives@techcyte.com";
   };
 
-  programs.jj.settings.user = {
+  programs.jujutsu.settings.user = {
     name = "Hawken Rives";
     email = "hawken.rives@techcyte.com";
   };

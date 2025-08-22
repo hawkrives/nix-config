@@ -4,17 +4,14 @@
   perSystem,
   ...
 }: {
+  # config settings for both NixOS- and Darwin-based systems
+
   imports = [inputs.lix-module.nixosModules.default];
 
-  programs.neovim = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
-    withRuby = false;
-    withNodeJs = false;
-    withPython3 = false;
-    vimAlias = true;
-    viAlias = true;
-  };
+  # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
+  # you need both this and the home-manager equivalent.
+  # plus, I suppose it's nice to be able to drop into fish as root or w/e.
+  programs.fish.enable = true;
 
   # Accept agreements for unfree software
   nixpkgs.config.allowUnfree = true;
@@ -24,22 +21,16 @@
     [
       pkgs.btop
       perSystem.nixpkgs-unstable.bottom
+    ]
+    ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
       perSystem.nixpkgs-unstable.ghostty.terminfo
-    ]
-    ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [pkgs.xbar]);
-
-  # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
-  # <https://schmiggolas.dev/posts/2024/nh/>
-  programs.nh = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.nh;
-  };
-
-  # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
-  # you need both this and the home-manager equivalent.
-  # plus, I suppose it's nice to be able to drop into fish as root or w/e.
-  programs.fish.enable = true;
+    ])
+    ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
+      pkgs.xbar
+      # install here because we use programs.nh.enable on linux
+      perSystem.nixpkgs-unstable.nh
+    ]);
 
   # some basic nix settings
   nix.settings = {
@@ -69,13 +60,4 @@
         "potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts="
       ];
   };
-
-  virtualisation.oci-containers.backend = "podman";
-  virtualisation.podman.enable = true;
-  # periodically prune Podman resources
-  virtualisation.podman.autoPrune.enable = true;
-  # Create a `docker` alias for podman, to use it as a drop-in replacement
-  virtualisation.podman.dockerCompat = true;
-  # Required for containers under podman-compose to be able to talk to each other.
-  # virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 }

@@ -7,6 +7,7 @@
 }: {
   imports = [
     flake.modules.nixos.host-shared
+    flake.modules.nixos.host-nixos
     flake.modules.nixos.veilid-shared
     flake.modules.nixos.host-server
 

@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   programs.git.enable = true;
   programs.git.difftastic.enable = true;
 
@@ -7,8 +7,8 @@
   programs.mergiraf.enable = true;
 
   programs.git = {
-    userName = "Hawken Rives";
-    userEmail = "hawkrives@fastmail.fm";
+    userName = pkgs.lib.mkDefault "Hawken Rives";
+    userEmail = pkgs.lib.mkDefault "hawkrives@fastmail.fm";
   };
 
   programs.git.extraConfig = {
