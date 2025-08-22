@@ -22,18 +22,12 @@
   # you can check if host is darwin by using pkgs.stdenv.isDarwin
   environment.systemPackages =
     [
-      # pkgs.btop
+      pkgs.btop
       perSystem.nixpkgs-unstable.bottom
-      pkgs.man-pages # enable man pages
       # TODO: only install this on the NAS
       perSystem.nixpkgs-unstable.ghostty.terminfo
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [pkgs.xbar]);
-
-  # Enable man pages
-  documentation.dev.enable = true;
-  documentation.man.generateCaches = true;
-  documentation.nixos.includeAllModules = true;
 
   # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
   # <https://schmiggolas.dev/posts/2024/nh/>
