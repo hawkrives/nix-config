@@ -10,6 +10,7 @@
 
   # openssh automatically opens its port
   services.openssh.enable = true;
+  services.openssh.startWhenNeeded = true; # socket-activated daemon
   services.openssh.extraConfig = ''
     AcceptEnv COLORTERM
   '';
