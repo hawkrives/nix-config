@@ -3,14 +3,8 @@
 in {
   # it's OK to open :53, because the router won't allow unexpected connections
   # from the internet to the machines
-  networking.firewall.allowedTCPPorts = [
-    53
-    port
-  ];
-  networking.firewall.allowedUDPPorts = [
-    53
-    port
-  ];
+  networking.firewall.allowedTCPPorts = [53 port];
+  networking.firewall.allowedUDPPorts = [53 port];
 
   services.adguardhome = {
     enable = true;

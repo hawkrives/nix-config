@@ -1,13 +1,30 @@
 {
-  username,
-  hostname,
-  unstable-pkgs,
-}: {
-  config,
+  inputs,
+  flake,
   pkgs,
+  hostName,
+  perSystem,
   ...
-}: {
-  imports = [../../common/hosts/darwin.nix];
+}: let
+  username = "hawken.rives";
+in {
+  imports = [
+    flake.nixosModules.host-shared
+    flake.darwinModules.host-shared
+    inputs.nix-rosetta-builder.darwinModules.default
+  ];
+
+  nixpkgs.hostPlatform = "aarch64-darwin";
+
+  # Used for backwards compatibility, please read the changelog before changing.
+  # $ darwin-rebuild changelog
+  system.stateVersion = 4;
+
+  users.users.${username} = {
+    name = username;
+    home = /Users/${username};
+    shell = pkgs.fish;
+  };
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = [
@@ -28,26 +45,21 @@
   nix.settings.netrc-file = "/Users/${username}/.netrc";
 
   # https://nixcademy.com/posts/macos-linux-builder/
+  # but then... https://github.com/cpick/nix-rosetta-builder
   nix.linux-builder = {
-    enable = true;
-    ephemeral = true;
-    maxJobs = 4;
-    config = {
-      virtualisation = {
-        darwin-builder = {
-          diskSize = 40 * 1024;
-          memorySize = 8 * 1024;
-        };
-        cores = 6;
-      };
-    };
+    enable = false;
+  };
+  nix-rosetta-builder = {
+    onDemand = true;
+    onDemandLingerMinutes = 10;
+    diskSize = "60GiB";
   };
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
 
-  networking.hostName = hostname;
-  networking.computerName = hostname;
+  networking.hostName = hostName;
+  networking.computerName = hostName;
 
   system.primaryUser = username;
 
@@ -58,7 +70,7 @@
     dock.showhidden = true;
     dock.slow-motion-allowed = false;
 
-    smb.NetBIOSName = hostname;
+    smb.NetBIOSName = hostName;
     # screencapture.location = "~/Pictures/screenshots";
     screencapture.disable-shadow = true;
 
@@ -74,21 +86,14 @@
   };
 
   system.keyboard.enableKeyMapping = true;
+  system.keyboard.remapCapsLockToEscape = true;
 
   # disable the startup chime
   system.startup.chime = false;
 
-  # The platform the configuration will be used on.
-  nixpkgs.hostPlatform = "aarch64-darwin";
-
-  system.keyboard.remapCapsLockToEscape = true;
-
-  environment.systemPackages = with pkgs; [
-    amazon-ecr-credential-helper
-    nix-output-monitor
-    nh
-    unstable-pkgs.attic-client
-    unstable-pkgs.devenv
+  environment.systemPackages = [
+    pkgs.amazon-ecr-credential-helper
+    perSystem.nixpkgs-unstable.attic-client
   ];
 
   homebrew = {
@@ -99,21 +104,8 @@
       cleanup = "zap";
     };
 
-    taps = [
-      # "homebrew/cask-fonts"
-      "d12frosted/homebrew-emacs-plus" # for emacs-plus
-    ];
-
     brews = [
       "container-diff"
-      {
-        name = "emacs-plus";
-        args = [
-          "with-savchenkovaleriy-big-sur-3d-icon"
-          "with-no-frame-refocus"
-          "with-native-comp"
-        ];
-      }
     ];
 
     caskArgs.appdir = "~/Applications";
@@ -165,11 +157,5 @@
       "WireGuard" = 1451685025;
       "Xcode" = 497799835;
     };
-  };
-
-  users.users.${username} = {
-    name = "${username}";
-    home = "/Users/${username}";
-    shell = pkgs.fish;
   };
 }
