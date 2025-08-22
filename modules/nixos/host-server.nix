@@ -15,6 +15,22 @@
     AcceptEnv COLORTERM
   '';
 
+  # enable .local domain resolution
+  services.avahi = {
+    enable = true;
+    publish.enable = true;
+    # register a mDNS HINFO record which contains information about the local operating system and CPU
+    publish.hinfo = true;
+    # Needed to allow samba to automatically register mDNS records (without the need for an `extraServiceFile`
+    publish.userServices = true;
+    # allows applications to resolve names in the `.local` domain by transparently querying the Avahi daemon.
+    nssmdns4 = true;
+    # Due to the fact that most mDNS responders only register local IPv4
+    # addresses, most user want to leave this option disabled to avoid long timeouts
+    # when applications first resolve the none existing IPv6 address.
+    nssmdns6 = true;
+  };
+
   # allow you to track your highest uptimes
   services.uptimed.enable = true;
 
