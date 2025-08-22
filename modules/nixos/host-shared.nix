@@ -40,6 +40,8 @@
     # enable flakes and the nice cli
     experimental-features = ["nix-command" "flakes"];
     # todo put the issue link here
+    # nix key generate-secret --key-name (hostname) | sudo tee /etc/nix/private-key
+    # cat /etc/nix/private-key | nix key convert-secret-to-public
     secret-key-files = "/etc/nix/private-key";
     # TODO I used to have this - needed?
     # allowed-users = ["root" "natsume"];
@@ -58,6 +60,7 @@
       ++ [
         "nutmeg:6F0E+NkIvpTI0d4QSvrDb3+LYhrQwXkYjqgI9etpuEw="
         "potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts="
+        "Techcyte-DGQJV434PF:2Xo6QORWHHSNQHveplJ1Fq1Ji8GXwtm7FsD4l/tM/0I="
       ];
   };
 }
