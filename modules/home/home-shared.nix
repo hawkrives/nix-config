@@ -13,15 +13,27 @@
         name = "pure";
         src = pkgs.fishPlugins.pure.src;
       }
+      {
+        name = "zoxide";
+        src = pkgs.fetchFromGitHub {
+          owner = "icezyclon";
+          repo = "zoxide.fish";
+          rev = "27a058a661e2eba021b90e9248517b6c47a22674";
+          hash = "sha256-OjrX0d8VjDMxiI5JlJPyu/scTs/fS/f5ehVyhAA/KDM=";
+        };
+      }
     ];
 
     shellInit = ''
       # integrate mise shims with fish
       if status is-interactive
-          mise activate fish | source
+        mise activate fish | source
       else
-          mise activate fish --shims | source
+        mise activate fish --shims | source
       end
+
+      # integrate brew with fish
+      test (uname -s) = Darwin && test (uname -m) = arm64 && eval (/opt/homebrew/bin/brew shellenv)
     '';
 
     functions = {
@@ -153,11 +165,10 @@
 
   # TODO: relocate this
   home.sessionPath = [
-    # "$HOME/.cargo/bin"
-    # "$HOME/go/bin"
     "$HOME/bin"
     "$HOME/.local/bin"
-    # "/opt/homebrew/bin"
+    "$HOME/.cargo/bin"
+    "$HOME/go/bin"
   ];
 
   programs = {
