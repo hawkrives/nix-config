@@ -56,28 +56,6 @@
   # }: {
   #   # Build darwin flake using:
   #   # $ darwin-rebuild build --flake .#techcyted
-  #   darwinConfigurations."Techcyte-XMG7K2VM6F" = let
-  #     username = "hawken";
-  #     system = "aarch64-darwin";
-  #   in
-  #     darwin.lib.darwinSystem {
-  #       modules = [
-  #         lix-module.nixosModules.default
-  #         (import ./hosts/Techcyte-XMG7K2VM6F/configuration.nix {
-  #           inherit username;
-  #           hostname = "Techcyte-XMG7K2VM6F";
-  #         })
-  #         home-manager.darwinModules.home-manager
-  #         {
-  #           home-manager.useGlobalPkgs = true;
-  #           home-manager.useUserPackages = true;
-  #           home-manager.users.${username} = import ./users/${username}/home.nix {
-  #             unstable-pkgs = import inputs.nixpkgs-unstable {inherit system;};
-  #           };
-  #         }
-  #       ];
-  #     };
-
   #   darwinConfigurations."Techcyte-DGQJV434PF" = let
   #     username = "hawken.rives";
   #     system = "aarch64-darwin";
@@ -103,36 +81,4 @@
   #         }
   #       ];
   #     };
-
-  #   # Build linux flake using:
-  #   # $ nixos-rebuild build --flake .#nutmeg
-  #   nixosConfigurations.nutmeg = let
-  #     system = "x86_64-linux";
-  #   in
-  #     nixpkgs.lib.nixosSystem {
-  #       inherit system;
-  #       modules = [
-  #         ./common/hosts/linux.nix
-  #         ./hosts/nutmeg/configuration.nix
-  #         lix-module.nixosModules.default
-  #       ];
-  #       specialArgs = {
-  #         pkgs-unstable = import nixpkgs-unstable {
-  #           config.allowUnfree = true;
-  #           inherit system;
-  #         };
-  #       };
-  #     };
-
-  #   # Build linux flake using:
-  #   # $ nixos-rebuild build --flake .#pmx
-  #   # nixosConfigurations.pmx-sonarr = let
-  #   # in nixpkgs.lib.nixosSystem {
-  #   #   system = "x86_64-linux";
-  #   #   modules = [
-  #   #     ./hosts/pmx-sonarr/configuration.nix
-  #   #     lix-module.nixosModules.default
-  #   #   ];
-  #   # };
-  # };
 }
