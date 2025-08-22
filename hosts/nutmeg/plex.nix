@@ -42,7 +42,6 @@ in {
     enable = true;
   };
 
-  # TODO: move to home-manager?
   # need uid/gid to match the NAS
   users.groups.servarr.gid = 1050;
   users.users.servarr = {
