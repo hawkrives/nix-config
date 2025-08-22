@@ -55,12 +55,6 @@ in {
   # for mount=type=cifs
   environment.systemPackages = [pkgs.cifs-utils];
 
-  # TODO: replace with getting avahi working on the network
-  # so .local addresses work
-  # networking.hosts = {
-  #   "192.168.1.194" = ["plex-nas"];
-  # };
-
   fileSystems."/var/lib/plex/media-shows" = {
     fsType = "nfs";
     device = "potato-bunny.local:/volume1/media-shows";
