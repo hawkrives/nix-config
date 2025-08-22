@@ -8,7 +8,7 @@
     inputs.self.nixosModules.documentation
   ];
 
-  # List services that you want to enable:
+  # openssh automatically opens its port
   services.openssh.enable = true;
   services.openssh.extraConfig = ''
     AcceptEnv COLORTERM
@@ -21,11 +21,7 @@
   networking.nftables.enable = true;
   networking.firewall.enable = true;
 
-  # TODO: does this belong here?
-  networking.firewall.allowedTCPPorts = [22 80 443];
-
   # power management for lower idle power draw
-  # TODO: why would you not enable this?
   powerManagement.powertop.enable = true;
 
   # packages available to all users

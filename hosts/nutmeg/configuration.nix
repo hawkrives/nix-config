@@ -36,14 +36,11 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # TODO: do we need this? what should it be?
-  programs.nh = {
-    flake = "/home/natsume/nix-config#nutmeg";
-    clean = {
-      enable = true;
-      dates = "weekly";
-      extraArgs = "--keep-since 4d --keep 3";
-    };
+  programs.nh.flake = "/home/natsume/nix-config#nutmeg";
+  programs.nh.clean = {
+    enable = true;
+    dates = "weekly";
+    extraArgs = "--keep-since 4d --keep 3";
   };
 
   boot.initrd.availableKernelModules = [
