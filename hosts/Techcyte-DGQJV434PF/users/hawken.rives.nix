@@ -24,4 +24,8 @@
     name = "Hawken Rives";
     email = "hawken.rives@techcyte.com";
   };
+
+  home.sessionVariables = {
+    GOPRIVATE = "gitlab.com/techcyte/";
+  };
 }

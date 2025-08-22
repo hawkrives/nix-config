@@ -3,11 +3,7 @@
   osConfig,
   perSystem,
   ...
-}: let
-  matplotlibNoX = perSystem.nixpkgs-unstable.python313Packages.matplotlib.override {
-    enableTk = false;
-  };
-in {
+}: {
   programs.fish = {
     enable = true;
 
@@ -27,6 +23,99 @@ in {
           mise activate fish --shims | source
       end
     '';
+
+    functions = {
+      # try overriding the pure prompt to look at jj instead
+      _pure_prompt_git = "fish_jj_prompt";
+
+      fish_vcs_prompt = {
+        description = "Print all vcs prompts";
+        body = ''
+          # If a prompt succeeded, we assume that it's printed the correct info.
+          # This is so we don't try `hg` if `git` already worked.
+          fish_jj_prompt $argv
+            or fish_git_prompt $argv
+            or fish_hg_prompt $argv
+            or fish_fossil_prompt $argv
+        '';
+      };
+
+      fish_jj_prompt = {
+        description = "Write out the jj prompt";
+        body = ''
+          # Is jj installed?
+          if not command -sq jj
+            return 1
+          end
+
+          # Are we in a jj repo?
+          if not jj root --quiet &>/dev/null
+            return 1
+          end
+
+          # Generate prompt
+          jj log --ignore-working-copy --no-graph --color always -r @ -T '
+            surround(
+              " (",
+              ")",
+              separate(
+                " ",
+                bookmarks.join(", "),
+                coalesce(
+                  surround(
+                    "\"",
+                    "\"",
+                    if(
+                      description.first_line().substr(0, 24).starts_with(description.first_line()),
+                      description.first_line().substr(0, 24),
+                      description.first_line().substr(0, 23) ++ "…"
+                    )
+                  ),
+                  label(if(empty, "empty"), description_placeholder)
+                ),
+                change_id.shortest(),
+                commit_id.shortest(),
+                if(conflict, label("conflict", "(conflict)")),
+                if(empty, label("empty", "(empty)")),
+                if(divergent, "(divergent)"),
+                if(hidden, "(hidden)"),
+              )
+            )
+          '
+        '';
+      };
+
+      vidpeek = ''ffmpeg -i $argv[2] -vf "select=eq(n\,$argv[1])" -vframes 1 $argv[3]'';
+      vc = ''ffmpeg -i "$argv[1]" -n -c:v libx264 -tag:v avc1 -movflags faststart -crf 30 -preset superfast "$argv[2]"'';
+      vc-fast = ''
+        set out (basename "$argv[1]" | string split --right --max 1 --no-empty . | head -n1).fast.mkv
+        ffmpeg -i "$argv[1]" -n -c:v libx264 -tag:v avc1 -movflags faststart -crf 30 -preset fast $out
+      '';
+      vc-h265 = ''
+        ffmpeg \
+          -i "$argv[1]" \
+          -n \
+          -c:v libx265 \
+          -x265-params no-open-gop=1:keyint=300:gop-lookahead=12:bframes=6:weightb=1:hme=1:strong-intra-smoothing=0:rect=0:aq-mode=4 \
+          -tag:v hvc1 \
+          -preset superfast \
+          -c:a eac3 \
+          -b:a 192k \
+          "$argv[2]"
+      '';
+      vc-h265-fps30 = ''
+        ffmpeg \
+          -i "$argv[1]" \
+          -n \
+          -c:v libx265 \
+          -x265-params no-open-gop=1:keyint=300:gop-lookahead=12:bframes=6:weightb=1:hme=1:strong-intra-smoothing=0:rect=0:aq-mode=4 \
+          -tag:v hvc1 \
+          -preset superfast \
+          -c:a eac3 \
+          -b:a 192k \
+          "$argv[2]"
+      '';
+    };
   };
 
   # disable home-manager man pages?
@@ -39,7 +128,19 @@ in {
   # only available on linux, disabled on macos
   services.ssh-agent.enable = pkgs.stdenv.isLinux;
 
-  # TODO: relocate this
+  home.sessionVariables = {
+    # Indicate if a nix develop shell is activated (based on IN_NIX_SHELL).
+    pure_enable_nixdevshell = "true";
+    # Prefix when being connected to SSH session (default: undefined)
+    pure_symbol_ssh_prefix = "§";
+    # Show prompt prefix when logged in as root.
+    pure_show_prefix_root_prompt = "true";
+    # Do not check pure runs inside a container
+    pure_enable_container_detection = "false";
+    # Shorten all but the CWD to a single character, so ~/Developer/github.com/hawkrives/gobbldygook becomes ~/D/g/h/gobbldygook
+    pure_shorten_prompt_current_directory_length = 1;
+  };
+
   home.shellAliases = {
     ls = "ls --color=auto";
     ll = "ls -l";
@@ -143,10 +244,6 @@ in {
 
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.lnav
-      (perSystem.nixpkgs-unstable.nix-visualize.override {
-        nix = perSystem.lix-module.default;
-        matplotlib = matplotlibNoX;
-      })
       pkgs.nixos-generators
 
       pkgs.bartib
