@@ -21,6 +21,23 @@
     #   ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
     #     pkgs.systemd-language-server
     #   ]);
+
+    settings = {
+      theme = "onedark";
+
+      editor.file-picker = {
+        # show hidden files in the filepicker
+        hidden = false;
+      };
+
+      keys = {
+        normal = {
+          # make D behave like vim
+          # NOTE: t⏎ will select to line end!
+          D = ["kill_to_line_end"];
+        };
+      };
+    };
   };
 
   home.sessionVariables = {
