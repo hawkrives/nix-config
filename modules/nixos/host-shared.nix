@@ -6,7 +6,15 @@
 }: {
   imports = [inputs.lix-module.nixosModules.default];
 
-  programs.vim.enable = true;
+  programs.neovim = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    withRuby = false;
+    withNodeJs = false;
+    withPython3 = false;
+    vimAlias = true;
+    viAlias = true;
+  };
 
   # Accept agreements for unfree software
   nixpkgs.config.allowUnfree = true;

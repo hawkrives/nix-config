@@ -51,9 +51,67 @@
     # "/opt/homebrew/bin"
   ];
 
-  # TODO: do we want these?
-  programs.dircolors.enable = true;
-  programs.direnv.enable = true;
+  programs = {
+    # atuin.enable = true;
+    # bacon.enable = true;
+    bat.enable = true;
+    broot.enable = true;
+    dircolors.enable = true;
+    direnv.enable = true;
+    # eza.enable = true;
+    fd.enable = true;
+    fzf.enable = true;
+    gh.enable = true;
+    htop.enable = true;
+    jq.enable = true;
+    less.enable = true;
+    nushell.enable = true;
+    # rclone.enable = true;
+    # readline.enable = true;
+    ripgrep.enable = true;
+    # skim.enable = true;
+    tmux.enable = true;
+    # visidata.enable = true;
+    # yazi.enable = true; # directory viewer
+    # yt-dlp.enable = true;
+    # zellij.enable = true; # multiplexer
+    zoxide.enable = true;
+  };
+
+  programs.lazydocker = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.lazydocker;
+  };
+
+  programs.lazygit = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.lazygit;
+  };
+
+  programs.mise = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.mise;
+    settings = {
+      experimental = true;
+    };
+  };
+
+  programs.neovim = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    withRuby = false; # don't need any ruby neovim plugins
+    withNodeJs = false;
+    withPython3 = false;
+    vimAlias = true;
+    viAlias = true;
+  };
+
+  programs.uv = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.uv;
+  };
+
+  # TODO: use programs.ssh to control the ssh config file
 
   home.packages =
     [
@@ -61,20 +119,11 @@
       # perSystem.nil.nil # nix lsp
 
       perSystem.nixpkgs-unstable.jjui
-      perSystem.nixpkgs-unstable.jujutsu
-      perSystem.nixpkgs-unstable.lazygit
       perSystem.nixpkgs-unstable.lnav
-      perSystem.nixpkgs-unstable.mise
-      perSystem.nixpkgs-unstable.neovim
       # perSystem.nixpkgs-unstable.nix-visualize
       # perSystem.nixpkgs-unstable.nixos-generators
-      perSystem.nixpkgs-unstable.uv
 
-      # pkgs.atuin
-      # pkgs.bacon
       # pkgs.bartib
-      pkgs.bat
-      pkgs.broot
       pkgs.certbot
       # pkgs.colima
       pkgs.curl
@@ -82,59 +131,42 @@
       pkgs.dogdns
       pkgs.du-dust
       # pkgs.entr
-      # pkgs.eza
-      pkgs.fd
       # pkgs.ffmpeg-headless
-      pkgs.fish
       pkgs.freeze # code screenshot
       # pkgs.fx # tui json viewer
-      pkgs.fzf
-      pkgs.gh
       # pkgs.git-absorb
       pkgs.glab # gitlab cli
       pkgs.graphviz
       pkgs.gron
       pkgs.htmlq
-      pkgs.htop
       pkgs.hyperfine
       # pkgs.imagemagick
       # pkgs.jless
-      pkgs.jq
-      pkgs.lazydocker
       # pkgs.lima
       pkgs.lsof
       # pkgs.mariadb
       pkgs.nix-output-monitor
-      pkgs.nushell
       # pkgs.parallel
       # pkgs.procs
       # pkgs.pstree
       pkgs.pv
       pkgs.python3
       pkgs.readline
-      pkgs.ripgrep
       pkgs.rlwrap
       pkgs.rustup
       pkgs.shellcheck
       # pkgs.shfmt
-      # pkgs.skim
       pkgs.soupault
       pkgs.sqlite-interactive
-      pkgs.tmux
       pkgs.tokei
       pkgs.tree
       # pkgs.trippy
       pkgs.unzip
-      # pkgs.visidata
       pkgs.watch
       pkgs.wget
       pkgs.xh
       pkgs.xz
-      # pkgs.yazi # directory viewer
       # pkgs.yq-go
-      # pkgs.yt-dlp
-      # pkgs.zellij # multiplexer
-      pkgs.zoxide
       pkgs.zstd
 
       # TODO: move into separate flakes
