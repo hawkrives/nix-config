@@ -1,17 +1,15 @@
 {...}: {
   programs.git.enable = true;
-  programs.git.delta.enable = true;
-  # programs.git.difftastic.enable = true;
+  programs.git.difftastic.enable = true;
 
   programs.git.maintenance.enable = true;
 
-  # TODO: enable
-  # programs.mergiraf.enable = true;
+  programs.mergiraf.enable = true;
 
-  # programs.git = {
-  #   userName = "Hawken Rives";
-  #   userEmail = "john.doe@example.com";
-  # };
+  programs.git = {
+    userName = "Hawken Rives";
+    userEmail = "hawkrives@fastmail.fm";
+  };
 
   programs.git.extraConfig = {
     init.defaultBranch = "main";

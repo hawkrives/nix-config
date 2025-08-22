@@ -2,6 +2,7 @@
   imports = [
     inputs.self.homeModules.home-shared
     inputs.self.homeModules.git-shared
+    inputs.self.homeModules.jj-shared
     inputs.self.homeModules.helix-shared
     inputs.self.homeModules.sqlite-shared
   ];
