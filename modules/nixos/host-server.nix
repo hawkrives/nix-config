@@ -14,6 +14,9 @@
     AcceptEnv COLORTERM
   '';
 
+  # allow you to track your highest uptimes
+  services.uptimed.enable = true;
+
   # Open ports in the firewall.
   networking.nftables.enable = true;
   networking.firewall.enable = true;
