@@ -1,7 +1,6 @@
 {...}: {
-  imports = [
-    # <nixpkgs/nixos/modules/profiles/hardened.nix>
-  ];
+  # TODO: can we enable this?
+  # imports = [<nixpkgs/nixos/modules/profiles/hardened.nix>];
 
   security.auditd.enable = true;
   security.audit.enable = true;
@@ -10,8 +9,7 @@
   ];
 
   services.logrotate.settings = {
-    header = {
-    };
+    header = {};
 
     "/var/log/audit/audit.log" = {
       dateext = true;
