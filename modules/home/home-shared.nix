@@ -3,7 +3,11 @@
   osConfig,
   perSystem,
   ...
-}: {
+}: let
+  matplotlibNoX = perSystem.nixpkgs-unstable.python313Packages.matplotlib.override {
+    enableTk = false;
+  };
+in {
   programs.fish = {
     enable = true;
 
@@ -24,6 +28,10 @@
       end
     '';
   };
+
+  # disable home-manager man pages?
+  manual.manpages.enable = false;
+  programs.man.generateCaches = false;
 
   # provides command-not-found suggestions for missing packages:
   programs.nix-index.enable = true;
@@ -52,13 +60,13 @@
   ];
 
   programs = {
-    # atuin.enable = true;
-    # bacon.enable = true;
+    atuin.enable = true;
+    bacon.enable = true;
     bat.enable = true;
     broot.enable = true;
     dircolors.enable = true;
     direnv.enable = true;
-    # eza.enable = true;
+    eza.enable = true;
     fd.enable = true;
     fzf.enable = true;
     gh.enable = true;
@@ -66,15 +74,12 @@
     jq.enable = true;
     less.enable = true;
     nushell.enable = true;
-    # rclone.enable = true;
-    # readline.enable = true;
+    rclone.enable = true;
+    readline.enable = true;
     ripgrep.enable = true;
-    # skim.enable = true;
+    skim.enable = true;
     tmux.enable = true;
-    # visidata.enable = true;
-    # yazi.enable = true; # directory viewer
-    # yt-dlp.enable = true;
-    # zellij.enable = true; # multiplexer
+    zellij.enable = true; # multiplexer
     zoxide.enable = true;
   };
 
@@ -111,62 +116,80 @@
     package = perSystem.nixpkgs-unstable.uv;
   };
 
+  # programs.visidata = {
+  #   enable = true; # installs X and Wayland on Linux thanks to Xclip...
+  #   package = perSystem.nixpkgs-unstable.visidata.override {
+  #     withXclip = false;
+  #     withPcap = false;
+  #     matplotlib = matplotlibNoX;
+  #   };
+  # };
+
+  programs.yazi = {
+    enable = true; # directory viewer
+    package = pkgs.yazi-unwrapped; # disable a bunch of plugins
+  };
+
+  programs.yt-dlp = {
+    enable = true; # directory viewer
+    package = perSystem.nixpkgs-unstable.yt-dlp-light; # to get ffmpeg-headless
+  };
+
   # TODO: use programs.ssh to control the ssh config file
 
   home.packages =
     [
       perSystem.alejandra.default # nix formatter
-      # perSystem.nil.nil # nix lsp
 
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.lnav
-      # perSystem.nixpkgs-unstable.nix-visualize
-      # perSystem.nixpkgs-unstable.nixos-generators
+      (perSystem.nixpkgs-unstable.nix-visualize.override {
+        nix = perSystem.lix-module.default;
+        matplotlib = matplotlibNoX;
+      })
+      pkgs.nixos-generators
 
-      # pkgs.bartib
+      pkgs.bartib
       pkgs.certbot
-      # pkgs.colima
       pkgs.curl
       pkgs.dive
       pkgs.dogdns
       pkgs.du-dust
-      # pkgs.entr
-      # pkgs.ffmpeg-headless
+      pkgs.entr
+      pkgs.ffmpeg-headless
       pkgs.freeze # code screenshot
-      # pkgs.fx # tui json viewer
-      # pkgs.git-absorb
+      pkgs.fx # tui json viewer
       pkgs.glab # gitlab cli
       pkgs.graphviz
       pkgs.gron
       pkgs.htmlq
       pkgs.hyperfine
-      # pkgs.imagemagick
-      # pkgs.jless
-      # pkgs.lima
+      (pkgs.imagemagick.override {})
+      pkgs.jless
       pkgs.lsof
       # pkgs.mariadb
       pkgs.nix-output-monitor
-      # pkgs.parallel
-      # pkgs.procs
-      # pkgs.pstree
+      pkgs.parallel
+      pkgs.procs
+      pkgs.pstree
       pkgs.pv
       pkgs.python3
       pkgs.readline
       pkgs.rlwrap
       pkgs.rustup
       pkgs.shellcheck
-      # pkgs.shfmt
+      pkgs.shfmt
       pkgs.soupault
       pkgs.sqlite-interactive
       pkgs.tokei
       pkgs.tree
-      # pkgs.trippy
+      pkgs.trippy
       pkgs.unzip
       pkgs.watch
       pkgs.wget
       pkgs.xh
       pkgs.xz
-      # pkgs.yq-go
+      pkgs.yq-go
       pkgs.zstd
 
       # TODO: move into separate flakes
