@@ -18,6 +18,7 @@
     ./tailscale.nix
     ./syncthing.nix
     ./paperless.nix
+    ./nix-serve.nix
 
     # experimental
     ./freeradius.nix
