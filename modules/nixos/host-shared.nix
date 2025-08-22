@@ -34,7 +34,9 @@
     package = perSystem.nixpkgs-unstable.nh;
   };
 
-  # give me fish everywhere
+  # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
+  # you need both this and the home-manager equivalent.
+  # plus, I suppose it's nice to be able to drop into fish as root or w/e.
   programs.fish.enable = true;
 
   # some basic nix settings
