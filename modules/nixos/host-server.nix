@@ -5,6 +5,7 @@
 }: {
   imports = [
     inputs.self.nixosModules.audit-shared
+    inputs.self.nixosModules.documentation
   ];
 
   # List services that you want to enable:
