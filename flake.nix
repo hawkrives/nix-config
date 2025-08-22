@@ -2,11 +2,11 @@
   description = "NixOS (and nix-darwin) configuration for Hawken";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
-    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=release-25.05";
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs?ref=nixpkgs-25.05-darwin";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
 
-    darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
+    darwin.url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
 
     tsnsrv.url = "github:boinkor-net/tsnsrv";
@@ -14,7 +14,7 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    home-manager.url = "github:nix-community/home-manager/release-25.05";
+    home-manager.url = "github:nix-community/home-manager?ref=release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.3-1.tar.gz";
