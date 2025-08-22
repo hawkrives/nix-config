@@ -33,8 +33,6 @@
   };
 
   # Load the blueprint
-  # TODO: put this back:
-  # nixpkgs.config.allowUnfree = true;
   outputs = inputs:
     inputs.blueprint {
       inherit inputs;
