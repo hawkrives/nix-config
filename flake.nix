@@ -25,9 +25,6 @@
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.3-1.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
 
-    nil.url = "github:oxalica/nil?ref=2025-06-13";
-    nil.inputs.nixpkgs.follows = "nixpkgs";
-
     alejandra.url = "github:kamadorueda/alejandra?ref=4.0.0";
     alejandra.inputs.nixpkgs.follows = "nixpkgs";
 

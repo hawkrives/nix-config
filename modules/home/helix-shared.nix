@@ -23,7 +23,7 @@ in {
         p.vscode-json-languageserver
         p.vscode-css-languageserver
         # p.nodePackages.vscode-html-languageserver
-        p.nil
+        perSystem.nixpkgs-unstable.nil
         p.ty
         p.ruff
         p.taplo # toml

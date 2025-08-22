@@ -94,6 +94,7 @@ in {
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
     perSystem.nixpkgs-unstable.attic-client
+    perSystem.nixpkgs-unstable.nil # for nix lsp for vs code
   ];
 
   homebrew = {
