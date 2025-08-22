@@ -104,7 +104,7 @@
       pkgs.difftastic
       pkgs.direnv
       pkgs.dive
-      pkgs.dog
+      # pkgs.dog
       pkgs.entr
       pkgs.eza
       pkgs.fd
