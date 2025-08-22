@@ -1,16 +1,14 @@
 {
-  inputs,
+  flake,
   pkgs,
   hostName,
   ...
 }: let
   username = "hawken.rives";
-  # TODO: fix
-  hostname = hostName;
 in {
   imports = [
-    inputs.self.nixosModules.host-shared
-    inputs.self.darwinModules.host-shared
+    flake.nixosModules.host-shared
+    flake.darwinModules.host-shared
   ];
 
   boot.binfmt.emulatedSystems = ["x86_64-linux"];
@@ -61,8 +59,8 @@ in {
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
 
-  networking.hostName = hostname;
-  networking.computerName = hostname;
+  networking.hostName = hostName;
+  networking.computerName = hostName;
 
   system.primaryUser = username;
 
@@ -73,7 +71,7 @@ in {
     dock.showhidden = true;
     dock.slow-motion-allowed = false;
 
-    smb.NetBIOSName = hostname;
+    smb.NetBIOSName = hostName;
     # screencapture.location = "~/Pictures/screenshots";
     screencapture.disable-shadow = true;
 
