@@ -48,68 +48,40 @@
 
       perSystem.nixpkgs-unstable.ghostty.terminfo
 
-      pkgs.nix-output-monitor
-      pkgs.du-dust
-      perSystem.nixpkgs-unstable.neovim
-      pkgs.lsof
-      perSystem.nixpkgs-unstable.lnav
-      pkgs.freeze # code screenshot
-      pkgs.htmlq
-      pkgs.graphviz
-      pkgs.shellcheck
-      pkgs.gron
-      pkgs.rlwrap
-      pkgs.dogdns
-      pkgs.tree
-      pkgs.broot
-      pkgs.yq-go
-      pkgs.gh
-      perSystem.nixpkgs-unstable.nh
-      pkgs.dive
-      perSystem.nixpkgs-unstable.lazygit
-      pkgs.lazydocker
-      pkgs.rustup
-      pkgs.nushell
-      pkgs.glab
-      pkgs.zoxide
-      pkgs.hyperfine
-      pkgs.tmux
-      pkgs.ripgrep
-      pkgs.unzip
-      pkgs.fd
-      pkgs.htop
-      pkgs.jq
-      pkgs.xh
-      pkgs.watch
-      pkgs.pv
-      pkgs.bat
-      pkgs.tokei
-      pkgs.soupault
       perSystem.nixpkgs-unstable.bottom
-      pkgs.wget
-      pkgs.certbot
+      perSystem.nixpkgs-unstable.jjui
+      perSystem.nixpkgs-unstable.jujutsu
+      perSystem.nixpkgs-unstable.lazygit
+      perSystem.nixpkgs-unstable.lnav
+      perSystem.nixpkgs-unstable.mise
+      perSystem.nixpkgs-unstable.neovim
+      perSystem.nixpkgs-unstable.nh
+      perSystem.nixpkgs-unstable.nix-visualize
+      perSystem.nixpkgs-unstable.nixos-generators
+      perSystem.nixpkgs-unstable.uv
 
-      pkgs.ripgrep
-      pkgs.sqlite
-      pkgs.sqlite-interactive
       pkgs.atuin
       pkgs.awscli2
       pkgs.bacon
       pkgs.bartib
       pkgs.bat
       pkgs.broot
+      pkgs.certbot
       pkgs.colima
       pkgs.curl
       pkgs.delta
       pkgs.difftastic
       pkgs.direnv
       pkgs.dive
-      # pkgs.dog
+      pkgs.dogdns
+      pkgs.du-dust
       pkgs.entr
       pkgs.eza
       pkgs.fd
+      pkgs.fd
       pkgs.ffmpeg
       pkgs.fish
+      pkgs.freeze # code screenshot
       pkgs.fx # tui json viewer
       pkgs.fzf
       pkgs.gh
@@ -126,9 +98,9 @@
       pkgs.lazydocker
       pkgs.lima
       pkgs.lnav
+      pkgs.lsof
       pkgs.mariadb
-      perSystem.nixpkgs-unstable.mise
-      perSystem.nixpkgs-unstable.nixos-generators
+      pkgs.nix-output-monitor
       pkgs.nushell
       pkgs.parallel
       pkgs.procs
@@ -142,16 +114,14 @@
       pkgs.shellcheck
       pkgs.shfmt
       pkgs.skim
-      pkgs.sqlite
+      pkgs.soupault
+      # pkgs.sqlite # needed?
+      pkgs.sqlite-interactive
       pkgs.tmux
       pkgs.tokei
       pkgs.tree
       pkgs.trippy
-      perSystem.nixpkgs-unstable.jujutsu
-      perSystem.nixpkgs-unstable.jjui
-      perSystem.nixpkgs-unstable.neovim
-      perSystem.nixpkgs-unstable.nix-visualize
-      perSystem.nixpkgs-unstable.uv
+      pkgs.unzip
       pkgs.visidata
       pkgs.watch
       pkgs.wget
@@ -163,6 +133,7 @@
       pkgs.zellij # multiplexer
       pkgs.zoxide
       pkgs.zstd
+
       # TODO: move into separate flakes
       pkgs.packwiz # for meloncraft-modpack
     ]
