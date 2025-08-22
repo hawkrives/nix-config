@@ -144,7 +144,7 @@
     # Indicate if a nix develop shell is activated (based on IN_NIX_SHELL).
     pure_enable_nixdevshell = "true";
     # Prefix when being connected to SSH session (default: undefined)
-    pure_symbol_ssh_prefix = "§";
+    pure_symbol_ssh_prefix = "§ ";
     # Show prompt prefix when logged in as root.
     pure_show_prefix_root_prompt = "true";
     # Do not check pure runs inside a container
