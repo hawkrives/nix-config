@@ -49,11 +49,12 @@
     # support pulling things from lix and flakehub
     extra-substituters = [
       "https://cache.lix.systems"
+      "https://nix-community.cachix.org"
     ];
     extra-trusted-public-keys =
       [
         "cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="
-        # TODO: am I missing a key for flakehub?
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ]
       # plus my hosts
       ++ [
