@@ -19,6 +19,7 @@
     ./syncthing.nix
     ./paperless.nix
     ./nix-serve.nix
+    ./peertube.nix
 
     # experimental
     ./freeradius.nix
