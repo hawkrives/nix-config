@@ -1,4 +1,5 @@
 {
+  inputs,
   flake,
   pkgs,
   hostName,
@@ -10,6 +11,7 @@ in {
   imports = [
     flake.nixosModules.host-shared
     flake.darwinModules.host-shared
+    inputs.nix-rosetta-builder.darwinModules.default
   ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
@@ -43,22 +45,14 @@ in {
   nix.settings.netrc-file = "/Users/${username}/.netrc";
 
   # https://nixcademy.com/posts/macos-linux-builder/
-  # TODO: do we still want this? I saw something about setting binfmt...?
+  # but then... https://github.com/cpick/nix-rosetta-builder
   nix.linux-builder = {
-    enable = true;
-    systems = ["x86_64-linux" "aarch64-linux"];
-    ephemeral = true;
-    maxJobs = 4;
-    config = {
-      boot.binfmt.emulatedSystems = ["x86_64-linux"];
-      virtualisation = {
-        darwin-builder = {
-          diskSize = 40 * 1024;
-          memorySize = 8 * 1024;
-        };
-        cores = 6;
-      };
-    };
+    enable = false;
+  };
+  nix-rosetta-builder = {
+    onDemand = true;
+    onDemandLingerMinutes = 10;
+    diskSize = "60GiB";
   };
 
   # something went wrong during setup and this is 350 instead of 30000
