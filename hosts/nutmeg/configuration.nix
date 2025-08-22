@@ -1,15 +1,17 @@
 {
-  inputs,
   hostName,
+  pkgs,
+  flake,
   ...
 }: {
   imports = [
-    inputs.self.nixosModules.host-shared
-    inputs.self.nixosModules.veilid-shared
-    inputs.self.nixosModules.host-server
+    flake.modules.nixos.host-shared
+    flake.modules.nixos.veilid-shared
+    flake.modules.nixos.host-server
 
     ./adguard.nix
     ./home-assistant.nix
+    ./home-assistant-matter.nix
     ./plex.nix
     ./tailscale.nix
 
@@ -37,34 +39,6 @@
   # TODO: do we need this? what should it be?
   programs.nh.flake = "/home/natsume/nix-config#nutmeg";
 
-  # fileSystems."/mnt/reddit" = {
-  #   device = "192.168.1.194:/volume1/project-reddit-data";
-  #   fsType = "nfs";
-  #   options = [
-  #     "nfsvers=4.2"
-  #     "noatime"
-  #     "x-systemd.automount"
-  #     "noauto"
-  #     "x-systemd.idle-timeout=60"
-  #     "x-systemd.device-timeout=5s"
-  #     "x-systemd.mount-timeout=5s"
-  #   ];
-  # };
-
-  # fileSystems."/mnt/stories" = {
-  #   device = "192.168.1.194:/volume1/project-story-archive";
-  #   fsType = "nfs";
-  #   options = [
-  #     "nfsvers=4.1"
-  #     "noatime"
-  #     "x-systemd.automount"
-  #     "noauto"
-  #     "x-systemd.idle-timeout=60"
-  #     "x-systemd.device-timeout=5s"
-  #     "x-systemd.mount-timeout=5s"
-  #   ];
-  # };
-
   boot.initrd.availableKernelModules = [
     "ahci"
     "ehci_pci"
@@ -82,7 +56,7 @@
   ];
 
   # TODO: fix
-  # boot.extraModulePackages = [config.boot.kernelPackages.broadcom_sta];
+  boot.extraModulePackages = [pkgs.kernelPackages.broadcom_sta];
 
   # reduce IO cache, this should reduce latency when 2 processes try to read a lot from the disk
   # from <https://github.com/tchfoo/raspi-dotfiles/blob/8fd846f740385c92aa5f849944a2cd1a02d7d841/modules/system.nix>
@@ -98,7 +72,7 @@
     "broadcom-sta-6.30.223.271-57-6.12.41"
     "broadcom-sta-6.30.223.271-57-6.12.42"
     # TODO: can we just do this?
-    # config.boot.kernelPackages.broadcom_sta
+    pkgs.boot.kernelPackages.broadcom_sta.name
   ];
 
   fileSystems."/" = {

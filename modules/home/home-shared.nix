@@ -61,7 +61,6 @@
       perSystem.nixpkgs-unstable.uv
 
       pkgs.atuin
-      pkgs.awscli2
       pkgs.bacon
       pkgs.bartib
       pkgs.bat
