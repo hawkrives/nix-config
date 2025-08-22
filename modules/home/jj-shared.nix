@@ -1,4 +1,8 @@
-{perSystem, ...}: {
+{
+  perSystem,
+  pkgs,
+  ...
+}: {
   programs.jujutsu.enable = true;
   programs.jujutsu.package = perSystem.nixpkgs-unstable.jujutsu;
 
@@ -6,8 +10,8 @@
     "$schema" = "https://jj-vcs.github.io/jj/latest/config-schema.json";
 
     user = {
-      name = "Hawken Rives";
-      email = "hawkrives@fastmail.fm";
+      name = pkgs.lib.mkDefault "Hawken Rives";
+      email = pkgs.lib.mkDefault "hawkrives@fastmail.fm";
     };
 
     ui = {

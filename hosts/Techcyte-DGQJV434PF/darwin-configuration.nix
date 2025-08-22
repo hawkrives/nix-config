@@ -2,6 +2,7 @@
   flake,
   pkgs,
   hostName,
+  perSystem,
   ...
 }: let
   username = "hawken.rives";
@@ -11,15 +12,17 @@ in {
     flake.darwinModules.host-shared
   ];
 
-  boot.binfmt.emulatedSystems = ["x86_64-linux"];
-
   nixpkgs.hostPlatform = "aarch64-darwin";
-
-  users.users.${username}.home = /Users/hawken.rives;
 
   # Used for backwards compatibility, please read the changelog before changing.
   # $ darwin-rebuild changelog
   system.stateVersion = 4;
+
+  users.users.${username} = {
+    name = username;
+    home = /Users/${username};
+    shell = pkgs.fish;
+  };
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = [
@@ -43,9 +46,11 @@ in {
   # TODO: do we still want this? I saw something about setting binfmt...?
   nix.linux-builder = {
     enable = true;
+    systems = ["x86_64-linux" "aarch64-linux"];
     ephemeral = true;
     maxJobs = 4;
     config = {
+      boot.binfmt.emulatedSystems = ["x86_64-linux"];
       virtualisation = {
         darwin-builder = {
           diskSize = 40 * 1024;
@@ -87,15 +92,14 @@ in {
   };
 
   system.keyboard.enableKeyMapping = true;
+  system.keyboard.remapCapsLockToEscape = true;
 
   # disable the startup chime
   system.startup.chime = false;
 
-  system.keyboard.remapCapsLockToEscape = true;
-
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
-    inputs.unstable-pkgs.attic-client
+    perSystem.nixpkgs-unstable.attic-client
   ];
 
   homebrew = {
@@ -106,21 +110,8 @@ in {
       cleanup = "zap";
     };
 
-    taps = [
-      # "homebrew/cask-fonts"
-      "d12frosted/homebrew-emacs-plus" # for emacs-plus
-    ];
-
     brews = [
       "container-diff"
-      {
-        name = "emacs-plus";
-        args = [
-          "with-savchenkovaleriy-big-sur-3d-icon"
-          "with-no-frame-refocus"
-          "with-native-comp"
-        ];
-      }
     ];
 
     caskArgs.appdir = "~/Applications";
@@ -172,12 +163,5 @@ in {
       "WireGuard" = 1451685025;
       "Xcode" = 497799835;
     };
-  };
-
-  # TODO: home-manager
-  users.users.${username} = {
-    name = "${username}";
-    home = "/Users/${username}";
-    shell = pkgs.fish;
   };
 }

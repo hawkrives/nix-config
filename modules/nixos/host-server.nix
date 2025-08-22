@@ -1,12 +1,23 @@
 {
   pkgs,
   flake,
+  perSystem,
   ...
 }: {
   imports = [
     flake.nixosModules.audit-shared
     flake.nixosModules.documentation
   ];
+
+  programs.neovim = pkgs.lib.optionals pkgs.stdenv.isLinux {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    withRuby = false;
+    withNodeJs = false;
+    withPython3 = false;
+    vimAlias = true;
+    viAlias = true;
+  };
 
   # openssh automatically opens its port
   services.openssh.enable = true;
