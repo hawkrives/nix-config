@@ -1,4 +1,4 @@
-{pkgs, lib, ...}: let
+{pkgs, ...}: let
   nfsOptions = [
     "nfsvers=4.1"
     "noatime" # we do not care about tracking the access time
@@ -37,10 +37,6 @@ in {
       })
     ];
   };
-
-  # HACK: restart plex evey 4 hours
-  systemd.services.plex.serviceConfig.RuntimeMaxSec = "4h";
-  systemd.services.plex.serviceConfig.Restart = lib.mkForce "always";
 
   services.tautulli = {
     enable = true;
