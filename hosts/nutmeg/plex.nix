@@ -56,37 +56,37 @@ in {
 
   fileSystems."/var/lib/plex/media-shows" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/media-shows";
+    device = "192.168.1.194:/volume1/media-shows";
     options = readOnlyNfs;
   };
 
   fileSystems."/var/lib/plex/media-channels" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/media-channels";
+    device = "192.168.1.194:/volume1/media-channels";
     options = readOnlyNfs;
   };
 
   fileSystems."/var/lib/plex/media-photos" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/media-photos";
+    device = "192.168.1.194:/volume1/media-photos";
     options = readOnlyNfs;
   };
 
   fileSystems."/var/lib/plex/media-music" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/media-music";
+    device = "192.168.1.194:/volume1/media-music";
     options = readOnlyNfs;
   };
 
   fileSystems."/var/lib/plex/media-movies" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/media-movies";
+    device = "192.168.1.194:/volume1/media-movies";
     options = readOnlyNfs;
   };
 
   fileSystems."/var/lib/plex/backup" = {
     fsType = "nfs";
-    device = "potato-bunny.local:/volume1/app-plex";
+    device = "192.168.1.194:/volume1/app-plex";
     options = nfsOptions;
   };
 }
