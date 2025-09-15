@@ -260,7 +260,7 @@
 
   home.packages =
     [
-      perSystem.alejandra.default # nix formatter
+      pkgs.alejandra # nix formatter
 
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.lnav

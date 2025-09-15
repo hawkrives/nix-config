@@ -22,9 +22,6 @@
     home-manager.url = "github:nix-community/home-manager?ref=release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    alejandra.url = "github:kamadorueda/alejandra?ref=4.0.0";
-    alejandra.inputs.nixpkgs.follows = "nixpkgs";
-
     systemd-lsp.url = "github:jfryy/systemd-lsp?ref=v2025.07.14";
     systemd-lsp.inputs.nixpkgs.follows = "nixpkgs";
   };
