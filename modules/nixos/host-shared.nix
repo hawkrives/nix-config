@@ -1,12 +1,11 @@
 {
   pkgs,
-  inputs,
   perSystem,
   ...
 }: {
   # config settings for both NixOS- and Darwin-based systems
 
-  imports = [inputs.lix-module.nixosModules.default];
+  imports = [];
 
   # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
   # you need both this and the home-manager equivalent.
@@ -31,6 +30,22 @@
       # install here because we use programs.nh.enable on linux
       perSystem.nixpkgs-unstable.nh
     ]);
+
+  nixpkgs.overlays = [
+    (final: prev: {
+      inherit
+        (final.lixPackageSets.stable)
+        nixpkgs-review
+        nix-direnv
+        nix-eval-jobs
+        nix-fast-build
+        colmena
+        ;
+    })
+  ];
+
+  nix.package = pkgs.lixPackageSets.stable.lix;
+  # nix.package = perSystem.nixpkgs-unstable.lixPackageSets.stable.lix;
 
   # TODO: document
   nix.optimise.automatic = true;

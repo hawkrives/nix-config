@@ -22,9 +22,6 @@
     home-manager.url = "github:nix-community/home-manager?ref=release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.93.3-1.tar.gz";
-    lix-module.inputs.nixpkgs.follows = "nixpkgs";
-
     alejandra.url = "github:kamadorueda/alejandra?ref=4.0.0";
     alejandra.inputs.nixpkgs.follows = "nixpkgs";
 
