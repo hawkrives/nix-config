@@ -1,5 +1,5 @@
 {
-  inputs,
+  # inputs,
   flake,
   pkgs,
   hostName,
@@ -11,7 +11,7 @@ in {
   imports = [
     flake.nixosModules.host-shared
     flake.darwinModules.host-shared
-    inputs.nix-rosetta-builder.darwinModules.default
+    # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
@@ -48,14 +48,14 @@ in {
 
   # https://nixcademy.com/posts/macos-linux-builder/
   # but then... https://github.com/cpick/nix-rosetta-builder
-  nix.linux-builder = {
-    enable = false;
-  };
-  nix-rosetta-builder = {
-    onDemand = true;
-    onDemandLingerMinutes = 10;
-    diskSize = "60GiB";
-  };
+  # nix.linux-builder = {
+  #   enable = false;
+  # };
+  # nix-rosetta-builder = {
+  #   onDemand = true;
+  #   onDemandLingerMinutes = 10;
+  #   diskSize = "60GiB";
+  # };
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
