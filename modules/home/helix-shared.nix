@@ -29,7 +29,7 @@ in {
         p.taplo # toml
       ]
       ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
-        perSystem.systemd-lsp.default
+        p.systemd-lsp
       ]);
 
     settings = {
