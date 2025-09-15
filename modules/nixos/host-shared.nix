@@ -32,11 +32,11 @@
       perSystem.nixpkgs-unstable.nh
     ]);
 
+  # TODO: document
+  nix.optimise.automatic = true;
+
   # some basic nix settings
   nix.settings = {
-    # symlink identical paths in the store in the background
-    # TODO: does lix support?
-    auto-optimise-store = true;
     # enable flakes and the nice cli
     experimental-features = ["nix-command" "flakes"];
     # todo put the issue link here
