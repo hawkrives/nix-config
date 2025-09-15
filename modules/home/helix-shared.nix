@@ -14,7 +14,7 @@ in {
         # language servers for helix
         p.bash-language-server
         p.docker-language-server # official from Docker, Inc
-        p.dockerfile-language-server-nodejs # for helix
+        p.dockerfile-language-server # for helix
         p.docker-compose-language-service
         p.typescript-language-server
         p.yaml-language-server
