@@ -41,44 +41,4 @@
       inherit inputs;
       nixpkgs.config.allowUnfree = true;
     };
-
-  # outputs = inputs @ {
-  #   darwin,
-  #   home-manager,
-  #   lix-module,
-  #   nixos-hardware,
-  #   nixpkgs,
-  #   nixpkgs-unstable,
-  #   tsnsrv,
-  #   nil,
-  #   alejandra,
-  #   ...
-  # }: {
-  #   # Build darwin flake using:
-  #   # $ darwin-rebuild build --flake .#techcyted
-  #   darwinConfigurations."Techcyte-DGQJV434PF" = let
-  #     username = "hawken.rives";
-  #     system = "aarch64-darwin";
-  #     # pkgs = import nixpkgs { inherit system; };
-  #   in
-  #     darwin.lib.darwinSystem {
-  #       modules = [
-  #         lix-module.nixosModules.default
-  #         (import ./hosts/Techcyte-DGQJV434PF/configuration.nix {
-  #           inherit username;
-  #           hostname = "Techcyte-DGQJV434PF";
-  #           unstable-pkgs = import inputs.nixpkgs-unstable {inherit system;};
-  #         })
-  #         home-manager.darwinModules.home-manager
-  #         {
-  #           home-manager.useGlobalPkgs = true;
-  #           home-manager.useUserPackages = true;
-  #           home-manager.users.${username} = import ./users/hawken/home.nix {
-  #             unstable-pkgs = import inputs.nixpkgs-unstable {inherit system;};
-  #             nil = nil.packages.${system};
-  #             alejandra = alejandra.packages.${system};
-  #           };
-  #         }
-  #       ];
-  #     };
 }
