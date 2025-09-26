@@ -193,6 +193,7 @@
     gh.enable = true;
     htop.enable = true;
     jq.enable = true;
+    jq.package = perSystem.nixpkgs-unstable.jq;
     less.enable = true;
     nushell.enable = true;
     rclone.enable = true;
