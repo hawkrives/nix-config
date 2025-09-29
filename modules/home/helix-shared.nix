@@ -58,8 +58,8 @@ in {
           "A-j" = "join_selections";
           "A-J" = "join_selections_space";
 
-          X = "remove_primary_selection";
-          x = "keep_selections";
+          # X = "remove_primary_selection";
+          # x = "keep_selections";
           "A-x" = "remove_selections";
 
           "H" = ["select_mode" "goto_line_start" "exit_select_mode"];
@@ -74,8 +74,8 @@ in {
           "A-j" = "join_selections";
           "A-J" = "join_selections_space";
 
-          X = "remove_primary_selection";
-          x = "keep_selections";
+          # X = "remove_primary_selection";
+          # x = "keep_selections";
           "A-x" = "remove_selections";
 
           "H" = "goto_line_start";
