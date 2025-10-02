@@ -264,6 +264,7 @@
       pkgs.alejandra # nix formatter
 
       perSystem.nixpkgs-unstable.jjui
+      perSystem.nixpkgs-unstable.jj-fzf
       perSystem.nixpkgs-unstable.lnav
       pkgs.nixos-generators
 
