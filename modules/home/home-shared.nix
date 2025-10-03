@@ -266,6 +266,7 @@
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.jj-fzf
       perSystem.nixpkgs-unstable.lnav
+      perSystem.nixpkgs-unstable.diffoci
       pkgs.nixos-generators
 
       pkgs.bartib
