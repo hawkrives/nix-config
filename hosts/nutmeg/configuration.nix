@@ -20,6 +20,7 @@
     ./paperless.nix
     ./nix-serve.nix
     ./peertube.nix
+    ./discourse.nix
 
     # experimental
     ./freeradius.nix
