@@ -1,4 +1,5 @@
 {...}: {
+  networking.firewall.allowedTCPPorts = [80];
   services.discourse = {
     enable = true;
     hostname = "nutmeg.local";
