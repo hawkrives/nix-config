@@ -20,7 +20,7 @@
       # global rate limiter will simply warn if the limit is exceeded, can be warn+block, warn, block or none
       max_reqs_per_ip_mode = "warn";
       # bypass rate limiting any IP resolved as a private IP
-      max_reqs_rate_limit_on_private = false;
+      max_reqs_rate_limit_on_private = true;
     };
     siteSettings = {
       email.disable_emails = "yes";
