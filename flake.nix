@@ -21,6 +21,13 @@
 
     home-manager.url = "github:nix-community/home-manager?ref=release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    serena.url = "github:oraios/serena";
+    serena.inputs.nixpkgs.follows = "nixpkgs";
+
+    # experimental; for managing the synology
+    system-manager.url = "github:numtide/system-manager";
+    system-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   # Load the blueprint
