@@ -320,6 +320,10 @@
       pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [
         pkgs.skhd
       ]
+    ) ++ (
+      pkgs.lib.optionals (pkgs.stdenv.isLinux) [
+       perSystem.nixpkgs-unstable.buildah
+      ]
     );
 
   # The state version is required and should stay at the version you originally installed.
