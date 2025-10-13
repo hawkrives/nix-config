@@ -21,6 +21,7 @@
       max_reqs_per_ip_mode = "warn";
       # bypass rate limiting any IP resolved as a private IP
       max_reqs_rate_limit_on_private = true;
+      enable_performance_http_headers = true;
     };
     siteSettings = {
       email.disable_emails = "yes";
