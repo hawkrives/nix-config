@@ -33,7 +33,7 @@ in {
     "@admin"
   ];
   nix.settings.substituters = [
-    "https://attic.services.hub.techcyte.com/cache"
+    # "https://attic.services.hub.techcyte.com/cache"
     "https://cache.nixos.org"
     "https://cache.lix.systems"
     "https://nix-community.cachix.org"
