@@ -20,26 +20,35 @@ in {
       (builtins.path {
         name = "Hama.bundle";
         path = pkgs.fetchFromGitHub {
+          # https://github.com/ZeroQI/Hama.bundle
           owner = "ZeroQI";
           repo = "Hama.bundle";
-          rev = "02f2025d6ffcceb973a2e3f72ec98b60ba9a60bd";
-          sha256 = "xXgmPrRJkBtXW1REYnxb1w5U1a8R79UllUWrcfCnuk4=";
+          rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
+          sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+        };
+      })
+
+      (builtins.path {
+        name = "YouTube-Agent.bundle";
+        path = pkgs.fetchFromGitHub {
+          # https://github.com/ZeroQI/YouTube-Agent.bundle
+          owner = "ZeroQI";
+          repo = "YouTube-Agent.bundle";
+          rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
+          sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
         };
       })
     ];
 
     extraScanners = [
       (pkgs.fetchFromGitHub {
+        # https://github.com/ZeroQI/Absolute-Series-Scanner
         owner = "ZeroQI";
         repo = "Absolute-Series-Scanner";
-        rev = "f41cd58eb72480c677ec6c9efec9de6adbad16ff";
-        sha256 = "XE1yHsJQo9o46NlE5ToIhK4EXONFKjANtKY3dpTs9HE=";
+        rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
+        sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
       })
     ];
-  };
-
-  services.tautulli = {
-    enable = true;
   };
 
   # need uid/gid to match the NAS
