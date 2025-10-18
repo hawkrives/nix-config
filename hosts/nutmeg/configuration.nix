@@ -21,9 +21,6 @@
     ./nix-serve.nix
     ./peertube.nix
     ./discourse.nix
-
-    # experimental
-    ./freeradius.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
