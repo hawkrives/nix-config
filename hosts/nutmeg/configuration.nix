@@ -114,7 +114,23 @@
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = true;
 
-  hardware.enableRedistributableFirmware = true;
+  # TODO: move to hardware.nix
+  # Explicitly disable the all-in-one firmware package; it includes _all_ redistributable firmware,
+  # so instead we selectively include the few parts that we need.
+  # hardware.enableRedistributableFirmware = true;
+
+  # TODO: move to hardware.nix
+  # Only add the firmware we actually need
+  hardware.firmware = with pkgs; [
+    # Intel CPU security and stability updates.
+    intel-microcode
+
+    # Add other *specific* firmware packages here if you find something doesn't
+    # work (e.g., a specific ethernet or Wi-Fi package).
+  ];
+
+  # TODO: remove
+  # hardware.intelgpu.vaapiDriver = "intel-vaapi-driver";
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
