@@ -6,10 +6,10 @@
   ...
 }: {
   imports = [
-    flake.modules.nixos.host-shared
-    flake.modules.nixos.host-nixos
-    flake.modules.nixos.veilid-shared
-    flake.modules.nixos.host-server
+    flake.nixosModules.host-shared
+    flake.nixosModules.host-nixos
+    flake.nixosModules.veilid-shared
+    flake.nixosModules.host-server
 
     ./adguard.nix
     ./home-assistant.nix
