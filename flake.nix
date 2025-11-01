@@ -34,6 +34,9 @@
       url = "github:numtide/system-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # if we ever get an M-series server:
+    # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
 
   # Load the blueprint
