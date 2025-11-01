@@ -280,7 +280,7 @@
       pkgs.gron
       pkgs.htmlq
       pkgs.hyperfine
-      (pkgs.imagemagick.override {})
+      pkgs.imagemagick
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.jj-fzf
       pkgs.jless
