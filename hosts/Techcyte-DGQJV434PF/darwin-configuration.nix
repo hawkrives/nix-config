@@ -108,9 +108,8 @@ in {
       cleanup = "zap";
     };
 
-    brews = [
-      "container-diff"
-    ];
+    # container-diff has been replaced with diffoci
+    brews = [];
 
     caskArgs.appdir = "~/Applications";
     casks = [
