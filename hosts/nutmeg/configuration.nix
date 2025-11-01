@@ -1,15 +1,15 @@
 {
+  inputs,
   hostName,
   pkgs,
   config,
-  flake,
   ...
 }: {
   imports = [
-    flake.nixosModules.host-shared
-    flake.nixosModules.host-nixos
-    flake.nixosModules.veilid-shared
-    flake.nixosModules.host-server
+    inputs.self.nixosModules.host-shared
+    inputs.self.nixosModules.host-server
+    inputs.self.nixosModules.host-nixos
+    inputs.self.nixosModules.veilid-shared
 
     ./adguard.nix
     ./home-assistant.nix
