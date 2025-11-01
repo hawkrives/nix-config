@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-25.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
 
+    hardware.url = "github:NixOS/nixos-hardware";
     systems.url = "github:nix-systems/default";
 
     blueprint = {
@@ -21,10 +22,6 @@
     tsnsrv = {
       url = "github:boinkor-net/tsnsrv";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nixos-hardware = {
-      url = "github:NixOS/nixos-hardware";
     };
 
     home-manager = {
