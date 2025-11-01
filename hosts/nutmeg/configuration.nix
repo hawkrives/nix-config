@@ -6,6 +6,12 @@
   ...
 }: {
   imports = [
+    # TODO: move these four to hardware.nix
+    # inputs.hardware.nixosModules.apple.macmini
+    inputs.hardware.nixosModules.common-pc
+    inputs.hardware.nixosModules.common-pc-ssd
+    inputs.hardware.nixosModules.common-cpu-intel
+
     inputs.self.nixosModules.host-shared
     inputs.self.nixosModules.host-server
     inputs.self.nixosModules.host-nixos
