@@ -262,10 +262,6 @@
   home.packages =
     [
       pkgs.alejandra # nix formatter
-
-      perSystem.nixpkgs-unstable.jjui
-      perSystem.nixpkgs-unstable.jj-fzf
-      perSystem.nixpkgs-unstable.lnav
       pkgs.nixos-generators
 
       pkgs.bartib
@@ -286,7 +282,10 @@
       pkgs.httpie
       pkgs.hyperfine
       (pkgs.imagemagick.override {})
+      perSystem.nixpkgs-unstable.jjui
+      perSystem.nixpkgs-unstable.jj-fzf
       pkgs.jless
+      perSystem.nixpkgs-unstable.lnav
       pkgs.lsof
       # pkgs.mariadb
       pkgs.nix-output-monitor
