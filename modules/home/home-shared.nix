@@ -261,9 +261,9 @@
 
   home.packages =
     [
-      pkgs.alejandra # nix formatter
-      pkgs.nixos-generators
+      # pkgs.nixos-generators
 
+      pkgs.alejandra # nix formatter
       pkgs.bartib
       pkgs.certbot
       pkgs.curl
