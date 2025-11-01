@@ -99,7 +99,14 @@
     fsType = "vfat";
   };
 
+  # TODO: move to hardware.nix
+  # disable disk swap
   swapDevices = [];
+  # enable `zramSwap` to use a compressed block device in RAM
+  zramSwap = {
+    enable = true;
+    memoryPercent = 25; # default: 50%
+  };
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
