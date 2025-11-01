@@ -22,11 +22,10 @@ in {
         p.terraform-ls
         p.vscode-json-languageserver
         p.vscode-css-languageserver
-        # p.nodePackages.vscode-html-languageserver
-        perSystem.nixpkgs-unstable.nil
+        p.nil
         p.ty
         p.ruff
-        p.taplo # toml
+        p.taplo # for toml
       ]
       ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
         p.systemd-lsp
