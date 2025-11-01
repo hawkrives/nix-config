@@ -34,6 +34,9 @@
   # Define your hostname. Defaults to the folder this file is in.
   networking.hostName = hostName;
 
+  # Enable fan control
+  services.mbpfan.enable = true;
+
   users.users.natsume = {
     isNormalUser = true;
     description = "Natsume";
