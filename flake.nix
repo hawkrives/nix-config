@@ -7,27 +7,37 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
 
     systems.url = "github:nix-systems/default";
-    blueprint.url = "github:numtide/blueprint";
-    blueprint.inputs.nixpkgs.follows = "nixpkgs";
-    blueprint.inputs.systems.follows = "systems";
 
-    nix-darwin.url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.05";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    blueprint = {
+      url = "github:numtide/blueprint";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
 
-    tsnsrv.url = "github:boinkor-net/tsnsrv";
-    tsnsrv.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
+    tsnsrv = {
+      url = "github:boinkor-net/tsnsrv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    home-manager.url = "github:nix-community/home-manager?ref=release-25.05";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+    };
 
-    serena.url = "github:oraios/serena";
-    serena.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager = {
+      url = "github:nix-community/home-manager?ref=release-25.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # experimental; for managing the synology
-    system-manager.url = "github:numtide/system-manager";
-    system-manager.inputs.nixpkgs.follows = "nixpkgs";
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # Load the blueprint
