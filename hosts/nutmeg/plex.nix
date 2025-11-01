@@ -24,7 +24,7 @@ in {
           owner = "ZeroQI";
           repo = "Hama.bundle";
           rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
-          sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+          sha256 = "PgZAqK3Ooz8JgMqCW7hZOBzuaVjCywA6ytx33J/WqC4=";
         };
       })
 
@@ -35,7 +35,7 @@ in {
           owner = "ZeroQI";
           repo = "YouTube-Agent.bundle";
           rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
-          sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+          sha256 = "W1lY9uDqxkkKmxBDewQc/BOsZSK2CbKHRBTzTscR68Y=";
         };
       })
     ];
@@ -46,7 +46,7 @@ in {
         owner = "ZeroQI";
         repo = "Absolute-Series-Scanner";
         rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
-        sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+        sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
       })
     ];
   };
