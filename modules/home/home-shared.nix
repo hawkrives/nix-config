@@ -294,7 +294,6 @@
       pkgs.procs
       pkgs.pstree
       pkgs.pv
-      pkgs.python3
       pkgs.readline
       pkgs.rlwrap
       pkgs.rustup
