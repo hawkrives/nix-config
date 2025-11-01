@@ -279,7 +279,6 @@
       pkgs.graphviz
       pkgs.gron
       pkgs.htmlq
-      pkgs.httpie
       pkgs.hyperfine
       (pkgs.imagemagick.override {})
       perSystem.nixpkgs-unstable.jjui
