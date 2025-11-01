@@ -266,12 +266,12 @@
       perSystem.nixpkgs-unstable.jjui
       perSystem.nixpkgs-unstable.jj-fzf
       perSystem.nixpkgs-unstable.lnav
-      perSystem.nixpkgs-unstable.diffoci
       pkgs.nixos-generators
 
       pkgs.bartib
       pkgs.certbot
       pkgs.curl
+      pkgs.diffoci
       pkgs.dive
       pkgs.dogdns
       pkgs.du-dust
