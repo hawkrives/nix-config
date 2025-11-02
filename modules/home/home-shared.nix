@@ -165,11 +165,7 @@
   home.shellAliases = {
     ls = "ls --color=auto";
     ll = "ls -l";
-    view = "nvim -R";
     vimdiff = "nvim -d";
-    gs = "git status";
-    gd = "git diff";
-    gdc = "git diff --cached";
   };
 
   # TODO: relocate this
@@ -192,8 +188,6 @@
     fzf.enable = true;
     gh.enable = true;
     htop.enable = true;
-    jq.enable = true;
-    jq.package = perSystem.nixpkgs-unstable.jq;
     less.enable = true;
     nushell.enable = true;
     rclone.enable = true;
@@ -203,6 +197,11 @@
     tmux.enable = true;
     zellij.enable = true; # multiplexer
     zoxide.enable = true;
+  };
+
+  programs.jq = {
+    enable = true;
+    package = perSystem.nixpkgs-unstable.jq;
   };
 
   programs.lazydocker = {
@@ -218,9 +217,7 @@
   programs.mise = {
     enable = true;
     package = perSystem.nixpkgs-unstable.mise;
-    settings = {
-      experimental = true;
-    };
+    settings.experimental = true;
   };
 
   programs.neovim = {
