@@ -2,12 +2,17 @@
 [tasks."update-and-commit"]
 run = "nix flake update --commit-lock-file"
 
+[tasks."build"]
+run = 'mise run "$(hostname)"'
+env.ACTION = "build"
+
 [tasks."switch"]
 run = 'mise run "$(hostname)"'
 env.ACTION = "switch"
 
 [tasks."ask"]
-run = 'mise run switch -- --ask'
+run = 'mise run "$(hostname)" -- --ask'
+env.ACTION = "switch"
 
 [tasks."Techcyte-DGQJV434PF"]
 run = 'nh darwin ${ACTION} --hostname "$MISE_TASK_NAME" .'
