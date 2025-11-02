@@ -1,22 +1,18 @@
 {
-  inputs,
+  flake,
   hostName,
-  pkgs,
-  config,
   ...
 }: {
   imports = [
-    # TODO: move these four to hardware.nix
-    # inputs.hardware.nixosModules.apple.macmini
-    inputs.hardware.nixosModules.common-pc
-    inputs.hardware.nixosModules.common-pc-ssd
-    inputs.hardware.nixosModules.common-cpu-intel
+    flake.nixosModules.host-shared
+    flake.nixosModules.host-server
+    flake.nixosModules.host-nixos
+    flake.nixosModules.veilid-shared
 
-    inputs.self.nixosModules.host-shared
-    inputs.self.nixosModules.host-server
-    inputs.self.nixosModules.host-nixos
-    inputs.self.nixosModules.veilid-shared
+    # configuration
+    ./hardware.nix
 
+    # modules
     ./adguard.nix
     ./home-assistant.nix
     ./home-assistant-matter.nix
@@ -30,23 +26,17 @@
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
 
-  # Define your hostname. Defaults to the folder this file is in.
-  networking.hostName = hostName;
-
-  # Enable fan control
-  services.mbpfan.enable = true;
+  services.mbpfan.enable = true; # enable Mac fan control daemon
+  systemd.coredump.enable = false; # disable core dumps
 
   users.users.natsume = {
     isNormalUser = true;
     description = "Natsume";
     extraGroups = ["wheel"];
-    shell = pkgs.fish;
+    # shell = pkgs.fish;
   };
-
-  # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
 
   programs.nh.flake = "/home/natsume/nix-config#nutmeg";
   programs.nh.clean = {
@@ -54,83 +44,6 @@
     dates = "weekly";
     extraArgs = "--keep-since 4d --keep 3";
   };
-
-  boot.initrd.availableKernelModules = [
-    "ahci"
-    "ehci_pci"
-    "firewire_ohci"
-    "sd_mod"
-    "sdhci_pci"
-    "uas"
-    "usbhid"
-    "xhci_pci"
-  ];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = [
-    "kvm-intel"
-    "wl"
-  ];
-
-  boot.extraModulePackages = [
-    config.boot.kernelPackages.broadcom_sta
-  ];
-
-  # reduce IO cache, this should reduce latency when 2 processes try to read a lot from the disk
-  # from <https://github.com/tchfoo/raspi-dotfiles/blob/8fd846f740385c92aa5f849944a2cd1a02d7d841/modules/system.nix>
-  boot.kernel.sysctl = {
-    "vm.dirty_background_ratio" = 10;
-    "vm.dirty_ratio" = 40;
-    "vm.vfs_cache_pressure" = 10;
-  };
-
-  # the bluetooth driver is insecure... but I want bluetooth readings from the house,
-  # so we have to continue running it.
-  nixpkgs.config.permittedInsecurePackages = [
-    config.boot.kernelPackages.broadcom_sta.name
-  ];
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/a049e035-2542-472e-ad90-4e0353d26185";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/67E3-17ED";
-    fsType = "vfat";
-  };
-
-  # TODO: move to hardware.nix
-  # disable disk swap
-  swapDevices = [];
-  # enable `zramSwap` to use a compressed block device in RAM
-  zramSwap = {
-    enable = true;
-    memoryPercent = 25; # default: 50%
-  };
-
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = true;
-
-  # TODO: move to hardware.nix
-  # Explicitly disable the all-in-one firmware package; it includes _all_ redistributable firmware,
-  # so instead we selectively include the few parts that we need.
-  # hardware.enableRedistributableFirmware = true;
-
-  # TODO: move to hardware.nix
-  # Only add the firmware we actually need
-  hardware.firmware = with pkgs; [
-    # Intel CPU security and stability updates.
-    intel-microcode
-
-    # Add other *specific* firmware packages here if you find something doesn't
-    # work (e.g., a specific ethernet or Wi-Fi package).
-  ];
-
-  # TODO: remove
-  # hardware.intelgpu.vaapiDriver = "intel-vaapi-driver";
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
