@@ -139,6 +139,9 @@
     };
   };
 
+  # enable font lookup thing on Linux
+  fonts.fontconfig.enable = pkgs.stdenv.isLinux;
+
   # disable home-manager man pages?
   manual.manpages.enable = false;
   programs.man.generateCaches = false;
@@ -313,6 +316,25 @@
     # you can access the host configuration using osConfig.
     ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [pkgs.skhd])
     ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [perSystem.nixpkgs-unstable.buildah]);
+
+  targets.darwin.defaults = {
+    "com.apple.dock".autohide = true;
+    "com.apple.dock".mru-spaces = false;
+    "com.apple.dock".mouse-over-hilite-stack = true;
+    "com.apple.dock".showhidden = true;
+    "com.apple.dock".slow-motion-allowed = false;
+
+    "screencapture".disable-shadow = true;
+
+    "com.apple.finder".ShowPathbar = true;
+    "com.apple.finder".ShowStatusBar = true;
+
+    "com.apple.menuextra.clock".Show24Hour = true;
+    "com.apple.menuextra.clock".ShowAMPM = false;
+
+    "universalaccess".closeViewScrollWheelToggle = true; # Use scroll gesture with the Ctrl (^) modifier key to zoom.
+    # "universalaccess".reduceMotion = true;
+  };
 
   # The state version is required and should stay at the version you originally installed.
   home.stateVersion = "23.05";

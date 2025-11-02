@@ -4,9 +4,7 @@
   hostName,
   perSystem,
   ...
-}: let
-  username = "hawken.rives";
-in {
+}: {
   imports = [
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
@@ -15,31 +13,14 @@ in {
 
   nixpkgs.hostPlatform = "aarch64-darwin";
 
-  # Used for backwards compatibility, please read the changelog before changing.
-  # $ darwin-rebuild changelog
-  system.stateVersion = 4;
-
-  users.users.${username} = {
-    name = username;
-    home = /Users/${username};
-    shell = pkgs.fish;
-  };
+  system.primaryUser = "hawken.rives";
+  users.users."hawken.rives".home = /Users/hawken.rives;
 
   # @admin is required for nix-builder
-  nix.settings.trusted-users = ["root" username "@admin"];
-  nix.settings.substituters = [
-    # "https://attic.services.hub.techcyte.com/cache"
-    "https://cache.nixos.org"
-    "https://cache.lix.systems"
-    "https://nix-community.cachix.org"
-  ];
-  nix.settings.trusted-public-keys = [
-    "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
-    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-    "cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="
-    "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-  ];
-  nix.settings.netrc-file = "/Users/${username}/.netrc";
+  nix.settings.trusted-users = ["root" "@admin"];
+  # nix.settings.substituters = ["https://attic.services.hub.techcyte.com/cache"];
+  nix.settings.netrc-file = "/Users/hawken.rives/.netrc"; # string, not path, to avoid copying into the nix store
+  nix.settings.extra-sandbox-paths = ["/Users/hawken.rives/.netrc"];
 
   # https://nixcademy.com/posts/macos-linux-builder/
   # but then... https://github.com/cpick/nix-rosetta-builder
@@ -57,30 +38,7 @@ in {
 
   networking.hostName = hostName;
   networking.computerName = hostName;
-
-  system.primaryUser = username;
-
-  system.defaults = {
-    dock.autohide = true;
-    dock.mru-spaces = false;
-    dock.mouse-over-hilite-stack = true;
-    dock.showhidden = true;
-    dock.slow-motion-allowed = false;
-
-    smb.NetBIOSName = hostName;
-    # screencapture.location = "~/Pictures/screenshots";
-    screencapture.disable-shadow = true;
-
-    finder.ShowPathbar = true;
-    finder.ShowStatusBar = true;
-
-    menuExtraClock.Show24Hour = true;
-    menuExtraClock.ShowAMPM = false;
-
-    # Use scroll gesture with the Ctrl (^) modifier key to zoom. The default is false.
-    # universalaccess.closeViewScrollWheelToggle = true;
-    # universalaccess.reduceMotion = true;
-  };
+  system.defaults.smb.NetBIOSName = hostName;
 
   system.keyboard.enableKeyMapping = true;
   system.keyboard.remapCapsLockToEscape = true;
@@ -125,7 +83,6 @@ in {
       "mullvad-vpn"
       "nova"
       "obs"
-      "obs-backgroundremoval"
       "plexamp"
       "sublime-merge"
       "sublime-text"
@@ -155,4 +112,8 @@ in {
       "Xcode" = 497799835;
     };
   };
+
+  # Used for backwards compatibility, please read the changelog before changing.
+  # $ darwin-rebuild changelog
+  system.stateVersion = 4;
 }

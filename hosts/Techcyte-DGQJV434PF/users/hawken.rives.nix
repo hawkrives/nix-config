@@ -14,8 +14,6 @@ in {
     flake.homeModules.sqlite-shared
   ];
 
-  fonts.packages = [pkgs.font-blex-mono-nerd-font];
-
   home.packages =
     [
       pkgs.awscli2
