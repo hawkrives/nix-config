@@ -1,16 +1,14 @@
 {
   pkgs,
-  pkgsUnstable,
-  flake,
+  perSystem,
   ...
-}: {
-  imports = [
-    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
-  ];
-
+}: let
+  p = perSystem.nixpkgs-unstable;
+in {
   # config settings for both NixOS- and Darwin-based systems
-
   nixpkgs.config.allowUnfree = true;
+
+  imports = [];
 
   # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
   # you need both this and the home-manager equivalent.
@@ -21,21 +19,25 @@
   # nixpkgs.config.allowUnfree = true;
 
   # Install fonts
-  fonts.packages = [pkgsUnstable.nerd-fonts.blex-mono];
+  fonts = {
+    packages = [p.nerd-fonts.blex-mono];
+    # enableDefaultPackages = true;
+  };
 
   # you can check if host is darwin by using pkgs.stdenv.isDarwin
   environment.systemPackages =
     [
       pkgs.btop
-      pkgsUnstable.bottom
+      p.bottom
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
-      pkgsUnstable.ghostty.terminfo
+      p.ghostty.terminfo
     ])
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
-      # install this only for isDarwin because we use programs.nh.enable on linux
-      pkgsUnstable.nh
+      pkgs.xbar
+      # install here because we use programs.nh.enable on linux
+      p.nh
     ]);
 
   nixpkgs.overlays = [

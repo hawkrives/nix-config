@@ -1,7 +1,6 @@
 {
   pkgs,
   pkgsUnstable,
-  flake,
   ...
 }: let
   nfsOptions = [
@@ -15,10 +14,6 @@
   ];
   readOnlyNfs = nfsOptions ++ ["ro"];
 in {
-  imports = [
-    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
-  ];
-
   services.plex = {
     enable = true;
     package = pkgsUnstable.plex;

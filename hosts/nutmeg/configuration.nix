@@ -5,6 +5,8 @@
   ...
 }: {
   imports = [
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument to other modules
+
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos

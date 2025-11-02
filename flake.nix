@@ -40,9 +40,26 @@
   };
 
   # Load the blueprint
-  outputs = inputs:
-    inputs.blueprint {
-      inherit inputs;
-      nixpkgs.config.allowUnfree = true;
-    };
+  outputs = inputs: {
+    inherit
+      (inputs.blueprint {
+        inherit inputs;
+        nixpkgs.config.allowUnfree = true;
+      })
+      checks
+      devShells
+      formatter
+      lib
+      templates
+      darwinConfigurations
+      nixosConfigurations
+      modules
+      homeModules
+      darwinModules
+      nixosModules
+      packages
+      ;
+
+    customOutputs = {};
+  };
 }

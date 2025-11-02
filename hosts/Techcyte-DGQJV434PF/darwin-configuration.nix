@@ -3,10 +3,11 @@
   pkgs,
   pkgsUnstable,
   hostName,
+  flake,
   ...
 }: {
   imports = [
-    inputs.self.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
 
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
@@ -16,8 +17,14 @@
   nixpkgs.hostPlatform = "aarch64-darwin";
 
   system.primaryUser = "hawken.rives";
-  users.users."hawken.rives".home = /Users/hawken.rives;
-  users.users."hawken.rives".shell = pkgs.fish;
+  users.users."hawken.rives" = {
+    home = /Users/hawken.rives;
+    shell = pkgs.fish;
+    packages = [
+      pkgs.awscli2
+      pkgsUnstable.copilot-cli
+    ];
+  };
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = ["root" "@admin"];
