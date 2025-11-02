@@ -1,6 +1,6 @@
 {
   pkgs,
-  pkgsUnstable,
+  perSystem,
   ...
 }: let
   nfsOptions = [
@@ -16,7 +16,7 @@
 in {
   services.plex = {
     enable = true;
-    package = pkgsUnstable.plex;
+    package = perSystem.nixpkgs-unstable.plex;
     group = "servarr";
     openFirewall = true;
 

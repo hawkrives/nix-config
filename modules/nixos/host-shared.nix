@@ -6,7 +6,6 @@
   p = perSystem.nixpkgs-unstable;
 in {
   # config settings for both NixOS- and Darwin-based systems
-  nixpkgs.config.allowUnfree = true;
 
   imports = [];
 
@@ -16,7 +15,7 @@ in {
   programs.fish.enable = true;
 
   # Accept agreements for unfree software
-  # nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfree = true;
 
   # Install fonts
   fonts = {
@@ -35,7 +34,6 @@ in {
       p.ghostty.terminfo
     ])
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
-      pkgs.xbar
       # install here because we use programs.nh.enable on linux
       p.nh
     ]);

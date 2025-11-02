@@ -1,14 +1,11 @@
 {
   inputs,
   pkgs,
-  pkgsUnstable,
+  perSystem,
   hostName,
-  flake,
   ...
 }: {
   imports = [
-    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
-
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
     # inputs.nix-rosetta-builder.darwinModules.default
@@ -20,10 +17,6 @@
   users.users."hawken.rives" = {
     home = /Users/hawken.rives;
     shell = pkgs.fish;
-    packages = [
-      pkgs.awscli2
-      pkgsUnstable.copilot-cli
-    ];
   };
 
   # @admin is required for nix-builder
@@ -58,9 +51,9 @@
 
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
-    pkgsUnstable.attic-client
-    pkgsUnstable.nil # for nix lsp for vs code / zed
-    pkgsUnstable.devenv
+    perSystem.nixpkgs-unstable.attic-client
+    perSystem.nixpkgs-unstable.nil # for nix lsp for vs code / zed
+    perSystem.nixpkgs-unstable.devenv
   ];
 
   homebrew = {
