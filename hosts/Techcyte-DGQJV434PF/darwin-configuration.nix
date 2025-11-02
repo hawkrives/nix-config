@@ -1,6 +1,5 @@
 {
-  # inputs,
-  flake,
+  inputs,
   pkgs,
   hostName,
   perSystem,
@@ -9,8 +8,8 @@
   username = "hawken.rives";
 in {
   imports = [
-    flake.nixosModules.host-shared
-    flake.darwinModules.host-shared
+    inputs.self.nixosModules.host-shared
+    inputs.self.darwinModules.host-shared
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
@@ -27,11 +26,7 @@ in {
   };
 
   # @admin is required for nix-builder
-  nix.settings.trusted-users = [
-    "root"
-    username
-    "@admin"
-  ];
+  nix.settings.trusted-users = ["root" username "@admin"];
   nix.settings.substituters = [
     # "https://attic.services.hub.techcyte.com/cache"
     "https://cache.nixos.org"
@@ -96,8 +91,8 @@ in {
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
     perSystem.nixpkgs-unstable.attic-client
-    perSystem.nixpkgs-unstable.nil # for nix lsp for vs code
-    pkgs.devenv
+    perSystem.nixpkgs-unstable.nil # for nix lsp for vs code / zed
+    perSystem.nixpkgs-unstable.devenv
   ];
 
   homebrew = {
