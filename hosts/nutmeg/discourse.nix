@@ -1,22 +1,24 @@
 {...}: {
-  networking.firewall.allowedTCPPorts = [80];
+  # networking.firewall.allowedTCPPorts = [80];
   services.discourse = {
     enable = true;
-    hostname = "nutmeg.local";
+    # hostname = "nutmeg.local";
+    hostname = "techcyte-chat.localhost";
     enableACME = false;
     backendSettings = {
       max_reqs_per_ip_per_minute = 30000;
       max_reqs_per_ip_per_10_seconds = 6000;
       max_asset_reqs_per_ip_per_10_seconds = 25000;
 
-      ### rate limits apply to all sites
+      # rate limits apply to all sites
       max_user_api_reqs_per_minute = 2000;
       max_user_api_reqs_per_day = 288000;
       max_admin_api_reqs_per_key_per_minute = 60000;
       # max_reqs_per_ip_per_minute = 200;
       # max_reqs_per_ip_per_10_seconds = 50;
-      # applies to asset type routes (avatars/css and so on)
+      # # applies to asset type routes (avatars/css and so on)
       # max_asset_reqs_per_ip_per_10_seconds = 200;
+
       # global rate limiter will simply warn if the limit is exceeded, can be warn+block, warn, block or none
       max_reqs_per_ip_mode = "warn";
       # bypass rate limiting any IP resolved as a private IP
