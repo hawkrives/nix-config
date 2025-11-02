@@ -32,18 +32,17 @@
   services.mbpfan.enable = true; # enable Mac fan control daemon
   systemd.coredump.enable = false; # disable core dumps
 
-  users.users.natsume = {
+  users.users."natsume" = {
     isNormalUser = true;
-    description = "Natsume";
     extraGroups = ["wheel"];
     shell = pkgs.fish;
   };
 
-  programs.nh.flake = "/home/natsume/nix-config#nutmeg";
-  programs.nh.clean = {
-    enable = true;
-    dates = "weekly";
-    extraArgs = "--keep-since 4d --keep 3";
+  programs.nh = {
+    flake = "/home/natsume/nix-config#${hostName}";
+    clean.enable = true;
+    clean.dates = "weekly";
+    clean.extraArgs = "--keep-since 4d --keep 3";
   };
 
   # This value determines the NixOS release from which the default
