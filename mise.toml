@@ -1,8 +1,8 @@
 [tasks.current-host]
 run = 'mise run "$(hostname)"'
 
-[tasks.update]
-run = "nix flake update"
+[tasks."update-and-commit"]
+run = "nix flake update --commit-lock-file"
 
 # [tasks.Techcyte-XMG7K2VM6F]
 # run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
