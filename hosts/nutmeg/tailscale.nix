@@ -20,6 +20,7 @@
       "svc:peertube".endpoints."tcp:443" = "http://localhost:23357";
       "svc:paperless".endpoints."tcp:443" = "http://localhost:28981";
       "svc:techcyte-chat".endpoints."tcp:443" = "http://techcyte-chat.localhost:80";
+      "svc:homeassistant".endpoints."tcp:443" = "http://localhost:8123";
     };
   };
 
