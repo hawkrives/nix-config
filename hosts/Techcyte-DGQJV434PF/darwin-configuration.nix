@@ -3,11 +3,10 @@
   pkgs,
   pkgsUnstable,
   hostName,
-  flake,
   ...
 }: {
   imports = [
-    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+    inputs.self.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
 
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared

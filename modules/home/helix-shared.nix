@@ -1,34 +1,36 @@
 {
-  pkgs,
-  perSystem,
+  pkgsUnstable,
+  flake,
   ...
-}: let
-  p = perSystem.nixpkgs-unstable;
-in {
+}: {
+  imports = [
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+  ];
+
   programs.helix = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.helix;
+    package = pkgsUnstable.helix;
 
     extraPackages =
       [
         # language servers for helix
-        p.bash-language-server
-        p.docker-language-server # official from Docker, Inc
-        p.dockerfile-language-server # for helix
-        p.docker-compose-language-service
-        p.typescript-language-server
-        p.yaml-language-server
-        p.gopls
-        p.terraform-ls
-        p.vscode-json-languageserver
-        p.vscode-css-languageserver
-        p.nil
-        p.ty
-        p.ruff
-        p.taplo # for toml
+        pkgsUnstable.bash-language-server
+        pkgsUnstable.docker-language-server # official from Docker, Inc
+        pkgsUnstable.dockerfile-language-server # for helix
+        pkgsUnstable.docker-compose-language-service
+        pkgsUnstable.typescript-language-server
+        pkgsUnstable.yaml-language-server
+        pkgsUnstable.gopls
+        pkgsUnstable.terraform-ls
+        pkgsUnstable.vscode-json-languageserver
+        pkgsUnstable.vscode-css-languageserver
+        pkgsUnstable.nil
+        pkgsUnstable.ty
+        pkgsUnstable.ruff
+        pkgsUnstable.taplo # for toml
       ]
-      ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
-        p.systemd-lsp
+      ++ (pkgsUnstable.lib.optionals pkgsUnstable.stdenv.isLinux [
+        pkgsUnstable.systemd-lsp
       ]);
 
     settings = {

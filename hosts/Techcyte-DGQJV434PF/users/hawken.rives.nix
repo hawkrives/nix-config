@@ -1,12 +1,12 @@
 {
   flake,
   pkgs,
-  perSystem,
+  pkgsUnstable,
   ...
-}: let
-  p = perSystem.nixpkgs-unstable;
-in {
+}: {
   imports = [
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+
     flake.homeModules.home-shared
     flake.homeModules.git-shared
     flake.homeModules.jj-shared
@@ -17,27 +17,27 @@ in {
   home.packages =
     [
       pkgs.awscli2
-      p.copilot-cli
+      pkgsUnstable.copilot-cli
     ]
     ++ # language servers for zed
     [
-      p.bash-language-server
-      p.docker-compose-language-service
-      p.dockerfile-language-server
-      p.nil
-      p.nixd
-      p.ruff
-      p.sql-formatter
-      p.taplo # for toml
-      p.terraform-ls
-      p.ty
-      p.vscode-css-languageserver
-      p.vscode-json-languageserver
-      p.vtsls
-      p.yaml-language-server
+      pkgsUnstable.bash-language-server
+      pkgsUnstable.docker-compose-language-service
+      pkgsUnstable.dockerfile-language-server
+      pkgsUnstable.nil
+      pkgsUnstable.nixd
+      pkgsUnstable.ruff
+      pkgsUnstable.sql-formatter
+      pkgsUnstable.taplo # for toml
+      pkgsUnstable.terraform-ls
+      pkgsUnstable.ty
+      pkgsUnstable.vscode-css-languageserver
+      pkgsUnstable.vscode-json-languageserver
+      pkgsUnstable.vtsls
+      pkgsUnstable.yaml-language-server
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
-      p.systemd-lsp
+      pkgsUnstable.systemd-lsp
     ]);
 
   programs.git = {

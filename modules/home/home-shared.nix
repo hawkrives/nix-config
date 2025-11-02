@@ -1,9 +1,14 @@
 {
   pkgs,
+  pkgsUnstable,
   osConfig,
-  perSystem,
+  flake,
   ...
 }: {
+  imports = [
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+  ];
+
   programs.fish = {
     enable = true;
 
@@ -204,28 +209,28 @@
 
   programs.jq = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.jq;
+    package = pkgsUnstable.jq;
   };
 
   programs.lazydocker = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.lazydocker;
+    package = pkgsUnstable.lazydocker;
   };
 
   programs.lazygit = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.lazygit;
+    package = pkgsUnstable.lazygit;
   };
 
   programs.mise = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.mise;
+    package = pkgsUnstable.mise;
     settings.experimental = true;
   };
 
   programs.neovim = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    package = pkgsUnstable.neovim-unwrapped;
     withRuby = false; # don't need any ruby neovim plugins
     withNodeJs = false;
     withPython3 = false;
@@ -235,12 +240,12 @@
 
   programs.uv = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.uv;
+    package = pkgsUnstable.uv;
   };
 
   # programs.visidata = {
   #   enable = true; # installs X and Wayland on Linux thanks to Xclip...
-  #   package = perSystem.nixpkgs-unstable.visidata.override {
+  #   package = pkgsUnstable.visidata.override {
   #     withXclip = false;
   #     withPcap = false;
   #     matplotlib = matplotlibNoX;
@@ -254,7 +259,7 @@
 
   programs.yt-dlp = {
     enable = true; # directory viewer
-    package = perSystem.nixpkgs-unstable.yt-dlp-light; # to get ffmpeg-headless
+    package = pkgsUnstable.yt-dlp-light; # to get ffmpeg-headless
   };
 
   # TODO: use programs.ssh to control the ssh config file
@@ -281,10 +286,10 @@
       pkgs.htmlq
       pkgs.hyperfine
       pkgs.imagemagick
-      perSystem.nixpkgs-unstable.jjui
-      perSystem.nixpkgs-unstable.jj-fzf
+      pkgsUnstable.jjui
+      pkgsUnstable.jj-fzf
       pkgs.jless
-      perSystem.nixpkgs-unstable.lnav
+      pkgsUnstable.lnav
       pkgs.lsof
       # pkgs.mariadb
       pkgs.nix-output-monitor
@@ -295,7 +300,7 @@
       pkgs.readline
       pkgs.rlwrap
       pkgs.rustup
-      perSystem.nixpkgs-unstable.shellcheck
+      pkgsUnstable.shellcheck
       pkgs.shfmt
       pkgs.soupault
       pkgs.sqlite-interactive
@@ -315,7 +320,7 @@
     ]
     # you can access the host configuration using osConfig.
     ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [pkgs.skhd])
-    ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [perSystem.nixpkgs-unstable.buildah]);
+    ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [pkgsUnstable.buildah]);
 
   targets =
     if pkgs.stdenv.isDarwin
