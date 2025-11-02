@@ -108,7 +108,6 @@ in {
 
     caskArgs.appdir = "~/Applications";
     casks = [
-      "font-blex-mono-nerd-font"
       "alfred"
       "anytype"
       "bbedit"
