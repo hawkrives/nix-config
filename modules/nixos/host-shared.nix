@@ -10,6 +10,8 @@
 
   # config settings for both NixOS- and Darwin-based systems
 
+  nixpkgs.config.allowUnfree = true;
+
   # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
   # you need both this and the home-manager equivalent.
   # plus, I suppose it's nice to be able to drop into fish as root or w/e.
