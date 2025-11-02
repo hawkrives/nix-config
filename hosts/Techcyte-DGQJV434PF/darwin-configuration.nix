@@ -17,6 +17,7 @@
 
   system.primaryUser = "hawken.rives";
   users.users."hawken.rives".home = /Users/hawken.rives;
+  users.users."hawken.rives".shell = pkgs.fish;
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = ["root" "@admin"];

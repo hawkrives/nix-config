@@ -1,6 +1,7 @@
 {
   flake,
   hostName,
+  pkgs,
   ...
 }: {
   imports = [
@@ -35,7 +36,7 @@
     isNormalUser = true;
     description = "Natsume";
     extraGroups = ["wheel"];
-    # shell = pkgs.fish;
+    shell = pkgs.fish;
   };
 
   programs.nh.flake = "/home/natsume/nix-config#nutmeg";
