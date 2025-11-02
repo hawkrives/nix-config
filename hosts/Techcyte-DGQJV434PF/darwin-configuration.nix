@@ -1,11 +1,14 @@
 {
   inputs,
   pkgs,
+  pkgsUnstable,
   hostName,
-  perSystem,
+  flake,
   ...
 }: {
   imports = [
+    flake.modules.common.nixpkgs-unstable # provides the pkgsUnstable argument
+
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
     # inputs.nix-rosetta-builder.darwinModules.default
@@ -48,9 +51,9 @@
 
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
-    perSystem.nixpkgs-unstable.attic-client
-    perSystem.nixpkgs-unstable.nil # for nix lsp for vs code / zed
-    perSystem.nixpkgs-unstable.devenv
+    pkgsUnstable.attic-client
+    pkgsUnstable.nil # for nix lsp for vs code / zed
+    pkgsUnstable.devenv
   ];
 
   homebrew = {

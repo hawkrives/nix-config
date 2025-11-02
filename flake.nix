@@ -53,6 +53,7 @@
       templates
       darwinConfigurations
       nixosConfigurations
+      modules
       homeModules
       darwinModules
       nixosModules

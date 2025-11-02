@@ -1,4 +1,8 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  pkgsUnstable,
+  ...
+}: let
   nfsOptions = [
     "nfsvers=4.1"
     "noatime" # we do not care about tracking the access time
@@ -12,7 +16,7 @@
 in {
   services.plex = {
     enable = true;
-    # package = pkgs.plex;
+    package = pkgsUnstable.plex;
     group = "servarr";
     openFirewall = true;
 

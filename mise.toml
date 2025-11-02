@@ -1,20 +1,19 @@
-[tasks.current-host]
-run = 'mise run "$(hostname)"'
 
 [tasks."update-and-commit"]
 run = "nix flake update --commit-lock-file"
 
-# [tasks.Techcyte-XMG7K2VM6F]
-# run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
+[tasks."switch"]
+run = 'mise run "$(hostname)"'
+env.ACTION = "switch"
 
-[tasks.Techcyte-DGQJV434PF]
-# run = 'darwin-rebuild switch --flake ".#$MISE_TASK_NAME"'
-run = 'nh darwin switch . --hostname "$MISE_TASK_NAME"'
+[tasks."ask"]
+run = 'mise run switch -- --ask'
 
-[tasks.potato-bunny]
-# run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
-run = 'nh os switch . --hostname "$MISE_TASK_NAME"'
+[tasks."Techcyte-DGQJV434PF"]
+run = 'nh darwin ${ACTION} --hostname "$MISE_TASK_NAME" .'
 
-[tasks.nutmeg]
-# run = 'nixos-rebuild switch --flake ".#$MISE_TASK_NAME"'
-run = 'nh os switch . --hostname "$MISE_TASK_NAME"'
+[tasks."potato-bunny"]
+run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
+
+[tasks."nutmeg"]
+run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
