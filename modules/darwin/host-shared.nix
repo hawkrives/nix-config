@@ -5,6 +5,10 @@
   # Enable sudo authentication with Touch ID
   security.pam.services.sudo_local.touchIdAuth = true;
 
+  # on darwin, please give me an updated version of bash because I do
+  # still need bash for things. nixos doesn't use this option anymore.
+  programs.bash.enable = true;
+
   # Set Git commit hash for darwin-version.
   system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
 }

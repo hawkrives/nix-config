@@ -14,10 +14,6 @@ in {
   # plus, I suppose it's nice to be able to drop into fish as root or w/e.
   programs.fish.enable = true;
 
-  # especially on mac, please give me an updated version of bash because I do
-  # still need bash for things
-  programs.bash.enable = true;
-
   # Accept agreements for unfree software
   # nixpkgs.config.allowUnfree = true;
 

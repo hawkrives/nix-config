@@ -4,7 +4,6 @@ in {
   # [networking]
   # experimental; use systemd-networkd to manage interfaces
   networking.useNetworkd = true;
-  systemd.network.enable = false;
 
   # [booting]
   boot.loader.systemd-boot.enable = true;
