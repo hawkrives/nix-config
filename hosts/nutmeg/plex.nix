@@ -1,8 +1,4 @@
-{
-  pkgs,
-  perSystem,
-  ...
-}: let
+{pkgs, ...}: let
   nfsOptions = [
     "nfsvers=4.1"
     "noatime" # we do not care about tracking the access time
@@ -16,7 +12,8 @@
 in {
   services.plex = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.plex;
+    # TODO: figure out how to allow installing unfree packages from nixpkgs-unstable
+    # package = perSystem.nixpkgs-unstable.plex;
     group = "servarr";
     openFirewall = true;
 
