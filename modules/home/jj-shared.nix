@@ -47,6 +47,8 @@
       ll = ["log" "-T" "log_with_files"];
       lc = ["log" "-T" "log_compact"];
       tug = ["bookmark" "move" "--from" "heads(::@ & bookmarks())" "--to" "closest_pushable(@)"];
+      current-bookmark = ["bookmark" "list" "--revisions" "closest_pushable(@)" "--template" "name"];
+      glab-mr = ["util" "exec" "--" "sh" "-c" "glab mr create --assignee hawken.rives --squash-before-merge --draft --fill --source-branch $(jj current-bookmark)"];
       # TODO: not yet working
       mr = [
         "util"
