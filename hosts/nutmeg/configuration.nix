@@ -22,7 +22,7 @@
     ./syncthing.nix
     ./paperless.nix
     ./nix-serve.nix
-    ./peertube.nix
+    # ./peertube.nix
     ./discourse.nix
   ];
 

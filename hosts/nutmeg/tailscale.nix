@@ -60,23 +60,23 @@ in {
   networking.firewall.trustedInterfaces = [config.services.tailscale.interfaceName];
 
   # generate tailscale-serve config file
-  environment.etc.${tailscaleServeConfigFilename}.text = builtins.toJSON tailscaleServeConfig;
+  # environment.etc.${tailscaleServeConfigFilename}.text = builtins.toJSON tailscaleServeConfig;
 
   # automatically apply tailscale-serve config whenever it changes
-  systemd.services.tailscale-serve-apply = {
-    description = "Apply Tailscale serve configuration";
+  # systemd.services.tailscale-serve-apply = {
+  #   description = "Apply Tailscale serve configuration";
 
-    # This service is a one-shot script
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${updateScript}/bin/tailscale-serve-update";
-    };
+  #   # This service is a one-shot script
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = "${updateScript}/bin/tailscale-serve-update";
+  #   };
 
-    # Run after tailscale is up and the network is online
-    after = ["tailscale.service" "network-online.target"];
-    wants = ["network-online.target"];
+  #   # Run after tailscale is up and the network is online
+  #   after = ["tailscale.service" "network-online.target"];
+  #   wants = ["network-online.target"];
 
-    # Run this service on boot
-    wantedBy = ["multi-user.target"];
-  };
+  #   # Run this service on boot
+  #   wantedBy = ["multi-user.target"];
+  # };
 }
