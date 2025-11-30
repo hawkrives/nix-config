@@ -3,8 +3,9 @@
 in {
   # [networking]
   # experimental; use systemd-networkd to manage interfaces
-  # networking.useNetworkd = true;
-  # services.resolved.enable = false; # systemd-resolved listens on :53, conflicting with adguard-home
+  networking.useNetworkd = true;
+  services.resolved.enable = false; # systemd-resolved listens on :53, conflicting with adguard-home
+  networking.resolvconf.enable = false;
 
   # [booting]
   boot.loader.systemd-boot.enable = true;
