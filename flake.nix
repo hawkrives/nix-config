@@ -2,7 +2,7 @@
   description = "NixOS (and nix-darwin) configuration for Hawken";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
 
     hardware.url = "github:NixOS/nixos-hardware";
@@ -15,7 +15,7 @@
     };
 
     nix-darwin = {
-      url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.05";
+      url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -25,7 +25,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager?ref=release-25.05";
+      url = "github:nix-community/home-manager?ref=release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
