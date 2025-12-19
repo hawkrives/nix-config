@@ -40,9 +40,9 @@ in {
       p.systemd-lsp
     ]);
 
-  programs.git = {
-    userName = "Hawken Rives";
-    userEmail = "hawken.rives@techcyte.com";
+  programs.git.settings.user = {
+    name = "Hawken Rives";
+    email = "hawken.rives@techcyte.com";
   };
 
   home.sessionVariables = {
