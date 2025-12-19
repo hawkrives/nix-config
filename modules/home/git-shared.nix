@@ -4,8 +4,6 @@
 
   programs.git.maintenance.enable = true;
 
-  programs.mergiraf.enable = true;
-
   programs.git = {
     userName = pkgs.lib.mkDefault "Hawken Rives";
     userEmail = pkgs.lib.mkDefault "hawkrives@fastmail.fm";
