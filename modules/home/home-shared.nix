@@ -270,7 +270,7 @@
       pkgs.diffoci
       pkgs.dive
       pkgs.dogdns
-      pkgs.du-dust
+      pkgs.dust
       pkgs.entr
       pkgs.ffmpeg-headless
       pkgs.freeze # code screenshot
