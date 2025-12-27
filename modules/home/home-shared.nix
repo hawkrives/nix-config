@@ -204,10 +204,7 @@
 
   programs.jq.enable = true;
 
-  programs.lazydocker = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.lazydocker;
-  };
+  programs.lazydocker.enable = true;
 
   programs.lazygit = {
     enable = true;
