@@ -206,10 +206,7 @@
 
   programs.lazydocker.enable = true;
 
-  programs.lazygit = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.lazygit;
-  };
+  programs.lazygit.enable = true;
 
   programs.mise = {
     enable = true;
