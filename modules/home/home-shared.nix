@@ -224,10 +224,7 @@
     viAlias = true;
   };
 
-  programs.uv = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.uv;
-  };
+  programs.uv.enable = true;
 
   # programs.visidata = {
   #   enable = true; # installs X and Wayland on Linux thanks to Xclip...
