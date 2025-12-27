@@ -1,34 +1,27 @@
-{
-  pkgs,
-  perSystem,
-  ...
-}: let
-  p = perSystem.nixpkgs-unstable;
-in {
+{pkgs, ...}: {
   programs.helix = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.helix;
 
-    extraPackages =
+    extraPackages = with pkgs;
       [
         # language servers for helix
-        p.bash-language-server
-        p.docker-language-server # official from Docker, Inc
-        p.dockerfile-language-server # for helix
-        p.docker-compose-language-service
-        p.typescript-language-server
-        p.yaml-language-server
-        p.gopls
-        p.terraform-ls
-        p.vscode-json-languageserver
-        p.vscode-css-languageserver
-        p.nil
-        p.ty
-        p.ruff
-        p.taplo # for toml
+        bash-language-server
+        docker-language-server # official from Docker, Inc
+        dockerfile-language-server # for helix
+        docker-compose-language-service
+        typescript-language-server
+        yaml-language-server
+        gopls
+        terraform-ls
+        vscode-json-languageserver
+        vscode-css-languageserver
+        nil
+        ty
+        ruff
+        taplo # for toml
       ]
       ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
-        p.systemd-lsp
+        systemd-lsp
       ]);
 
     settings = {
