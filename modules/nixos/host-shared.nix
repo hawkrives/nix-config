@@ -19,7 +19,7 @@ in {
 
   # Install fonts
   fonts = {
-    packages = [p.nerd-fonts.blex-mono];
+    packages = [pkgs.nerd-fonts.blex-mono];
     # enableDefaultPackages = true;
   };
 
