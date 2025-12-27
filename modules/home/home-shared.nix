@@ -202,10 +202,7 @@
     zoxide.enable = true;
   };
 
-  programs.jq = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.jq;
-  };
+  programs.jq.enable = true;
 
   programs.lazydocker = {
     enable = true;
