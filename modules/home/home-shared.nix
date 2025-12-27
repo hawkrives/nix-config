@@ -271,9 +271,9 @@
       pkgs.hyperfine
       pkgs.imagemagick
       perSystem.nixpkgs-unstable.jjui
-      perSystem.nixpkgs-unstable.jj-fzf
+      pkgs.jj-fzf
       pkgs.jless
-      perSystem.nixpkgs-unstable.lnav
+      pkgs.lnav
       pkgs.lsof
       # pkgs.mariadb
       pkgs.nix-output-monitor
@@ -284,7 +284,7 @@
       pkgs.readline
       pkgs.rlwrap
       pkgs.rustup
-      perSystem.nixpkgs-unstable.shellcheck
+      pkgs.shellcheck
       pkgs.shfmt
       pkgs.soupault
       pkgs.sqlite-interactive
