@@ -3,7 +3,7 @@
 
   programs.neovim = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    package = pkgs.neovim-unwrapped;
     withRuby = false;
     withNodeJs = false;
     withPython3 = false;

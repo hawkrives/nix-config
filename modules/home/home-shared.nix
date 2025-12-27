@@ -225,7 +225,7 @@
 
   programs.neovim = {
     enable = true;
-    package = perSystem.nixpkgs-unstable.neovim-unwrapped;
+    package = pkgs.neovim-unwrapped;
     withRuby = false; # don't need any ruby neovim plugins
     withNodeJs = false;
     withPython3 = false;
