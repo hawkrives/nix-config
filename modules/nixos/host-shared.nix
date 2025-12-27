@@ -27,11 +27,11 @@ in {
   environment.systemPackages =
     [
       pkgs.btop
-      p.bottom
+      pkgs.bottom
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
-      p.ghostty.terminfo
+      pkgs.ghostty.terminfo
     ])
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
       # install here because we use programs.nh.enable on linux
