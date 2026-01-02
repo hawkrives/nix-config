@@ -9,7 +9,8 @@ in {
   services.adguardhome = {
     enable = true;
     mutableSettings = true;
+    port = port;
+    # settings.http.address = "0.0.0.0:${toString port}";
     settings.dns.bind_hosts = ["0.0.0.0"];
-    settings.dns.bind_port = port;
   };
 }
