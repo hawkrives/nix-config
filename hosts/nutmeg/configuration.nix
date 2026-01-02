@@ -9,6 +9,8 @@
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
     flake.nixosModules.veilid-shared
+    # flake.nixosModules.pocket-id
+    # flake.nixosModules.pomerium
 
     # configuration
     ./hardware.nix
