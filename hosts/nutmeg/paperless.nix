@@ -1,7 +1,8 @@
-{...}: {
+{perSystem, ...}: {
   environment.etc."paperless-admin-pass".text = "admin";
   services.paperless = {
     enable = true;
+    package = perSystem.nixpkgs-unstable.paperless-ngx;
     consumptionDirIsPublic = true;
     passwordFile = "/etc/paperless-admin-pass";
 
