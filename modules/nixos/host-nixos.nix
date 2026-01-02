@@ -1,4 +1,4 @@
-{perSystem, ...}: {
+{perSystem, pkgs, ...}: {
   # config settings only applicable to NixOS-based systems, not Darwin
 
   programs.neovim = {
