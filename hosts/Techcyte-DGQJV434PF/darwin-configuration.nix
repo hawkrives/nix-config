@@ -54,6 +54,9 @@
     pkgs.attic-client
     pkgs.nil # for nix lsp for vs code / zed
     perSystem.nixpkgs-unstable.devenv
+    # macos apps
+    perSystem.nixpkgs-unstable.jetbrains.datagrip
+    perSystem.nixpkgs-unstable.jetbrains.goland
   ];
 
   homebrew = {
@@ -64,7 +67,6 @@
       cleanup = "zap";
     };
 
-    # container-diff has been replaced with diffoci
     brews = [];
 
     caskArgs.appdir = "~/Applications";
@@ -79,13 +81,13 @@
       "gitup-app"
       "google-chrome"
       "handbrake-app"
-      "jetbrains-toolbox"
       "kaleidoscope"
       "keepingyouawake"
       "mimestream"
       "mullvad-vpn"
       "nova"
       "obs"
+      "orbstack"
       "plexamp"
       "sublime-merge"
       "sublime-text"

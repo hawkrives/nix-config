@@ -70,14 +70,12 @@ in {
     # support pulling things from lix and flakehub
     extra-substituters = [
       "https://cache.nixos.org"
-      "https://cache.lix.systems"
       "https://nix-community.cachix.org"
     ];
     extra-trusted-public-keys =
       [
         "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "cache.lix.systems:aBnZUw8zA7H35Cz2RyKFVs3H4PlGTLawyY5KRbvJR8o="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ]
       # plus my hosts
