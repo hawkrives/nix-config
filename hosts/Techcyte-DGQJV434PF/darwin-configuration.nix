@@ -55,8 +55,8 @@
     pkgs.nil # for nix lsp for vs code / zed
     perSystem.nixpkgs-unstable.devenv
     # macos apps
-    perSystem.nixpkgs-unstable.jetbrains.datagrip
-    perSystem.nixpkgs-unstable.jetbrains.goland
+    # perSystem.nixpkgs-unstable.jetbrains.datagrip
+    # perSystem.nixpkgs-unstable.jetbrains.goland
   ];
 
   homebrew = {
