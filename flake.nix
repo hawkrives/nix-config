@@ -14,7 +14,7 @@
     };
 
     nix-darwin = {
-      url = "github:nix-darwin/nix-darwin?ref=nix-darwin-25.11";
+      url = "github:nix-darwin/nix-darwin?ref=master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -24,7 +24,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager?ref=release-25.11";
+      url = "github:nix-community/home-manager?ref=master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
