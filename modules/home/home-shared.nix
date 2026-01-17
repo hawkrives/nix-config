@@ -217,7 +217,10 @@
 
     mise = {
       enable = true;
-      settings.experimental = true;
+      globalConfig = {
+        tools."pipx:batrachian-toad" = "0.5.34";
+        settings.experimental = true;
+      };
     };
   };
 
@@ -253,7 +256,7 @@
       pkgs.curl
       pkgs.diffoci
       pkgs.dive
-      pkgs.dogdns
+      pkgs.doggo # maintained fork of dogdns
       pkgs.dust
       pkgs.entr
       pkgs.ffmpeg-headless
@@ -266,11 +269,12 @@
       pkgs.hyperfine
       pkgs.imagemagick
       pkgs.jjui
-      pkgs.jj-fzf
+      # pkgs.jj-fzf
       pkgs.jless
+      pkgs.lazyjj
       pkgs.lnav
       pkgs.lsof
-      # pkgs.mariadb
+      pkgs.mariadb.client
       pkgs.nix-output-monitor
       pkgs.parallel
       pkgs.procs
@@ -283,16 +287,26 @@
       pkgs.shfmt
       pkgs.soupault
       pkgs.sqlite-interactive
+      pkgs.terraform
       pkgs.tokei
       pkgs.tree
       pkgs.trippy
       pkgs.unzip
       pkgs.watch
+      pkgs.watchexec
       pkgs.wget
       pkgs.xh
       pkgs.xz
       pkgs.yq-go
       pkgs.zstd
+
+      pkgs.gemini-cli
+      pkgs.copilot-cli
+      pkgs.codex
+      pkgs.claude-code
+
+      pkgs.nodejs-slim
+      pkgs.pnpm
 
       # TODO: move into separate flakes
       # pkgs.packwiz # for meloncraft-modpack
