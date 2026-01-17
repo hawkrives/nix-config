@@ -27,7 +27,7 @@ in {
   environment.systemPackages =
     [
       pkgs.btop
-      pkgs.bottom
+      # pkgs.bottom
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
