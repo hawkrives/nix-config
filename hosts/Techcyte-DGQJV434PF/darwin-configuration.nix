@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  perSystem,
   hostName,
   ...
 }: {
@@ -53,10 +52,10 @@
     pkgs.amazon-ecr-credential-helper
     pkgs.attic-client
     pkgs.nil # for nix lsp for vs code / zed
-    perSystem.nixpkgs-unstable.devenv
+    pkgs.devenv
     # macos apps
-    # perSystem.nixpkgs-unstable.jetbrains.datagrip
-    # perSystem.nixpkgs-unstable.jetbrains.goland
+    # pkgs.jetbrains.datagrip
+    # pkgs.jetbrains.goland
   ];
 
   homebrew = {

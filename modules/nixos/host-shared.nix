@@ -1,12 +1,5 @@
-{
-  pkgs,
-  perSystem,
-  ...
-}: let
-  p = perSystem.nixpkgs-unstable;
-in {
+{pkgs, ...}: {
   # config settings for both NixOS- and Darwin-based systems
-
   imports = [];
 
   # "to enable vendor fish completions provided by Nixpkgs," says the nix wiki,
@@ -27,7 +20,6 @@ in {
   environment.systemPackages =
     [
       pkgs.btop
-      # pkgs.bottom
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
@@ -35,7 +27,7 @@ in {
     ])
     ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
       # install here because we use programs.nh.enable on linux
-      p.nh
+      pkgs.nh
     ]);
 
   nixpkgs.overlays = [

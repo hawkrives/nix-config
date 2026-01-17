@@ -1,4 +1,4 @@
-{perSystem, pkgs, ...}: {
+{pkgs, ...}: {
   # config settings only applicable to NixOS-based systems, not Darwin
 
   programs.neovim = {
@@ -13,10 +13,7 @@
 
   # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
   # <https://schmiggolas.dev/posts/2024/nh/>
-  programs.nh = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.nh;
-  };
+  programs.nh.enable = true;
 
   # enables the "virtualisation.oci-containers.containers" namespace for running containers
   virtualisation.oci-containers.backend = "podman";

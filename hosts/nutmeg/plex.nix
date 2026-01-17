@@ -12,8 +12,6 @@
 in {
   services.plex = {
     enable = true;
-    # TODO: figure out how to allow installing unfree packages from nixpkgs-unstable
-    # package = perSystem.nixpkgs-unstable.plex;
     group = "servarr";
     openFirewall = true;
 

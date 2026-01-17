@@ -191,27 +191,34 @@
     fzf.enable = true;
     gh.enable = true;
     htop.enable = true;
+    lazydocker.enable = true;
+    lazygit.enable = true;
     less.enable = true;
+    jq.enable = true;
     nushell.enable = true;
     rclone.enable = true;
     readline.enable = true;
     ripgrep.enable = true;
     skim.enable = true;
     tmux.enable = true;
+    uv.enable = true;
     zellij.enable = true; # multiplexer
     zoxide.enable = true;
-  };
 
-  programs.jq.enable = true;
+    yt-dlp = {
+      enable = true;
+      package = pkgs.yt-dlp-light; # to get ffmpeg-headless
+    };
 
-  programs.lazydocker.enable = true;
+    yazi = {
+      enable = true; # directory viewer
+      package = pkgs.yazi-unwrapped; # disable a bunch of plugins
+    };
 
-  programs.lazygit.enable = true;
-
-  programs.mise = {
-    enable = true;
-    package = perSystem.nixpkgs-unstable.mise;
-    settings.experimental = true;
+    mise = {
+      enable = true;
+      settings.experimental = true;
+    };
   };
 
   programs.neovim = {
@@ -224,26 +231,14 @@
     viAlias = true;
   };
 
-  programs.uv.enable = true;
-
   # programs.visidata = {
   #   enable = true; # installs X and Wayland on Linux thanks to Xclip...
-  #   package = perSystem.nixpkgs-unstable.visidata.override {
+  #   package = pkgs.visidata.override {
   #     withXclip = false;
   #     withPcap = false;
   #     matplotlib = matplotlibNoX;
   #   };
   # };
-
-  programs.yazi = {
-    enable = true; # directory viewer
-    package = pkgs.yazi-unwrapped; # disable a bunch of plugins
-  };
-
-  programs.yt-dlp = {
-    enable = true; # directory viewer
-    package = perSystem.nixpkgs-unstable.yt-dlp-light; # to get ffmpeg-headless
-  };
 
   # TODO: use programs.ssh to control the ssh config file
 
@@ -270,7 +265,7 @@
       pkgs.htmlq
       pkgs.hyperfine
       pkgs.imagemagick
-      perSystem.nixpkgs-unstable.jjui
+      pkgs.jjui
       pkgs.jj-fzf
       pkgs.jless
       pkgs.lnav
@@ -300,7 +295,7 @@
       pkgs.zstd
 
       # TODO: move into separate flakes
-      pkgs.packwiz # for meloncraft-modpack
+      # pkgs.packwiz # for meloncraft-modpack
     ]
     # you can access the host configuration using osConfig.
     ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [pkgs.skhd])

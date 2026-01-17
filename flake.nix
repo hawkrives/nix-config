@@ -2,8 +2,7 @@
   description = "NixOS (and nix-darwin) configuration for Hawken";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-25.11";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
 
     hardware.url = "github:NixOS/nixos-hardware";
     systems.url = "github:nix-systems/default";

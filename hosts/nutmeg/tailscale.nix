@@ -1,11 +1,8 @@
 {
   config,
-  perSystem,
   pkgs,
   ...
 }: let
-  tailscalePackage = perSystem.nixpkgs-unstable.tailscale;
-
   tailscaleServeConfig = {
     version = "0.0.1"; # The "Service" configuration file format version. Must be "0.0.1".
     services = {
@@ -30,7 +27,7 @@
   # 2. Generate the "tailscale serve advertise" commands from the data
   advertiseCommands = pkgs.lib.strings.concatStringsSep "\n" (
     map
-    (serviceName: "${tailscalePackage}/bin/tailscale serve advertise ${serviceName}")
+    (serviceName: "${pkgs.tailscale}/bin/tailscale serve advertise ${serviceName}")
     (builtins.attrNames tailscaleServeConfig.services) # Gets ["svc:adguard", "svc:my-app", ...]
   );
 
@@ -40,7 +37,7 @@
     set -euo pipefail
 
     echo "Applying Tailscale serve config from ${tailscaleServeConfigPath}..."
-    ${tailscalePackage}/bin/tailscale serve set-config --all ${tailscaleServeConfigPath}
+    ${pkgs.tailscale}/bin/tailscale serve set-config --all ${tailscaleServeConfigPath}
 
     echo "Advertising services..."
     ${advertiseCommands}
@@ -50,7 +47,6 @@
 in {
   services.tailscale = {
     enable = true;
-    package = tailscalePackage;
     openFirewall = true; # allow the Tailscale UDP port through the firewall
     useRoutingFeatures = "both";
     permitCertUid = "nginx";
