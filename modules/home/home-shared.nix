@@ -207,7 +207,7 @@
 
     yt-dlp = {
       enable = true;
-      package = pkgs.yt-dlp-light; # to get ffmpeg-headless
+      # package = pkgs.yt-dlp-light; # to get ffmpeg-headless
     };
 
     yazi = {
