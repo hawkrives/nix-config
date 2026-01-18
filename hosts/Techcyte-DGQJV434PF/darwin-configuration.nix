@@ -74,7 +74,7 @@
       "anytype"
       "bbedit"
       "bike"
-      "docker-desktop"
+      # "docker-desktop"
       "firefox"
       "ghostty"
       "gitup-app"
