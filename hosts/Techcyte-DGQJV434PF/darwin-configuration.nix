@@ -75,6 +75,7 @@
       "bbedit"
       "bike"
       # "docker-desktop"
+      "expo-orbit"
       "firefox"
       "ghostty"
       "gitup-app"
