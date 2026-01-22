@@ -14,7 +14,6 @@
   home.packages =
     [
       pkgs.awscli2
-      pkgs.copilot-cli
       pkgs.podman
       pkgs.lima
     ]
