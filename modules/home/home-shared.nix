@@ -1,7 +1,6 @@
 {
   pkgs,
   osConfig,
-  perSystem,
   ...
 }: {
   programs.fish = {
