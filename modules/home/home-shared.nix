@@ -275,6 +275,7 @@
       pkgs.lsof
       pkgs.mariadb.client
       pkgs.nix-output-monitor
+      pkgs.oras
       pkgs.parallel
       pkgs.procs
       pkgs.pstree
@@ -284,6 +285,7 @@
       pkgs.rustup
       pkgs.shellcheck
       pkgs.shfmt
+      pkgs.skopeo
       pkgs.soupault
       pkgs.sqlite-interactive
       pkgs.terraform
