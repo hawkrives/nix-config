@@ -15,6 +15,8 @@
     [
       pkgs.awscli2
       pkgs.copilot-cli
+      pkgs.podman
+      pkgs.lima
     ]
     ++ # language servers for zed
     [
