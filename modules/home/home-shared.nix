@@ -302,7 +302,7 @@
       pkgs.zstd
 
       pkgs.gemini-cli
-      pkgs.copilot-cli
+      pkgs.github-copilot-cli
       pkgs.codex
       pkgs.claude-code
 

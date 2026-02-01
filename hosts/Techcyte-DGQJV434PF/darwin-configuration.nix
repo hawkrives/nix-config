@@ -53,6 +53,8 @@
     pkgs.attic-client
     pkgs.nil # for nix lsp for vs code / zed
     pkgs.devenv
+    pkgs.colima
+    pkgs.mas
     # macos apps
     # pkgs.jetbrains.datagrip
     # pkgs.jetbrains.goland
@@ -74,7 +76,7 @@
       "anytype"
       "bbedit"
       "bike"
-      # "docker-desktop"
+      "docker-desktop"
       "expo-orbit"
       "firefox"
       "ghostty"
@@ -87,7 +89,6 @@
       "mullvad-vpn"
       "nova"
       "obs"
-      "orbstack"
       "plexamp"
       "sublime-merge"
       "sublime-text"
@@ -100,7 +101,7 @@
 
     masApps = {
       # "Acorn 7" = 1547371478;
-      "AWS Extend Switch Roles" = 1592710340;
+      # "AWS Extend Switch Roles" = 1592710340;
       "iA Writer" = 775737590;
       "Keynote" = 409183694;
       "Muse" = 1501563902;
