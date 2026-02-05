@@ -28,12 +28,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # experimental; for managing the synology
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
