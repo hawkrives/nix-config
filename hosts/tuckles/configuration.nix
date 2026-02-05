@@ -1,6 +1,12 @@
 { flake, hostName, config, pkgs, ... }:
 
 {
+  imports = [
+    flake.nixosModules.host-shared
+    flake.nixosModules.host-server
+    flake.nixosModules.host-nixos
+  ];
+
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName;
   networking.useNetworkd = true;
@@ -34,10 +40,7 @@
     lolcat
   ];
 
-  programs.fish.enable = true;
-
   programs.nh = {
-    enable = true;
     # todo: flake = "path#${hostName}";
     clean = {
       enable = true;
@@ -47,7 +50,6 @@
   };
 
   services.openssh = {
-    enable = true;
     # require public key authentication for better security
     settings.PasswordAuthentication = false;
     settings.KbdInteractiveAuthentication = false;
