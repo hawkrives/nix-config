@@ -141,6 +141,7 @@
     "/.vscode/"
     ".mise.toml"
     ".serena/"
+    ".claude/*.local.json"
   ];
 
   programs.git.attributes = [
