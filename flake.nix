@@ -32,6 +32,8 @@
       # home management database
       url = "github:cpcloud/micasa?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.git-hooks.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.inputs.systems.follows = "systems";
     };
 
     # if we ever get an M-series server:
