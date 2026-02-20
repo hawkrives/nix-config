@@ -212,6 +212,7 @@
     yazi = {
       enable = true; # directory viewer
       package = pkgs.yazi-unwrapped; # disable a bunch of plugins
+      shellWrapperName = "y";
     };
 
     mise = {
