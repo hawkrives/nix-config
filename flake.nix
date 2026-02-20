@@ -28,6 +28,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    micasa = {
+      # home management database
+      url = "github:cpcloud/micasa?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };

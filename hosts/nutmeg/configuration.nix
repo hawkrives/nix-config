@@ -26,6 +26,7 @@
     ./nix-serve.nix
     # ./peertube.nix
     ./discourse.nix
+    ./micasa.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
