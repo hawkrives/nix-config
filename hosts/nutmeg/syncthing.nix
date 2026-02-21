@@ -17,5 +17,10 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [8384];
+  # techcyte user's home-manager syncthing instance (see users/techcyte.nix)
+  # 8385 = techcyte GUI, 22001 = techcyte sync protocol
+  networking.firewall = {
+    allowedTCPPorts = [8384 8385 22001];
+    allowedUDPPorts = [22001];
+  };
 }
