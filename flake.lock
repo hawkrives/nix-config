@@ -166,11 +166,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1771859371,
-        "narHash": "sha256-u193EuRyOCdBeoPjxjxAiwSIJyUNVOFRTvDBJACkDI4=",
+        "lastModified": 1771879991,
+        "narHash": "sha256-JErPvKwPalYYb0GeeDcKGb3PgJ+0n0JIA5KOYxA1fL4=",
         "owner": "cpcloud",
         "repo": "micasa",
-        "rev": "1334254db92f6aa7d34a6ef5745cb0d30826f08f",
+        "rev": "30b68b3b396344e0dbaa7cf517201967d11c8023",
         "type": "github"
       },
       "original": {
