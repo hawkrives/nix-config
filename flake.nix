@@ -7,6 +7,12 @@
     hardware.url = "github:NixOS/nixos-hardware";
     systems.url = "github:nix-systems/default";
 
+    nix-minecraft = {
+      url = "github:Infinidoge/nix-minecraft";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
+
     blueprint = {
       url = "github:numtide/blueprint";
       inputs.nixpkgs.follows = "nixpkgs";
