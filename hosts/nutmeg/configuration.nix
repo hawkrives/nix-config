@@ -2,8 +2,10 @@
   flake,
   hostName,
   pkgs,
+  inputs,
   ...
-}: {
+}:
+{
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
@@ -27,7 +29,12 @@
     # ./peertube.nix
     ./discourse.nix
     ./micasa.nix
+    ./minecraft.nix
+
+    inputs.nix-minecraft.nixosModules.minecraft-servers
   ];
+
+  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
@@ -37,11 +44,11 @@
 
   users.users."natsume" = {
     isNormalUser = true;
-    extraGroups = ["wheel"];
+    extraGroups = [ "wheel" ];
     shell = pkgs.fish;
   };
 
-  users.groups.techcyte = {};
+  users.groups.techcyte = { };
   users.users.techcyte = {
     isNormalUser = true;
     group = "techcyte";
