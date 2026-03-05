@@ -77,6 +77,7 @@
       "bbedit"
       "bike"
       "docker-desktop"
+      "element"
       "expo-orbit"
       "firefox"
       "ghostty"
