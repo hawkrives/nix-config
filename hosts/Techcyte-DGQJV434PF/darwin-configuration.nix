@@ -94,7 +94,6 @@
       "sublime-merge"
       "sublime-text"
       "tailscale-app"
-      "thunderbird"
       "visual-studio-code"
       "virtualbuddy"
       "vlc"
