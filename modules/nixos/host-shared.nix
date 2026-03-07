@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  inputs,
+  ...
+}: {
   # config settings for both NixOS- and Darwin-based systems
   imports = [];
 
@@ -47,6 +51,10 @@
 
   # TODO: document
   nix.optimise.automatic = true;
+
+  # set the default system nixpkgs (used by `nix shell nixpkgs#cowsay`, etc.) to
+  # the one specified in the flake inputs
+  nix.registry.nixpkgs.flake = inputs.nixpkgs;
 
   # some basic nix settings
   nix.settings = {

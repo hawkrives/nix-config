@@ -18,4 +18,8 @@
 
   # Set Git commit hash for darwin-version.
   system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
+
+  # set the default system nixpkgs (used by `nix shell nixpkgs#cowsay`, etc.) to
+  # the one specified in the flake inputs
+  nix.registry.nixpkgs.flake = inputs.nixpkgs;
 }
