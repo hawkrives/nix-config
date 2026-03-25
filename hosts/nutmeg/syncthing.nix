@@ -8,11 +8,13 @@
       devices = {
         long-blippp = {id = "BVVVV2C-BN26FQM-OI4GTM5-MSUCFJK-6FDTOJG-MWYO2K4-EFBDOL2-VZG4IQB";};
         techcyte-DGQJV434PF = {id = "E7TASFG-GOULRTE-VOLVZTN-DOA4BA2-DFBSYR5-KZURLEU-XJAZDKK-QSEQWAL";};
+        steamdeck = {id = "2G6JUBG-C3ZJDCL-YRVELTQ-4O746N2-R4XSROH-RC7U4QF-ORZZFMA-QCZFKQH";};
       };
 
       folders = {
         "~/paperless" = {devices = ["long-blippp" "techcyte-DGQJV434PF"];};
         "~/icloud" = {devices = ["long-blippp" "techcyte-DGQJV434PF"];};
+        # "games" = {devices = ["steamdeck"c]}
       };
     };
   };
