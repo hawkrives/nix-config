@@ -1,25 +1,44 @@
-{config, ...}: let
+{ config, ... }:
+let
   broadcomDriver = config.boot.kernelPackages.broadcom_sta;
-in {
+in
+{
   # [networking]
   # experimental; use systemd-networkd to manage interfaces
   networking.useNetworkd = true;
-  services.resolved.enable = false; # systemd-resolved listens on :53, conflicting with adguard-home
+  # systemd-resolved listens on :53, conflicting with adguard-home
+  services.resolved.enable = false;
   networking.resolvconf.enable = false;
+
+  environment.etc."resolv.conf".text = ''
+    nameserver 127.0.0.1
+  '';
 
   # [booting]
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
   # [kernel modules]
-  boot.initrd.availableKernelModules = ["ahci" "ehci_pci" "firewire_ohci" "sd_mod" "sdhci_pci" "uas" "usbhid" "xhci_pci"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = ["kvm-intel" "wl"];
-  boot.extraModulePackages = [broadcomDriver];
+  boot.initrd.availableKernelModules = [
+    "ahci"
+    "ehci_pci"
+    "firewire_ohci"
+    "sd_mod"
+    "sdhci_pci"
+    "uas"
+    "usbhid"
+    "xhci_pci"
+  ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [
+    "kvm-intel"
+    "wl"
+  ];
+  boot.extraModulePackages = [ broadcomDriver ];
 
   # the bluetooth driver is insecure... but I want bluetooth readings from the
   # house, so we have to continue running it.
-  nixpkgs.config.permittedInsecurePackages = [broadcomDriver.name];
+  nixpkgs.config.permittedInsecurePackages = [ broadcomDriver.name ];
 
   # [firmware]
   hardware.enableRedistributableFirmware = true;
@@ -27,7 +46,7 @@ in {
 
   # [swap]
   # disable disk swap and enable `zramSwap` to use a compressed block device in RAM
-  swapDevices = [];
+  swapDevices = [ ];
   zramSwap = {
     enable = true;
     memoryPercent = 25;
