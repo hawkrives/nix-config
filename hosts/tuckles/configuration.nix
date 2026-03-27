@@ -1,31 +1,32 @@
 {
   flake,
-  inputs,
   hostName,
   pkgs,
   ...
-}: {
+}:
+{
   imports = [
-    inputs.disko.nixosModules.disko
-
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
-
-    ./disk-config.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName;
   networking.useNetworkd = true;
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.grub.enable = true;
+  boot.initrd.availableKernelModules = [
+    "ahci"
+    "sd_mod"
+    "ata_piix"
+    "virtio_pci"
+  ];
 
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  swapDevices = [];
+  swapDevices = [ ];
   zramSwap = {
     enable = true;
     memoryPercent = 25;
@@ -33,7 +34,7 @@
 
   users.users.haru = {
     isNormalUser = true;
-    extraGroups = ["wheel"];
+    extraGroups = [ "wheel" ];
     shell = pkgs.fish;
 
     openssh.authorizedKeys.keys = [
@@ -45,7 +46,6 @@
 
   environment.systemPackages = with pkgs; [
     helix
-    git
     curl
   ];
 
@@ -65,9 +65,6 @@
   };
 
   security.sudo.wheelNeedsPassword = false;
-
-  # This must match the disk-config.nix bootloader path
-  fileSystems."/boot".device = "/dev/disk/by-partlabel/ESP";
 
   system.stateVersion = "25.11";
 }
