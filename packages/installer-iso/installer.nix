@@ -4,14 +4,14 @@
     enable = true;
     settings = {
       PermitRootLogin = "yes";
-      PasswordAuthentication = "no";
+      PasswordAuthentication = false;
     };
   };
 
   systemd.services.sshd.wantedBy = ["multi-user.target"];
 
   # Bake in your public key so nixos-anywhere can SSH in without interaction
-  users.users.root.opensshAuthorizedKeys.keys = [
+  users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILFhbHFf1LJ/NseB3yDEAKNu3CGNDs+ot8qdQA5LI4rU"
   ];
 
