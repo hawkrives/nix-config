@@ -1,10 +1,18 @@
-{ flake, hostName, config, pkgs, ... }:
-
 {
+  flake,
+  inputs,
+  hostName,
+  pkgs,
+  ...
+}: {
   imports = [
+    inputs.disko.nixosModules.disko
+
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
+
+    ./disk-config.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -25,7 +33,7 @@
 
   users.users.haru = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
 
     openssh.authorizedKeys.keys = [
@@ -36,8 +44,9 @@
   };
 
   environment.systemPackages = with pkgs; [
-    cowsay
-    lolcat
+    helix
+    git
+    curl
   ];
 
   programs.nh = {
@@ -54,6 +63,11 @@
     settings.PasswordAuthentication = false;
     settings.KbdInteractiveAuthentication = false;
   };
+
+  security.sudo.wheelNeedsPassword = false;
+
+  # This must match the disk-config.nix bootloader path
+  fileSystems."/boot".device = "/dev/disk/by-partlabel/ESP";
 
   system.stateVersion = "25.11";
 }
