@@ -1,4 +1,5 @@
-{config, ...}: {
+{ config, ... }:
+{
   # TODO: move to home-manager?
   users.groups.homeassistant = {
     gid = 10010;
@@ -39,6 +40,8 @@
     extraOptions = [
       "--network=host"
       "--pull=newer"
+      "--cap-add=NET_ADMIN"
+      "--cap-add=NET_RAW"
     ];
   };
 }
