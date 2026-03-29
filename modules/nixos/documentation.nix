@@ -40,7 +40,7 @@ lib.mkMerge [
   in
     lib.mkIf (cfg.enable) {
       # We generate the cache ourselves.
-      documentation.man.generateCaches = false;
+      documentation.man.cache.enable = false;
 
       environment.systemPackages = [pkgs.man-pages];
 
