@@ -9,6 +9,36 @@
     "x-systemd.mount-timeout=15s" # grace period for the actual mount call
   ];
   readOnlyNfs = nfsOptions ++ ["ro"];
+
+  hama = builtins.path {
+    name = "Hama.bundle";
+    path = pkgs.fetchFromGitHub {
+      # https://github.com/ZeroQI/Hama.bundle
+      owner = "ZeroQI";
+      repo = "Hama.bundle";
+      rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
+      sha256 = "PgZAqK3Ooz8JgMqCW7hZOBzuaVjCywA6ytx33J/WqC4=";
+    };
+  };
+
+  youtubeAgent = builtins.path {
+    name = "YouTube-Agent.bundle";
+    path = pkgs.fetchFromGitHub {
+      # https://github.com/ZeroQI/YouTube-Agent.bundle
+      owner = "ZeroQI";
+      repo = "YouTube-Agent.bundle";
+      rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
+      sha256 = "W1lY9uDqxkkKmxBDewQc/BOsZSK2CbKHRBTzTscR68Y=";
+    };
+  };
+
+  absoluteSeriesScanner = pkgs.fetchFromGitHub {
+    # https://github.com/ZeroQI/Absolute-Series-Scanner
+    owner = "ZeroQI";
+    repo = "Absolute-Series-Scanner";
+    rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
+    sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
+  };
 in {
   services.plex = {
     enable = true;
@@ -16,37 +46,12 @@ in {
     openFirewall = true;
 
     extraPlugins = [
-      (builtins.path {
-        name = "Hama.bundle";
-        path = pkgs.fetchFromGitHub {
-          # https://github.com/ZeroQI/Hama.bundle
-          owner = "ZeroQI";
-          repo = "Hama.bundle";
-          rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
-          sha256 = "PgZAqK3Ooz8JgMqCW7hZOBzuaVjCywA6ytx33J/WqC4=";
-        };
-      })
-
-      (builtins.path {
-        name = "YouTube-Agent.bundle";
-        path = pkgs.fetchFromGitHub {
-          # https://github.com/ZeroQI/YouTube-Agent.bundle
-          owner = "ZeroQI";
-          repo = "YouTube-Agent.bundle";
-          rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
-          sha256 = "W1lY9uDqxkkKmxBDewQc/BOsZSK2CbKHRBTzTscR68Y=";
-        };
-      })
+      hama
+      youtubeAgent
     ];
 
     extraScanners = [
-      (pkgs.fetchFromGitHub {
-        # https://github.com/ZeroQI/Absolute-Series-Scanner
-        owner = "ZeroQI";
-        repo = "Absolute-Series-Scanner";
-        rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
-        sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
-      })
+      absoluteSeriesScanner
     ];
   };
 
