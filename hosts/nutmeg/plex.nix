@@ -79,12 +79,6 @@ in {
     options = readOnlyNfs;
   };
 
-  fileSystems."/var/lib/plex/media-photos" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/media-photos";
-    options = readOnlyNfs;
-  };
-
   fileSystems."/var/lib/plex/media-music" = {
     fsType = "nfs";
     device = "192.168.1.194:/volume1/media-music";
