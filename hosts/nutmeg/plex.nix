@@ -85,14 +85,10 @@ in
   services.tsnsrv.services.tautulli-nm.urlParts.port = config.services.tautulli.port;
   services.tsnsrv.services.plex-nm.urlParts.port = 32400;
 
-  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" { readOnly = true; };
-  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {
-    readOnly = true;
-  };
-  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { readOnly = true; };
-  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" {
-    readOnly = true;
-  };
+  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" { };
+  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" { };
+  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { };
+  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" { };
 
   fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
 
