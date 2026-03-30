@@ -75,7 +75,8 @@ in
   };
 
   services.tautulli = {
-    enable = true;
+    # enable = true;
+    enable = false;
     openFirewall = true;
 
     dataDir = "/var/lib/tautulli";

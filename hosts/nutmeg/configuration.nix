@@ -21,7 +21,7 @@
     ./home-assistant.nix
     ./home-assistant-matter.nix
     ./plex.nix
-    ./servarr.nix
+    # ./servarr.nix
     ./tailscale.nix
     ./syncthing.nix
     ./paperless.nix
