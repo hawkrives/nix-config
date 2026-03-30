@@ -35,6 +35,8 @@
       "--pull=newer"
       "--network=host"
       "--security-opt=apparmor=unconfined"
+      "--cap-add=NET_ADMIN"
+      "--cap-add=NET_RAW"
     ];
   };
 }
