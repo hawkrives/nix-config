@@ -1,14 +1,27 @@
-{pkgs, ...}: let
-  nfsOptions = [
-    "nfsvers=4.1"
-    "noatime" # we do not care about tracking the access time
-    "_netdev" # ensure it's treated as a network fs, rather than local
-    "x-systemd.automount" # enable mounting on first access
-    "x-systemd.idle-timeout=5m" # unmount after this long
-    "x-systemd.device-timeout=15s" # wait for a device to show up before giving up
-    "x-systemd.mount-timeout=15s" # grace period for the actual mount call
-  ];
-  readOnlyNfs = nfsOptions ++ ["ro"];
+{
+  lib,
+  pkgs,
+  ...
+}: let
+  synology = "192.168.1.194";
+  nfsMount = sharePath: {readOnly ? false}: {
+    fsType = "nfs";
+    device = sharePath;
+    options =
+      [
+        "nfsvers=4.1"
+        "noatime" # we do not care about tracking the access time
+        "_netdev" # ensure it's treated as a network fs, rather than local
+        "x-systemd.automount" # enable mounting on first access
+        "x-systemd.idle-timeout=5m" # unmount after this long
+        "x-systemd.device-timeout=15s" # wait for a device to show up before giving up
+        "x-systemd.mount-timeout=15s" # grace period for the actual mount call
+      ]
+      ++ lib.lists.optionals readOnly [
+        "ro"
+      ];
+  };
+  synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
   hama = builtins.path {
     name = "Hama.bundle";
@@ -42,7 +55,6 @@
 in {
   services.plex = {
     enable = true;
-    group = "servarr";
     openFirewall = true;
 
     extraPlugins = [
@@ -55,6 +67,13 @@ in {
     ];
   };
 
+  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" {readOnly = true;};
+  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {readOnly = true;};
+  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" {readOnly = true;};
+  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" {readOnly = true;};
+
+  fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" {};
+
   # need uid/gid to match the NAS
   users.groups.servarr.gid = 1050;
   users.users.servarr = {
@@ -62,38 +81,5 @@ in {
     isNormalUser = true;
     group = "servarr";
     home = "/var/lib/servarr";
-  };
-
-  # for mount=type=cifs
-  environment.systemPackages = [pkgs.cifs-utils];
-
-  fileSystems."/var/lib/plex/media-shows" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/media-shows";
-    options = readOnlyNfs;
-  };
-
-  fileSystems."/var/lib/plex/media-channels" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/media-channels";
-    options = readOnlyNfs;
-  };
-
-  fileSystems."/var/lib/plex/media-music" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/media-music";
-    options = readOnlyNfs;
-  };
-
-  fileSystems."/var/lib/plex/media-movies" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/media-movies";
-    options = readOnlyNfs;
-  };
-
-  fileSystems."/var/lib/plex/backup" = {
-    fsType = "nfs";
-    device = "192.168.1.194:/volume1/app-plex";
-    options = nfsOptions;
   };
 }
