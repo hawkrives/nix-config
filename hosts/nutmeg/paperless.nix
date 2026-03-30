@@ -1,15 +1,25 @@
 {config, ...}: {
+  # TODO replace with agenix/sops
   environment.etc."paperless-admin-pass".text = "admin";
+
   services.paperless = {
     enable = true;
-    consumptionDirIsPublic = true;
     passwordFile = "/etc/paperless-admin-pass";
 
-    # TODO: expose via tailscale; do not bind to 0.0.0.0
-    # address = "0.0.0.0";
+    domain = "paperless.vaquita-woodpecker.ts.net";
 
-    # TODO: migrate data to postgres
-    # database.createLocally = true;
+    consumptionDirIsPublic = true;
+    configureTika = true;
+    database.createLocally = true;
+
+    # TODO: set mediaDir to NAS folder?
+    # mediaDir
+
+    exporter = {
+      # TODO: enable once we have the backup share set up
+      enable = false;
+      # directory = "/mnt/backup/paperless";
+    };
 
     settings = {
       PAPERLESS_CONSUMER_IGNORE_PATTERN = [
@@ -22,14 +32,10 @@
         optimize = 1;
         pdfa_image_compression = "lossless";
       };
-
-      PAPERLESS_URL = "https://paperless.vaquita-woodpecker.ts.net";
-      # PAPERLESS_URL = "http://nutmeg.local:28981";
-      # PAPERLESS_URL = "http://192.168.1.228:28981";
     };
   };
 
   services.tsnsrv.services.paperless.urlParts.port = config.services.paperless.port;
 
-  # networking.firewall.allowedTCPPorts = [28981];
+  networking.firewall.allowedTCPPorts = [config.services.paperless.port];
 }
