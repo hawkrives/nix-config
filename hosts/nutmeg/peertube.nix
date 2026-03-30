@@ -1,9 +1,9 @@
 {config, ...}: {
-  services.tsnsrv.services.peertube.urlParts.port = config.services.peertube.listenWeb;
+  services.tsnsrv.services.peertube.urlParts.port = config.services.peertube.listenHttp;
 
   services.peertube = {
     enable = true;
-    listenWeb = 23357;
+    listenWeb = 443;
     # configureNginx = true;
     localDomain = "peertube.vaquita-woodpecker.ts.net";
 
@@ -14,6 +14,7 @@
 
     settings = {
       instance.name = "PeerTube Test Server";
+      video_transcription.enabled = true;
     };
   };
 
