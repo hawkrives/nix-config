@@ -1,7 +1,8 @@
 {...}: {
   # networking.firewall.allowedTCPPorts = [80];
   services.discourse = {
-    enable = true;
+    enable = false;
+
     # hostname = "nutmeg.local";
     hostname = "techcyte-chat.localhost";
     enableACME = false;
