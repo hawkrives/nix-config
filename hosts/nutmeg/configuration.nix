@@ -26,7 +26,7 @@
     ./syncthing.nix
     ./paperless.nix
     ./nix-serve.nix
-    ./peertube.nix
+    # ./peertube.nix
     ./discourse.nix
     ./micasa.nix
     ./minecraft.nix
