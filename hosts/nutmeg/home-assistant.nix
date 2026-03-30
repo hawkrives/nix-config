@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # TODO: move to home-manager?
   users.groups.homeassistant = {
     gid = 10010;
@@ -10,6 +9,8 @@
     home = "/var/lib/home-assistant";
     isNormalUser = true;
   };
+
+  services.tsnsrv.services.ha.toURL = "http://localhost:${toString 8123}";
 
   networking.firewall.allowedTCPPorts = [
     8123
