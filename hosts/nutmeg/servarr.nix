@@ -40,19 +40,19 @@ in {
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
   services.radarr = servarrApp;
-  services.tsnsrv.services.radarr-nm.toURL = "http://localhost:${toString config.services.radarr.settings.server.port}";
+  services.tsnsrv.services.radarr-nm.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
   services.sonarr = servarrApp;
-  services.tsnsrv.services.sonarr-nm.toURL = "http://localhost:${toString config.services.sonarr.settings.server.port}";
+  services.tsnsrv.services.sonarr-nm.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
   services.prowlarr = servarrApp;
-  services.tsnsrv.services.prowlarr-nm.toURL = "http://localhost:${toString config.services.prowlarr.settings.server.port}";
+  services.tsnsrv.services.prowlarr-nm.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
   services.lidarr = servarrApp;
-  services.tsnsrv.services.lidarr-nm.toURL = "http://localhost:${toString config.services.lidarr.settings.server.port}";
+  services.tsnsrv.services.lidarr-nm.urlParts.port = config.services.lidarr.settings.server.port;
 
   # ── Recyclarr ─────────────────────────────────────────────────────
   services.recyclarr.enable = true;
@@ -68,12 +68,12 @@ in {
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.bazarr-nm.toURL = "http://localhost:${toString config.services.bazarr.listenPort}";
+  services.tsnsrv.services.bazarr-nm.urlParts.port = config.services.bazarr.listenPort;
 
   # ── Overseerr (:5055) —────────────────────────────────────────────
   services.overseerr = {
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.seerr-nm.toURL = "http://localhost:${toString config.services.overseerr.port}";
+  services.tsnsrv.services.seerr-nm.urlParts.port = config.services.overseerr.port;
 }

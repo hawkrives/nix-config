@@ -14,5 +14,5 @@
     settings.dns.bind_hosts = ["0.0.0.0"];
   };
 
-  services.tsnsrv.services.ag.toURL = "http://localhost:${toString config.services.adguardhome.port}";
+  services.tsnsrv.services.ag.urlParts.port = config.services.adguardhome.port;
 }

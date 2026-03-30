@@ -29,7 +29,7 @@
     };
   };
 
-  services.tsnsrv.services.paperless.toURL = "http://localhost:${toString config.services.paperless.port}";
+  services.tsnsrv.services.paperless.urlParts.port = config.services.paperless.port;
 
   # networking.firewall.allowedTCPPorts = [28981];
 }

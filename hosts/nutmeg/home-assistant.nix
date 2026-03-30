@@ -10,7 +10,7 @@
     isNormalUser = true;
   };
 
-  services.tsnsrv.services.ha.toURL = "http://localhost:${toString 8123}";
+  services.tsnsrv.services.ha.urlParts.port = 8123;
 
   networking.firewall.allowedTCPPorts = [
     8123
