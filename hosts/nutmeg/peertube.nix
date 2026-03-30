@@ -1,5 +1,5 @@
 {config, ...}: {
-  services.tsnsrv.services.paperless.urlParts.port = config.services.peertube.listenWeb;
+  services.tsnsrv.services.peertube.urlParts.port = config.services.peertube.listenWeb;
 
   services.peertube = {
     enable = true;
