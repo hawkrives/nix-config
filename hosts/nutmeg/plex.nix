@@ -67,6 +67,14 @@ in {
     ];
   };
 
+  services.tautulli = {
+    enable = true;
+    openFirewall = true;
+    port = 8181;
+
+    dataDir = "/var/lib/tautulli";
+  };
+
   fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" {readOnly = true;};
   fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {readOnly = true;};
   fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" {readOnly = true;};
