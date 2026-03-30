@@ -42,6 +42,14 @@
       inputs.flake-utils.inputs.systems.follows = "systems";
     };
 
+    agenix = {
+      url = "github:ryantm/agenix?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.darwin.follows = "nix-darwin";
+      inputs.home-manager.follows = "home-manager";
+      inputs.systems.follows = "systems";
+    };
+
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
