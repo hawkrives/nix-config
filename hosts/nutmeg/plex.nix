@@ -93,11 +93,11 @@ in
   fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
 
   # need uid/gid to match the NAS
-  users.groups.servarr.gid = 1050;
-  users.users.servarr = {
-    uid = 1036;
-    isNormalUser = true;
-    group = "servarr";
-    home = "/var/lib/servarr";
-  };
+  # users.groups.servarr.gid = 1050;
+  # users.users.servarr = {
+  #   uid = 1036;
+  #   isNormalUser = true;
+  #   group = "servarr";
+  #   home = "/var/lib/servarr";
+  # };
 }
