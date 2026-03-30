@@ -1,4 +1,8 @@
-{lib, ...}: let
+{
+  lib,
+  config,
+  ...
+}: let
   synology = "192.168.1.194";
   nfsMount = sharePath: {readOnly ? false}: {
     fsType = "nfs";
@@ -34,15 +38,19 @@ in {
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
   services.radarr = servarrApp;
+  services.tsnsrv.services.radarr-nm.toURL = "http://localhost:${toString config.services.radarr.settings.server.port}";
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
   services.sonarr = servarrApp;
+  services.tsnsrv.services.sonarr-nm.toURL = "http://localhost:${toString config.services.sonarr.settings.server.port}";
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
   services.prowlarr = servarrApp;
+  services.tsnsrv.services.prowlarr-nm.toURL = "http://localhost:${toString config.services.prowlarr.settings.server.port}";
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
   services.lidarr = servarrApp;
+  services.tsnsrv.services.lidarr-nm.toURL = "http://localhost:${toString config.services.lidarr.settings.server.port}";
 
   # ── Recyclarr ─────────────────────────────────────────────────────
   services.recyclarr.enable = true;
@@ -50,7 +58,7 @@ in {
   # ── FlareSolverr (:8191) —─────────────────────────────────────────
   services.flaresolverr = {
     enable = true;
-    openFirewall = true;
+    # openFirewall = true;
   };
 
   # ── Bazarr (:6767) ────────────────────────────────────────────────
@@ -58,10 +66,12 @@ in {
     enable = true;
     openFirewall = true;
   };
+  services.tsnsrv.services.bazarr-nm.toURL = "http://localhost:${toString config.services.bazarr.listenPort}";
 
   # ── Overseerr (:5055) —────────────────────────────────────────────
   services.overseerr = {
     enable = true;
     openFirewall = true;
   };
+  services.tsnsrv.services.seerr-nm.toURL = "http://localhost:${toString config.services.overseerr.port}";
 }

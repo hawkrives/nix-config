@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  config,
   ...
 }: let
   synology = "192.168.1.194";
@@ -70,10 +71,12 @@ in {
   services.tautulli = {
     enable = true;
     openFirewall = true;
-    port = 8181;
 
     dataDir = "/var/lib/tautulli";
   };
+
+  services.tsnsrv.services.tautulli-nm.toURL = "http://localhost:${toString config.services.tautulli.port}";
+  services.tsnsrv.services.plex-nm.toURL = "http://localhost:32400";
 
   fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" {readOnly = true;};
   fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {readOnly = true;};
