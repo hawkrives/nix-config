@@ -28,6 +28,8 @@
     openFirewall = true;
 
     settings.log.dbEnabled = false; # avoid writing logs to the database
+    settings.auth.method = "External"; # disable auth requirement
+    settings.update.mechanism = "external"; # disable builtin update process
   };
 in {
   fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" {readOnly = true;};

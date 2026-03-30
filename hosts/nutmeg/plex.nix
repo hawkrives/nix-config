@@ -3,13 +3,18 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   synology = "192.168.1.194";
-  nfsMount = sharePath: {readOnly ? false}: {
-    fsType = "nfs";
-    device = sharePath;
-    options =
-      [
+  nfsMount =
+    sharePath:
+    {
+      readOnly ? false,
+    }:
+    {
+      fsType = "nfs";
+      device = sharePath;
+      options = [
         "nfsvers=4.1"
         "noatime" # we do not care about tracking the access time
         "_netdev" # ensure it's treated as a network fs, rather than local
@@ -21,7 +26,7 @@
       ++ lib.lists.optionals readOnly [
         "ro"
       ];
-  };
+    };
   synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
   hama = builtins.path {
@@ -53,7 +58,8 @@
     rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
     sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
   };
-in {
+in
+{
   services.plex = {
     enable = true;
     openFirewall = true;
@@ -75,15 +81,19 @@ in {
     dataDir = "/var/lib/tautulli";
   };
 
-  services.tsnsrv.services.tautulli-nm.toURL = "http://localhost:${toString config.services.tautulli.port}";
-  services.tsnsrv.services.plex-nm.toURL = "http://localhost:32400";
+  services.tsnsrv.services.tautulli-nm.urlParts.port = config.services.tautulli.port;
+  services.tsnsrv.services.plex-nm.urlParts.port = 32400;
 
-  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" {readOnly = true;};
-  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {readOnly = true;};
-  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" {readOnly = true;};
-  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" {readOnly = true;};
+  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" { readOnly = true; };
+  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {
+    readOnly = true;
+  };
+  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { readOnly = true; };
+  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" {
+    readOnly = true;
+  };
 
-  fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" {};
+  fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
 
   # need uid/gid to match the NAS
   users.groups.servarr.gid = 1050;
