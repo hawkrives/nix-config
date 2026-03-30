@@ -4,8 +4,7 @@
   pkgs,
   inputs,
   ...
-}:
-{
+}: {
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
@@ -37,7 +36,7 @@
     inputs.tsnsrv.nixosModules.default
   ];
 
-  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
+  nixpkgs.overlays = [inputs.nix-minecraft.overlay];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
@@ -47,11 +46,11 @@
 
   users.users."natsume" = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
   };
 
-  users.groups.techcyte = { };
+  users.groups.techcyte = {};
   users.users.techcyte = {
     isNormalUser = true;
     group = "techcyte";
@@ -78,5 +77,5 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "23.11"; # Did you read the comment?
+  system.stateVersion = "25.11"; # Did you read the comment?
 }
