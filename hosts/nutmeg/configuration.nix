@@ -31,8 +31,10 @@
     ./discourse.nix
     ./micasa.nix
     ./minecraft.nix
+    ./tsnsrv.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
+    inputs.tsnsrv.nixosModules.default
   ];
 
   nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
