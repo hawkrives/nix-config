@@ -1,4 +1,4 @@
-{...}: {
+{config, ...}: {
   environment.etc."paperless-admin-pass".text = "admin";
   services.paperless = {
     enable = true;
@@ -28,6 +28,8 @@
       # PAPERLESS_URL = "http://192.168.1.228:28981";
     };
   };
+
+  services.tsnsrv.services.paperless.toURL = "http://localhost:${toString config.services.paperless.port}";
 
   # networking.firewall.allowedTCPPorts = [28981];
 }
