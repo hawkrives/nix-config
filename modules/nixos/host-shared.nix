@@ -1,6 +1,7 @@
 {
   pkgs,
   inputs,
+  perSystem,
   ...
 }: {
   # config settings for both NixOS- and Darwin-based systems
@@ -24,6 +25,7 @@
   environment.systemPackages =
     [
       pkgs.btop
+      perSystem.agenix.default
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS

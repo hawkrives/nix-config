@@ -1,4 +1,8 @@
 {inputs, ...}: {
+  imports = [
+    inputs.agenix.darinModules.default
+  ];
+
   # enable dragging windows from anywhere anywhere while holding the control and command keys
   system.defaults.NSGlobalDomain.NSWindowShouldDragOnGesture = true;
 
