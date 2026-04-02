@@ -289,6 +289,7 @@
       pkgs.shfmt
       pkgs.skopeo
       pkgs.soupault
+      pkgs.sqlit-tui
       pkgs.sqlite-interactive
       pkgs.terraform
       pkgs.tokei
