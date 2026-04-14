@@ -24,7 +24,7 @@
   synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
   servarrApp = {
-    enable = true;
+    # enable = true;
     openFirewall = true;
 
     settings.log.dbEnabled = false; # avoid writing logs to the database
@@ -51,28 +51,28 @@ in {
   services.tsnsrv.services.prowlarr-nm.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
-  services.lidarr = servarrApp;
+  services.lidarr = servarrApp // {enable = true;};
   services.tsnsrv.services.lidarr-nm.urlParts.port = config.services.lidarr.settings.server.port;
 
   # ── Recyclarr ─────────────────────────────────────────────────────
-  services.recyclarr.enable = true;
+  # services.recyclarr.enable = true;
 
   # ── FlareSolverr (:8191) —─────────────────────────────────────────
   services.flaresolverr = {
-    enable = true;
+    # enable = true;
     # openFirewall = true;
   };
 
   # ── Bazarr (:6767) ────────────────────────────────────────────────
   services.bazarr = {
-    enable = true;
+    # enable = true;
     openFirewall = true;
   };
   services.tsnsrv.services.bazarr-nm.urlParts.port = config.services.bazarr.listenPort;
 
   # ── Overseerr (:5055) —────────────────────────────────────────────
   services.overseerr = {
-    enable = true;
+    # enable = true;
     openFirewall = true;
   };
   services.tsnsrv.services.seerr-nm.urlParts.port = config.services.overseerr.port;

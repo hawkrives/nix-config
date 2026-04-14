@@ -21,7 +21,7 @@
     ./home-assistant.nix
     ./home-assistant-matter.nix
     ./plex.nix
-    # ./servarr.nix
+    ./servarr.nix
     ./tailscale.nix
     ./syncthing.nix
     ./paperless.nix
@@ -62,6 +62,12 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILFhbHFf1LJ/NseB3yDEAKNu3CGNDs+ot8qdQA5LI4rU hawken.rives@Techcyte-DGQJV434PF"
       "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGKeWabODTfpiljiMRYVD7FFk8sQQgaKFqZMHo6iyfKjeN4868IuJBZ78euIbM4ztXy/JICW6oVhfPifAm9d3Jk= ECD-ShellFish@Long-Blippp-30122023"
     ];
+  };
+
+  # for slime
+  networking.firewall = {
+    allowedTCPPorts = [9100];
+    allowedUDPPorts = [9100];
   };
 
   programs.nh = {

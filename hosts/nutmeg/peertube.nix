@@ -3,7 +3,9 @@
   services.tsnsrv.services.peertube.urlParts.port = config.services.peertube.listenHttp;
 
   services.peertube = {
-    enable = true;
+    # disable until we get the media off of nutmeg
+    # enable = true;
+    
     listenWeb = 443;
     # configureNginx = true;
     localDomain = "peertube.vaquita-woodpecker.ts.net";
@@ -27,7 +29,7 @@
 
     settings = {
       instance.name = "vidz-bop";
-      # whisper is broken (2026-03-30) due to a python dependency on 26.05
+      # whisper is broken (2026-03-30) due to a python dependency on nixos 26.05
       # video_transcription.enabled = true;
     };
   };
