@@ -13,7 +13,7 @@
   programs.fish.enable = true;
 
   # Accept agreements for unfree software
-  nixpkgs.config.allowUnfree = true;
+  # nixpkgs.config.allowUnfree = true;
 
   # Install fonts
   fonts = {
