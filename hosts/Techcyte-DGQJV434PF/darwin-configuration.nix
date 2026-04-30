@@ -68,8 +68,6 @@
       cleanup = "zap";
     };
 
-    brews = [];
-
     caskArgs.appdir = "~/Applications";
     casks = [
       "alfred"
