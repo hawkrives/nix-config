@@ -36,10 +36,6 @@ in
   ];
   boot.extraModulePackages = [ broadcomDriver ];
 
-  # the bluetooth driver is insecure... but I want bluetooth readings from the
-  # house, so we have to continue running it.
-  nixpkgs.config.permittedInsecurePackages = [ broadcomDriver.name ];
-
   # [firmware]
   hardware.enableRedistributableFirmware = true;
   hardware.cpu.intel.updateMicrocode = true;

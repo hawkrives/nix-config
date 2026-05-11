@@ -59,7 +59,11 @@
     inherit
       (inputs.blueprint {
         inherit inputs;
-        nixpkgs.config.allowUnfree = true;
+        nixpkgs.config = {
+          allowUnfree = true;
+          allowInsecurePredicate =
+            pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+        };
       })
       checks
       devShells
