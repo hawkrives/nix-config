@@ -64,7 +64,6 @@
           allowInsecurePredicate =
             pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
         };
-        nix.package = inputs.nixpkgs.lixPackageSets.stable.lix;
         nixpkgs.overlays = [
           (final: prev: {
             inherit (prev.lixPackageSets.stable)
@@ -75,8 +74,6 @@
               colmena
               ;
 
-            git = final.gitMinimal;
-            nodejs = final.nodejs-slim;
           })
         ];
       })
