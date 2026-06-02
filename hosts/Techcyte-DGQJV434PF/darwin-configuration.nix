@@ -101,11 +101,8 @@
     masApps = {
       # "Acorn 7" = 1547371478;
       "iA Writer" = 775737590;
-      "Keynote" = 409183694;
       "Muse" = 1501563902;
       "Nautik" = 1672838783;
-      "Numbers" = 409203825;
-      "Pages" = 409201541;
       "Photomator" = 1444636541;
       "Pixelmator" = 1289583905;
       "Soulver 3" = 1508732804;
