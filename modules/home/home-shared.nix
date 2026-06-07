@@ -2,7 +2,8 @@
   pkgs,
   osConfig,
   ...
-}: {
+}:
+{
   programs.fish = {
     enable = true;
 
@@ -24,23 +25,23 @@
     ];
 
     shellInit = ''
-      # integrate mise shims with fish
       if status is-interactive
+        # integrate mise shims with fish
         mise activate fish | source
-      else
-        mise activate fish --shims | source
-      end
 
-      # integrate brew with fish
-      test (uname -s) = Darwin && test (uname -m) = arm64 && eval (/opt/homebrew/bin/brew shellenv)
-
-      if status is-interactive
-        set -gx ATUIN_NOBIND "true"
-        atuin init fish | source
+        # atuin - disabled as of 2026-06-07 because I can't get it to NOT bind up-arrow
+        # atuin hex init fish | source
+        # export ATUIN_NOBIND="true"
+        # atuin init fish | source
 
         # bind to ctrl-r in normal and insert mode, add any other bindings you want here too
-        bind \cr _atuin_search
-        bind -M insert \cr _atuin_search
+        # bind \cr _atuin_search
+        # bind -M insert \cr _atuin_search
+
+        # homebrew
+        test (uname -s) = Darwin && test (uname -m) = arm64 && eval (/opt/homebrew/bin/brew shellenv)
+      else
+        mise activate fish --shims | source
       end
     '';
 
@@ -179,7 +180,17 @@
   ];
 
   programs = {
-    atuin.enable = true;
+    atuin = {
+      # enable = true;
+      enable = false;
+      settings = {
+        keymap.emacs = {
+          "enter" = "return-selection";
+          "tab" = "return-selection";
+        };
+      };
+    };
+
     bacon.enable = true;
     bat.enable = true;
     broot.enable = true;
@@ -218,7 +229,7 @@
     mise = {
       enable = true;
       globalConfig = {
-        tools."pipx:batrachian-toad" = "0.5.34";
+        # tools."pipx:batrachian-toad" = "0.5.34";
         settings.experimental = true;
       };
     };
@@ -245,104 +256,104 @@
 
   # TODO: use programs.ssh to control the ssh config file
 
-  home.packages =
-    [
-      # pkgs.nixos-generators
+  home.packages = [
+    # pkgs.nixos-generators
 
-      pkgs.alejandra # nix formatter
-      pkgs.bartib
-      pkgs.buildah
-      pkgs.certbot
-      pkgs.curl
-      pkgs.diffoci
-      pkgs.dive
-      pkgs.doggo # maintained fork of dogdns
-      pkgs.dust
-      pkgs.entr
-      pkgs.ffmpeg-headless
-      pkgs.freeze # code screenshot
-      pkgs.fx # tui json viewer
-      pkgs.glab # gitlab cli
-      pkgs.graphviz
-      pkgs.gron
-      pkgs.htmlq
-      pkgs.hyperfine
-      pkgs.imagemagick
-      pkgs.jjui
-      # pkgs.jj-fzf
-      pkgs.jless
-      pkgs.lazyjj
-      pkgs.lnav
-      pkgs.lsof
-      pkgs.mariadb.client
-      pkgs.nixtamal # alternative locker for flakes
-      pkgs.nix-output-monitor
-      pkgs.oras
-      pkgs.parallel
-      pkgs.procs
-      pkgs.pstree
-      pkgs.pv
-      pkgs.readline
-      pkgs.rlwrap
-      pkgs.rustup
-      pkgs.shellcheck
-      pkgs.shfmt
-      pkgs.skopeo
-      pkgs.soupault
-      pkgs.sqlit-tui
-      pkgs.sqlite-interactive
-      pkgs.terraform
-      pkgs.tokei
-      pkgs.tree
-      pkgs.trippy
-      pkgs.unzip
-      pkgs.watch
-      pkgs.watchexec
-      pkgs.wget
-      pkgs.xh
-      pkgs.xz
-      pkgs.yq-go
-      pkgs.zstd
+    pkgs.alejandra # nix formatter
+    pkgs.bartib
+    pkgs.buildah
+    pkgs.certbot
+    pkgs.curl
+    pkgs.diffoci
+    pkgs.dive
+    pkgs.doggo # maintained fork of dogdns
+    pkgs.dust
+    pkgs.entr
+    pkgs.ffmpeg-headless
+    pkgs.freeze # code screenshot
+    pkgs.fx # tui json viewer
+    pkgs.glab # gitlab cli
+    pkgs.graphviz
+    pkgs.gron
+    pkgs.htmlq
+    pkgs.hyperfine
+    pkgs.imagemagick
+    pkgs.jjui
+    # pkgs.jj-fzf
+    pkgs.jless
+    pkgs.lazyjj
+    pkgs.lnav
+    pkgs.lsof
+    pkgs.mariadb.client
+    pkgs.nixtamal # alternative locker for flakes
+    pkgs.nix-output-monitor
+    pkgs.oras
+    pkgs.parallel
+    pkgs.procs
+    pkgs.pstree
+    pkgs.pv
+    pkgs.readline
+    pkgs.rlwrap
+    pkgs.rustup
+    pkgs.shellcheck
+    pkgs.shfmt
+    pkgs.skopeo
+    pkgs.soupault
+    pkgs.sqlit-tui
+    pkgs.sqlite-interactive
+    pkgs.terraform
+    pkgs.tokei
+    pkgs.tree
+    pkgs.trippy
+    pkgs.unzip
+    pkgs.watch
+    pkgs.watchexec
+    pkgs.wget
+    pkgs.xh
+    pkgs.xz
+    pkgs.yq-go
+    pkgs.zstd
 
-      pkgs.gemini-cli
-      pkgs.github-copilot-cli
-      pkgs.codex
-      pkgs.claude-code
+    # pkgs.gemini-cli
+    # pkgs.github-copilot-cli
+    # pkgs.codex
+    pkgs.claude-code
 
-      pkgs.nodejs-slim
-      pkgs.pnpm
+    # pkgs.nodejs-slim
+    pkgs.pnpm
 
-      # TODO: move into separate flakes
-      # pkgs.packwiz # for meloncraft-modpack
-    ]
-    # you can access the host configuration using osConfig.
-    ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [pkgs.skhd])
-    ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [pkgs.cocoapods])
-    ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) []);
+    # TODO: move into separate flakes
+    # pkgs.packwiz # for meloncraft-modpack
+  ]
+  # you can access the host configuration using `osConfig.`
+  ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [ pkgs.skhd ])
+  ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.cocoapods ])
+  ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [ ]);
 
   targets =
-    if pkgs.stdenv.isDarwin
-    then {
-      darwin.defaults = {
-        "com.apple.dock".autohide = true;
-        "com.apple.dock".mru-spaces = false;
-        "com.apple.dock".mouse-over-hilite-stack = true;
-        "com.apple.dock".showhidden = true;
-        "com.apple.dock".slow-motion-allowed = false;
+    if pkgs.stdenv.isDarwin then
+      {
+        darwin.defaults = {
+          "com.apple.dock".autohide = true;
+          "com.apple.dock".mru-spaces = false;
+          "com.apple.dock".mouse-over-hilite-stack = true;
+          "com.apple.dock".showhidden = true;
+          "com.apple.dock".slow-motion-allowed = false;
 
-        "screencapture".disable-shadow = true;
+          "screencapture".disable-shadow = true;
 
-        "com.apple.finder".ShowPathbar = true;
-        "com.apple.finder".ShowStatusBar = true;
+          "com.apple.finder".ShowPathbar = true;
+          "com.apple.finder".ShowStatusBar = true;
 
-        "com.apple.menuextra.clock".Show24Hour = true;
-        "com.apple.menuextra.clock".ShowAMPM = false;
+          "com.apple.menuextra.clock".Show24Hour = true;
+          "com.apple.menuextra.clock".ShowAMPM = false;
 
-        "universalaccess".closeViewScrollWheelToggle = true; # Use scroll gesture with the Ctrl (^) modifier key to zoom.
-        # "universalaccess".reduceMotion = true;
-      };
-    }
-    else {};
+          "universalaccess".closeViewScrollWheelToggle = true; # Use scroll gesture with the Ctrl (^) modifier key to zoom.
+          # "universalaccess".reduceMotion = true;
+        };
+      }
+    else
+      { };
 
   # The state version is required and should stay at the version you originally installed.
   home.stateVersion = "23.05";
