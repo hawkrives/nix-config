@@ -325,10 +325,10 @@
     # TODO: move into separate flakes
     # pkgs.packwiz # for meloncraft-modpack
   ]
-  # install skhd on macOS when this user has enabled vim or neovim. keyed off the
-  # user's own Home Manager config (not the host's osConfig) so it works for both
-  # standalone (`nh home switch`) and module-integrated evaluation.
-  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.isDarwin) [ pkgs.skhd ])
+  # you can also look at the current user's config (`config`) or the system
+  # config (`osConfig`), but note that osConfig is null if the homeManager
+  # config is evaluated separately as in `nh home switch .#`.
+  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.isDarwin) [ ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.cocoapods ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [ ]);
 
