@@ -1,10 +1,11 @@
 {
   pkgs,
+  flake,
   ...
 }: {
   imports = [
-    ./audit-shared.nix
-    ./documentation.nix
+    flake.nixosModules.audit-shared
+    flake.nixosModules.documentation
   ];
 
   # openssh automatically opens its port
