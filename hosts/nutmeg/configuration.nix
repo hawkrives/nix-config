@@ -1,17 +1,15 @@
 {
-  flake,
-  hostName,
   pkgs,
   inputs,
   ...
 }: {
   imports = [
-    flake.nixosModules.host-shared
-    flake.nixosModules.host-server
-    flake.nixosModules.host-nixos
-    # flake.nixosModules.veilid-shared
-    # flake.nixosModules.pocket-id
-    # flake.nixosModules.pomerium
+    ../../modules/nixos/host-shared.nix
+    ../../modules/nixos/host-server.nix
+    ../../modules/nixos/host-nixos.nix
+    # ../../modules/nixos/veilid-shared.nix
+    # ../../modules/nixos/pocket-id.nix
+    # ../../modules/nixos/pomerium.nix
 
     # configuration
     ./hardware.nix
@@ -39,7 +37,7 @@
   nixpkgs.overlays = [inputs.nix-minecraft.overlay];
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
+  networking.hostName = "nutmeg";
 
   services.mbpfan.enable = true; # enable Mac fan control daemon
   systemd.coredump.enable = false; # disable core dumps
@@ -71,7 +69,7 @@
   };
 
   programs.nh = {
-    flake = "/home/natsume/nix-config#${hostName}";
+    flake = "/home/natsume/nix-config#nutmeg";
     clean.enable = true;
     clean.dates = "weekly";
     clean.extraArgs = "--keep-since 4d --keep 3";

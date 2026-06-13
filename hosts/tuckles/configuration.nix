@@ -1,18 +1,16 @@
 {
-  flake,
-  hostName,
   pkgs,
   ...
 }:
 {
   imports = [
-    flake.nixosModules.host-shared
-    flake.nixosModules.host-server
-    flake.nixosModules.host-nixos
+    ../../modules/nixos/host-shared.nix
+    ../../modules/nixos/host-server.nix
+    ../../modules/nixos/host-nixos.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  networking.hostName = hostName;
+  networking.hostName = "tuckles";
   networking.useNetworkd = true;
 
   boot.loader.grub.enable = true;
@@ -50,7 +48,7 @@
   ];
 
   programs.nh = {
-    # todo: flake = "path#${hostName}";
+    # todo: flake = "path#tuckles";
     clean = {
       enable = true;
       dates = "weekly";
