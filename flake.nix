@@ -13,12 +13,6 @@
       inputs.systems.follows = "systems";
     };
 
-    blueprint = {
-      url = "github:numtide/blueprint";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.systems.follows = "systems";
-    };
-
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin?ref=master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -54,43 +48,96 @@
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
 
-  # Load the blueprint
-  outputs = inputs: {
-    inherit
-      (inputs.blueprint {
-        inherit inputs;
-        nixpkgs.config = {
-          allowUnfree = true;
-          allowInsecurePredicate =
-            pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      nix-darwin,
+      home-manager,
+      systems,
+      ...
+    }:
+    let
+      lib = nixpkgs.lib;
+
+      forAllSystems = lib.genAttrs (import systems);
+
+      # nixpkgs settings that used to live in the blueprint call.
+      nixpkgsConfig =
+        { ... }:
+        {
+          nixpkgs.config = {
+            allowUnfree = true;
+            allowInsecurePredicate =
+              pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+          };
         };
-        nixpkgs.overlays = [
-          (final: prev: {
-            inherit (prev.lixPackageSets.stable)
-              nixpkgs-review
-              nix-direnv
-              nix-eval-jobs
-              nix-fast-build
-              colmena
-              ;
 
-          })
-        ];
-      })
-      checks
-      devShells
-      formatter
-      lib
-      templates
-      darwinConfigurations
-      nixosConfigurations
-      modules
-      homeModules
-      darwinModules
-      nixosModules
-      packages
-      ;
+      # Wire a set of home-manager users ({ name = path; }) into a system
+      # configuration. The home-manager NixOS/Darwin module provides `pkgs`,
+      # `osConfig`, etc. to each user module automatically.
+      homeUsers =
+        users:
+        { ... }:
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = { inherit inputs; };
+          home-manager.users = builtins.mapAttrs (_name: path: import path) users;
+        };
 
-    customOutputs = { };
-  };
+      mkNixos =
+        {
+          modules,
+          users ? { },
+        }:
+        lib.nixosSystem {
+          specialArgs = { inherit inputs; };
+          modules = [
+            nixpkgsConfig
+            home-manager.nixosModules.home-manager
+            (homeUsers users)
+          ] ++ modules;
+        };
+
+      mkDarwin =
+        {
+          modules,
+          users ? { },
+        }:
+        nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit inputs; };
+          modules = [
+            nixpkgsConfig
+            home-manager.darwinModules.home-manager
+            (homeUsers users)
+          ] ++ modules;
+        };
+    in
+    {
+      nixosConfigurations = {
+        nutmeg = mkNixos {
+          modules = [ ./hosts/nutmeg/configuration.nix ];
+          users = {
+            natsume = ./hosts/nutmeg/users/natsume.nix;
+            techcyte = ./hosts/nutmeg/users/techcyte.nix;
+          };
+        };
+
+        tuckles = mkNixos {
+          modules = [ ./hosts/tuckles/configuration.nix ];
+        };
+      };
+
+      darwinConfigurations = {
+        "Techcyte-DGQJV434PF" = mkDarwin {
+          modules = [ ./hosts/Techcyte-DGQJV434PF/darwin-configuration.nix ];
+          users = {
+            "hawken.rives" = ./hosts/Techcyte-DGQJV434PF/users/hawken.rives.nix;
+          };
+        };
+      };
+
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+    };
 }

@@ -1,12 +1,11 @@
 {
   inputs,
   pkgs,
-  hostName,
   ...
 }: {
   imports = [
-    inputs.self.nixosModules.host-shared
-    inputs.self.darwinModules.host-shared
+    ../../modules/nixos/host-shared.nix
+    ../../modules/darwin/host-shared.nix
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
@@ -38,9 +37,9 @@
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
 
-  networking.hostName = hostName;
-  networking.computerName = hostName;
-  system.defaults.smb.NetBIOSName = hostName;
+  networking.hostName = "Techcyte-DGQJV434PF";
+  networking.computerName = "Techcyte-DGQJV434PF";
+  system.defaults.smb.NetBIOSName = "Techcyte-DGQJV434PF";
 
   system.keyboard.enableKeyMapping = true;
   system.keyboard.remapCapsLockToEscape = true;
