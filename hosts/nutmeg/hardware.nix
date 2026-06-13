@@ -1,8 +1,6 @@
-{ config, ... }:
-let
+{config, ...}: let
   broadcomDriver = config.boot.kernelPackages.broadcom_sta;
-in
-{
+in {
   # [networking]
   # experimental; use systemd-networkd to manage interfaces
   networking.useNetworkd = true;
@@ -29,12 +27,12 @@ in
     "usbhid"
     "xhci_pci"
   ];
-  boot.initrd.kernelModules = [ ];
+  boot.initrd.kernelModules = [];
   boot.kernelModules = [
     "kvm-intel"
     "wl"
   ];
-  boot.extraModulePackages = [ broadcomDriver ];
+  boot.extraModulePackages = [broadcomDriver];
 
   # [firmware]
   hardware.enableRedistributableFirmware = true;
@@ -42,7 +40,7 @@ in
 
   # [swap]
   # disable disk swap and enable `zramSwap` to use a compressed block device in RAM
-  swapDevices = [ ];
+  swapDevices = [];
   zramSwap = {
     enable = true;
     memoryPercent = 25;

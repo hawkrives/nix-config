@@ -1,14 +1,10 @@
-{
-  flake,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   imports = [
-    flake.homeModules.home-shared
-    flake.homeModules.git-shared
-    flake.homeModules.jj-shared
-    flake.homeModules.helix-shared
-    flake.homeModules.sqlite-shared
+    ../../../modules/home/home-shared.nix
+    ../../../modules/home/git-shared.nix
+    ../../../modules/home/jj-shared.nix
+    ../../../modules/home/helix-shared.nix
+    ../../../modules/home/sqlite-shared.nix
   ];
 
   home.packages =

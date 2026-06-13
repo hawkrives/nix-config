@@ -5,7 +5,7 @@
   services.peertube = {
     # disable until we get the media off of nutmeg
     # enable = true;
-    
+
     listenWeb = 443;
     # configureNginx = true;
     localDomain = "peertube.vaquita-woodpecker.ts.net";
