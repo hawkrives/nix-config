@@ -1,6 +1,6 @@
 {
   pkgs,
-  osConfig,
+  config,
   ...
 }:
 {
@@ -325,8 +325,10 @@
     # TODO: move into separate flakes
     # pkgs.packwiz # for meloncraft-modpack
   ]
-  # you can access the host configuration using `osConfig.`
-  ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [ pkgs.skhd ])
+  # you can also look at the current user's config (`config`) or the system
+  # config (`osConfig`), but note that osConfig is null if the homeManager
+  # config is evaluated separately as in `nh home switch .#`.
+  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.isDarwin) [ ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.cocoapods ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [ ]);
 
