@@ -24,7 +24,7 @@
   environment.systemPackages =
     [
       pkgs.btop
-      inputs.agenix.packages.${pkgs.system}.default
+      inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS
