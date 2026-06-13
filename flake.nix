@@ -84,6 +84,11 @@
       templates
       darwinConfigurations
       nixosConfigurations
+      # legacyPackages.<system>.homeConfigurations.<user>@<host> holds the
+      # standalone Home Manager configs Blueprint builds from hosts/*/users/*.nix.
+      # This is what `nh home switch` / `home-manager switch` auto-detect, so it
+      # must be re-exported for `.#<user>@<host>` to resolve.
+      legacyPackages
       modules
       homeModules
       darwinModules
