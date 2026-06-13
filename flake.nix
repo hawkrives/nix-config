@@ -63,14 +63,16 @@
       forAllSystems = lib.genAttrs (import systems);
 
       # nixpkgs settings that used to live in the blueprint call.
+      nixpkgsConfigValues = {
+        allowUnfree = true;
+        allowInsecurePredicate =
+          pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+      };
+
       nixpkgsConfig =
         { ... }:
         {
-          nixpkgs.config = {
-            allowUnfree = true;
-            allowInsecurePredicate =
-              pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
-          };
+          nixpkgs.config = nixpkgsConfigValues;
         };
 
       # Wire a set of home-manager users ({ name = path; }) into a system
@@ -113,6 +115,32 @@
             (homeUsers users)
           ] ++ modules;
         };
+
+      # Build a standalone home-manager configuration (usable via
+      # `home-manager switch --flake .#<name>`, or buildable directly with
+      # `nix build .#homeConfigurations.<name>.activationPackage`). Unlike the
+      # module wiring above, this does not depend on a surrounding NixOS/Darwin
+      # system, so `osConfig` is absent for these.
+      mkHome =
+        {
+          system,
+          username,
+          homeDirectory,
+          modules,
+        }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            inherit system;
+            config = nixpkgsConfigValues;
+          };
+          extraSpecialArgs = { inherit inputs; };
+          modules = modules ++ [
+            {
+              home.username = username;
+              home.homeDirectory = homeDirectory;
+            }
+          ];
+        };
     in
     {
       nixosConfigurations = {
@@ -135,6 +163,26 @@
           users = {
             "hawken.rives" = ./hosts/Techcyte-DGQJV434PF/users/hawken.rives.nix;
           };
+        };
+      };
+
+      # Standalone home-manager configurations. The names match the order
+      # `home-manager switch` resolves them in: `<user>@<hostname>` first, then
+      # bare `<user>`. The darwin entry mirrors the work Mac; the bare entry
+      # targets Linux so it can be built/managed in cloud or CI sessions.
+      homeConfigurations = {
+        "hawken.rives@Techcyte-DGQJV434PF" = mkHome {
+          system = "aarch64-darwin";
+          username = "hawken.rives";
+          homeDirectory = "/Users/hawken.rives";
+          modules = [ ./hosts/Techcyte-DGQJV434PF/users/hawken.rives.nix ];
+        };
+
+        "hawken.rives" = mkHome {
+          system = "x86_64-linux";
+          username = "hawken.rives";
+          homeDirectory = "/home/hawken.rives";
+          modules = [ ./hosts/Techcyte-DGQJV434PF/users/hawken.rives.nix ];
         };
       };
 

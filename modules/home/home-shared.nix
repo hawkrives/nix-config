@@ -1,6 +1,9 @@
 {
   pkgs,
-  osConfig,
+  # `osConfig` is only provided when home-manager runs as a NixOS/nix-darwin
+  # module. In a standalone homeConfiguration it is absent, so default to null
+  # and guard any access below.
+  osConfig ? null,
   ...
 }:
 {
@@ -325,8 +328,8 @@
     # TODO: move into separate flakes
     # pkgs.packwiz # for meloncraft-modpack
   ]
-  # you can access the host configuration using `osConfig.`
-  ++ (pkgs.lib.optionals (osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [ pkgs.skhd ])
+  # you can access the host configuration using `osConfig.` (null when standalone)
+  ++ (pkgs.lib.optionals (osConfig != null && osConfig.programs.vim.enable && pkgs.stdenv.isDarwin) [ pkgs.skhd ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.cocoapods ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [ ]);
 
