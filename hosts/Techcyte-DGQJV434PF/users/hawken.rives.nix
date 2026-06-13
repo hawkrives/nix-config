@@ -15,7 +15,7 @@
     [
       pkgs.awscli2
       pkgs.podman
-      pkgs.lima
+      # pkgs.lima
       pkgs.nomad
     ]
     ++ # language servers for zed
