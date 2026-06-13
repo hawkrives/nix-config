@@ -52,8 +52,8 @@
     pkgs.amazon-ecr-credential-helper
     # pkgs.attic-client
     pkgs.nil # for nix lsp for vs code / zed
-    pkgs.devenv
-    pkgs.colima
+    # pkgs.devenv
+    # pkgs.colima
     pkgs.mas
     # macos apps
     # pkgs.jetbrains.datagrip
