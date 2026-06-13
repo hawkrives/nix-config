@@ -66,7 +66,7 @@
         };
         nixpkgs.overlays = [
           (final: prev: {
-            inherit (prev.lixPackageSets.stable)
+            inherit (prev.lixPackageSets.latest)
               nixpkgs-review
               nix-direnv
               nix-eval-jobs
