@@ -2,13 +2,18 @@
   lib,
   config,
   ...
-}: let
+}:
+let
   synology = "192.168.1.194";
-  nfsMount = sharePath: {readOnly ? false}: {
-    fsType = "nfs";
-    device = sharePath;
-    options =
-      [
+  nfsMount =
+    sharePath:
+    {
+      readOnly ? false,
+    }:
+    {
+      fsType = "nfs";
+      device = sharePath;
+      options = [
         "nfsvers=4.1"
         "noatime" # we do not care about tracking the access time
         "_netdev" # ensure it's treated as a network fs, rather than local
@@ -20,7 +25,7 @@
       ++ lib.lists.optionals readOnly [
         "ro"
       ];
-  };
+    };
   synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
   servarrApp = {
@@ -31,27 +36,47 @@
     settings.auth.method = "External"; # disable auth requirement
     settings.update.mechanism = "external"; # disable builtin update process
   };
-in {
-  fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" {readOnly = true;};
-  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" {readOnly = true;};
-  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" {readOnly = true;};
-  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" {readOnly = true;};
-  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" {readOnly = true;};
+
+  # Each app's API key lives in a ragenix secret (secrets/<app>-api-key.age) as
+  # an environment file with a single <APP>__AUTH__APIKEY=… line, decrypted to
+  # /run/agenix/<app>-api-key. systemd reads EnvironmentFile= as root before
+  # dropping to the service user, so the secret stays root-owned (the default).
+  # The env var overrides the <ApiKey> in the app's config.xml at startup.
+  apiKey =
+    app:
+    servarrApp
+    // {
+      environmentFiles = [ config.age.secrets."${app}-api-key".path ];
+    };
+in
+{
+  fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
+  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { readOnly = true; };
+  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { readOnly = true; };
+  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" { readOnly = true; };
+  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { readOnly = true; };
+
+  age.secrets.radarr-api-key.file = ../../secrets/radarr-api-key.age;
+  age.secrets.sonarr-api-key.file = ../../secrets/sonarr-api-key.age;
+  age.secrets.prowlarr-api-key.file = ../../secrets/prowlarr-api-key.age;
+  age.secrets.lidarr-api-key.file = ../../secrets/lidarr-api-key.age;
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
-  services.radarr = servarrApp;
+  services.radarr = apiKey "radarr";
   services.tsnsrv.services.radarr-nm.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
-  services.sonarr = servarrApp;
+  services.sonarr = apiKey "sonarr";
   services.tsnsrv.services.sonarr-nm.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
-  services.prowlarr = servarrApp;
+  services.prowlarr = apiKey "prowlarr";
   services.tsnsrv.services.prowlarr-nm.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
-  services.lidarr = servarrApp // {enable = true;};
+  services.lidarr = apiKey "lidarr" // {
+    enable = true;
+  };
   services.tsnsrv.services.lidarr-nm.urlParts.port = config.services.lidarr.settings.server.port;
 
   # ── Recyclarr ─────────────────────────────────────────────────────

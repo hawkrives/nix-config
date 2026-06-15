@@ -18,13 +18,26 @@ let
     nutmeg
     techcyte
   ];
-in {
+in
+{
   # Example secret proving the workflow end-to-end. Wired on nutmeg only.
-  "example.age".publicKeys = users ++ [nutmeg];
+  "example.age".publicKeys = users ++ [ nutmeg ];
 
   # paperless superuser password (nutmeg).
-  "paperless-admin-pass.age".publicKeys = users ++ [nutmeg];
+  "paperless-admin-pass.age".publicKeys = users ++ [ nutmeg ];
 
   # peertube signing secret (nutmeg).
-  "peertube-secret.age".publicKeys = users ++ [nutmeg];
+  "peertube-secret.age".publicKeys = users ++ [ nutmeg ];
+
+  # lidarr API key, injected via environmentFiles (nutmeg).
+  "lidarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+
+  # radarr API key, injected via environmentFiles (nutmeg).
+  "radarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+
+  # sonarr API key, injected via environmentFiles (nutmeg).
+  "sonarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+
+  # prowlarr API key, injected via environmentFiles (nutmeg).
+  "prowlarr-api-key.age".publicKeys = users ++ [ nutmeg ];
 }
