@@ -43,8 +43,6 @@
     };
 
     ragenix = {
-      # drop-in agenix replacement; passes through agenix's NixOS/Darwin module
-      # and ships a Rust CLI (provides both `ragenix` and an `agenix` alias).
       url = "github:yaxitech/ragenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
