@@ -25,7 +25,8 @@
   environment.systemPackages =
     [
       pkgs.btop
-      perSystem.agenix.default
+      pkgs.rage
+      perSystem.ragenix.default
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
       # TODO: only install this on the NAS

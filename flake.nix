@@ -42,12 +42,11 @@
       inputs.flake-utils.inputs.systems.follows = "systems";
     };
 
-    agenix = {
-      url = "github:ryantm/agenix?ref=main";
+    ragenix = {
+      # drop-in agenix replacement; passes through agenix's NixOS/Darwin module
+      # and ships a Rust CLI (provides both `ragenix` and an `agenix` alias).
+      url = "github:yaxitech/ragenix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.darwin.follows = "nix-darwin";
-      inputs.home-manager.follows = "home-manager";
-      inputs.systems.follows = "systems";
     };
 
     # if we ever get an M-series server:

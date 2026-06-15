@@ -44,6 +44,10 @@
   services.mbpfan.enable = true; # enable Mac fan control daemon
   systemd.coredump.enable = false; # disable core dumps
 
+  # ragenix example secret; decrypted to /run/agenix/example at activation via
+  # this host's /etc/ssh/ssh_host_ed25519_key. Recipients live in secrets/secrets.nix.
+  age.secrets.example.file = ../../secrets/example.age;
+
   users.users."natsume" = {
     isNormalUser = true;
     extraGroups = ["wheel"];

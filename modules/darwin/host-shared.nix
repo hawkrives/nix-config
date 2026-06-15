@@ -1,6 +1,6 @@
 {inputs, ...}: {
   imports = [
-    inputs.agenix.darwinModules.default
+    inputs.ragenix.darwinModules.default
   ];
 
   # enable dragging windows from anywhere anywhere while holding the control and command keys

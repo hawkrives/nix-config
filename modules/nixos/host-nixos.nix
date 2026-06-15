@@ -5,7 +5,7 @@
 }: {
   # config settings only applicable to NixOS-based systems, not Darwin
   imports = [
-    inputs.agenix.nixosModules.default
+    inputs.ragenix.nixosModules.default
   ];
 
   programs.neovim = {
