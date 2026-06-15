@@ -24,4 +24,7 @@ in {
 
   # paperless superuser password (nutmeg).
   "paperless-admin-pass.age".publicKeys = users ++ [nutmeg];
+
+  # peertube signing secret (nutmeg).
+  "peertube-secret.age".publicKeys = users ++ [nutmeg];
 }
