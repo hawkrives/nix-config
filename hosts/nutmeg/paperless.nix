@@ -1,10 +1,11 @@
 {config, ...}: {
-  # TODO replace with agenix/sops
-  environment.etc."paperless-admin-pass".text = "admin";
+  # Superuser password is decrypted to /run/agenix/paperless-admin-pass and read
+  # by systemd LoadCredential (as root) when starting the paperless service.
+  age.secrets.paperless-admin-pass.file = ../../secrets/paperless-admin-pass.age;
 
   services.paperless = {
     enable = true;
-    passwordFile = "/etc/paperless-admin-pass";
+    passwordFile = config.age.secrets.paperless-admin-pass.path;
 
     domain = "paperless.vaquita-woodpecker.ts.net";
 

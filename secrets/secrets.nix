@@ -21,4 +21,7 @@ let
 in {
   # Example secret proving the workflow end-to-end. Wired on nutmeg only.
   "example.age".publicKeys = users ++ [nutmeg];
+
+  # paperless superuser password (nutmeg).
+  "paperless-admin-pass.age".publicKeys = users ++ [nutmeg];
 }
