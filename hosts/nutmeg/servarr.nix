@@ -56,6 +56,8 @@ in
   fileSystems."/mnt/music" = synologyMount "/volume1/media-music" { readOnly = true; };
   fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { readOnly = true; };
 
+  fileSystems."/var/lib/lidarr/.config/Lidarr/MediaCover" = synologyMount "/volume1/app-lidarr/MediaCover" { };
+
   age.secrets.radarr-api-key.file = ../../secrets/radarr-api-key.age;
   age.secrets.sonarr-api-key.file = ../../secrets/sonarr-api-key.age;
   age.secrets.prowlarr-api-key.file = ../../secrets/prowlarr-api-key.age;
