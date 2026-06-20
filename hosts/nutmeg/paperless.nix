@@ -7,7 +7,7 @@
     enable = true;
     passwordFile = config.age.secrets.paperless-admin-pass.path;
 
-    domain = "paperless.vaquita-woodpecker.ts.net";
+    domain = "paperless-1.vaquita-woodpecker.ts.net";
 
     consumptionDirIsPublic = true;
     configureTika = true;
@@ -37,6 +37,7 @@
   };
 
   services.tsnsrv.services.paperless.urlParts.port = config.services.paperless.port;
+  services.tsnsrv.services.paperless.urlParts.host = config.services.paperless.address;
 
   networking.firewall.allowedTCPPorts = [config.services.paperless.port];
 }
