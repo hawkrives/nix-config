@@ -11,6 +11,7 @@
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
     inputs.disko.nixosModules.default
+    inputs.vpn-confinement.nixosModules.default
     flake.nixosModules.synology-mounts
     ./disk.nix
     ./networking.nix
