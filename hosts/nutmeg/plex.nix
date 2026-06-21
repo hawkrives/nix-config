@@ -84,6 +84,12 @@ in
   services.tsnsrv.services.tautulli-nm.urlParts.port = config.services.tautulli.port;
   services.tsnsrv.services.plex-nm.urlParts.port = 32400;
 
+  # Plex reads the same NAS media tree, which is group-owned by gid 100 ("users")
+  # with the library dirs at 0770. Plex's own uid isn't the owner (1036), so it
+  # needs gid 100 to traverse/read shows and music (movies happen to be 0777).
+  # Read-only is all Plex needs; the *arr services do the writing (see servarr.nix).
+  users.users.plex.extraGroups = [ "users" ];
+
   fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" { };
   fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" { };
   fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { };

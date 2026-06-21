@@ -27,6 +27,16 @@ let
     };
 in
 {
+  # The NAS media tree is owned by the old stack's shared identity (uid 1036,
+  # gid 100 = "users") with group-write on the library dirs. Our per-app service
+  # users each live only in their own group, so they can't write to the shared
+  # media over NFS (NFS sec=sys passes uid/gid through). Add them to "users"
+  # (gid 100) so they inherit the group-write the NAS already grants. radarr
+  # only worked by luck (/mnt/movies happens to be 0777); shows/music are 0770.
+  users.users.sonarr.extraGroups = [ "users" ];
+  users.users.radarr.extraGroups = [ "users" ];
+  users.users.lidarr.extraGroups = [ "users" ];
+
   fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
   fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { };
   fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { };
