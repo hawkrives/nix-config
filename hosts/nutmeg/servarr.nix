@@ -137,26 +137,31 @@ in
     in
     [ "+${pin}" ];
 
-  # ── Overseerr (:5055) —────────────────────────────────────────────
-  services.overseerr = {
+  # ── Seerr (:5055) ─────────────────────────────────────────────────
+  # Seerr (formerly Jellyseerr) — an actively-maintained Overseerr fork that adds
+  # Jellyfin/Emby while keeping full Plex support. Migrated from overseerr: its
+  # DB + settings.json share Overseerr's schema, so the old data was copied into
+  # /var/lib/seerr and Seerr migrates it forward. `services.jellyseerr` is a
+  # renamed-option alias for `services.seerr`.
+  services.seerr = {
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.seerr-nm.urlParts.port = config.services.overseerr.port;
+  services.tsnsrv.services.seerr-nm.urlParts.port = config.services.seerr.port;
 
-  # Same idea as bazarr: overseerr owns settings.json at runtime (no declarative
+  # Same idea as bazarr: seerr owns settings.json at runtime (no declarative
   # config option), but its radarr/sonarr API keys are secrets that belong in
   # ragenix. Pin the *arr connections (+ loopback for plex) on every start. It's
   # DynamicUser, so the file is owned by a dynamic uid under /var/lib/private —
   # we run as root ('+') to read the secrets and rewrite the file in place
   # (truncate-in-place via cat keeps the dynamic-uid ownership). No-ops until the
   # servers exist, so it enforces rather than bootstraps. The plex *token* is
-  # still a runtime OAuth thing (the 401 watchlist error) — not managed here.
-  systemd.services.overseerr.serviceConfig.ExecStartPre =
+  # still a runtime OAuth thing (signed in via the UI) — not managed here.
+  systemd.services.seerr.serviceConfig.ExecStartPre =
     let
-      pin = pkgs.writeShellScript "overseerr-pin-arr" ''
+      pin = pkgs.writeShellScript "seerr-pin-arr" ''
         set -euo pipefail
-        cfg=/var/lib/overseerr/settings.json
+        cfg=${config.services.seerr.configDir}/settings.json
         [ -f "$cfg" ] || exit 0
         ${pkgs.jq}/bin/jq -e '(.radarr | length > 0) and (.sonarr | length > 0)' "$cfg" >/dev/null 2>&1 || exit 0
         rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
