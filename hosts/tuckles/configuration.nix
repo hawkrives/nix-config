@@ -13,6 +13,7 @@
     inputs.disko.nixosModules.default
     inputs.vpn-confinement.nixosModules.default
     flake.nixosModules.synology-mounts
+    flake.nixosModules.mdns
     ./disk.nix
     ./networking.nix
     ./storage.nix

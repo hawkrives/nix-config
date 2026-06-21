@@ -4,12 +4,14 @@
   pkgs,
   inputs,
   ...
-}: {
+}:
+{
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
     flake.nixosModules.synology-mounts
+    flake.nixosModules.mdns
     # flake.nixosModules.veilid-shared
     # flake.nixosModules.pocket-id
     # flake.nixosModules.pomerium
@@ -37,7 +39,7 @@
     inputs.tsnsrv.nixosModules.default
   ];
 
-  nixpkgs.overlays = [inputs.nix-minecraft.overlay];
+  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
@@ -51,11 +53,11 @@
 
   users.users."natsume" = {
     isNormalUser = true;
-    extraGroups = ["wheel"];
+    extraGroups = [ "wheel" ];
     shell = pkgs.fish;
   };
 
-  users.groups.techcyte = {};
+  users.groups.techcyte = { };
   users.users.techcyte = {
     isNormalUser = true;
     group = "techcyte";
@@ -71,8 +73,8 @@
 
   # for slime
   networking.firewall = {
-    allowedTCPPorts = [9100];
-    allowedUDPPorts = [9100];
+    allowedTCPPorts = [ 9100 ];
+    allowedUDPPorts = [ 9100 ];
   };
 
   programs.nh = {
