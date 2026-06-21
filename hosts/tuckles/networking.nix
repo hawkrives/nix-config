@@ -1,11 +1,10 @@
 { config, ... }:
 {
-  # Static LAN address via systemd-networkd (configuration.nix sets useNetworkd).
+  # DHCP via systemd-networkd (configuration.nix sets useNetworkd). The router
+  # pins this host to 192.168.1.66 via a static DHCP reservation on its MAC.
   systemd.network.networks."10-lan" = {
     matchConfig.Name = "en*";
-    address = [ "192.168.1.195/24" ];
-    routes = [ { Gateway = "192.168.1.1"; } ];
-    networkConfig.DNS = "192.168.1.194";
+    networkConfig.DHCP = "ipv4";
     linkConfig.RequiredForOnline = "routable";
   };
 

@@ -17,15 +17,15 @@
     settings.filtering.rewrites = [
       {
         domain = "tuckles";
-        answer = "192.168.1.195";
+        answer = "192.168.1.66";
       }
       {
         domain = "sabnzbd";
-        answer = "192.168.1.195";
+        answer = "192.168.1.66";
       }
       {
         domain = "qbittorrent";
-        answer = "192.168.1.195";
+        answer = "192.168.1.66";
       }
     ];
   };
