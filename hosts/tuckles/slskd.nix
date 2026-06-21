@@ -50,7 +50,10 @@ in
       enable = true;
       vpnNamespace = "mullvad";
     };
-    unitConfig.RequiresMountsFor = [ "/mnt/music" ];
+    # NB: deliberately NOT RequiresMountsFor=/mnt/music. The NFS mounts
+    # idle-unmount after 5m (x-systemd.idle-timeout); a hard Requires on the
+    # mount makes systemd stop slskd when that fires. Like qB/SAB, rely on the
+    # automount to (re)mount /mnt/music transparently on access instead.
     restartTriggers = [
       config.age.secrets.slskd-api-key.file
       config.age.secrets.slskd-env.file
