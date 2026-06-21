@@ -47,6 +47,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    vpn-confinement = {
+      url = "github:Maroka-chan/VPN-Confinement";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
