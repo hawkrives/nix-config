@@ -25,10 +25,9 @@
   networking.hostName = hostName;
   networking.useNetworkd = true;
 
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/vda";
-  };
+  # disko sets boot.loader.grub.devices from disk.nix's `device`; setting it
+  # here too would duplicate /dev/vda in mirroredBoots and fail an assertion.
+  boot.loader.grub.enable = true;
   boot.initrd.availableKernelModules = [
     "ahci"
     "sd_mod"
