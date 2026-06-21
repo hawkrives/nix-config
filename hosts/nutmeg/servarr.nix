@@ -75,25 +75,25 @@ in
   services.radarr = apiKey "radarr" // {
     enable = true;
   };
-  services.tsnsrv.services.radarr-nm.urlParts.port = config.services.radarr.settings.server.port;
+  services.tsnsrv.services.radarr.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
   services.sonarr = apiKey "sonarr" // {
     enable = true;
   };
-  services.tsnsrv.services.sonarr-nm.urlParts.port = config.services.sonarr.settings.server.port;
+  services.tsnsrv.services.sonarr.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
   services.prowlarr = apiKey "prowlarr" // {
     enable = true;
   };
-  services.tsnsrv.services.prowlarr-nm.urlParts.port = config.services.prowlarr.settings.server.port;
+  services.tsnsrv.services.prowlarr.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
   services.lidarr = apiKey "lidarr" // {
     enable = true;
   };
-  services.tsnsrv.services.lidarr-nm.urlParts.port = config.services.lidarr.settings.server.port;
+  services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
 
   # ── Recyclarr ─────────────────────────────────────────────────────
   # services.recyclarr.enable = true;
@@ -109,7 +109,7 @@ in
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.bazarr-nm.urlParts.port = config.services.bazarr.listenPort;
+  services.tsnsrv.services.bazarr.urlParts.port = config.services.bazarr.listenPort;
 
   # Bazarr has no declarative-config option (it owns config.yaml at runtime), but
   # the one thing we *do* want pinned — its link to radarr/sonarr, including the
@@ -147,7 +147,7 @@ in
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.seerr-nm.urlParts.port = config.services.seerr.port;
+  services.tsnsrv.services.seerr.urlParts.port = config.services.seerr.port;
 
   # Same idea as bazarr: seerr owns settings.json at runtime (no declarative
   # config option), but its radarr/sonarr API keys are secrets that belong in

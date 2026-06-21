@@ -49,6 +49,12 @@ in
   "radarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
   "sonarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
 
+  # Soulseek account credentials for slskd (tuckles only).
+  "slskd-env.age".publicKeys = users ++ [ tuckles ];
+
+  # slskd web API key — shared by slskd (tuckles) and Soularr (nutmeg).
+  "slskd-api-key.age".publicKeys = users ++ [ nutmeg tuckles ];
+
   # Mullvad WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
   "wg-mullvad-tuckles.age".publicKeys = users ++ [ tuckles ];
 

@@ -81,8 +81,8 @@ in
     dataDir = "/var/lib/tautulli";
   };
 
-  services.tsnsrv.services.tautulli-nm.urlParts.port = config.services.tautulli.port;
-  services.tsnsrv.services.plex-nm.urlParts.port = 32400;
+  services.tsnsrv.services.tautulli.urlParts.port = config.services.tautulli.port;
+  services.tsnsrv.services.plex.urlParts.port = 32400;
 
   # Plex reads the same NAS media tree, which is group-owned by gid 100 ("users")
   # with the library dirs at 0770. Plex's own uid isn't the owner (1036), so it
