@@ -1,8 +1,8 @@
-{config, ...}: {
+{ config, ... }: {
   # it's OK to open :53, because the router won't allow unexpected connections
   # from the internet to the machines
-  networking.firewall.allowedTCPPorts = [53];
-  networking.firewall.allowedUDPPorts = [53];
+  networking.firewall.allowedTCPPorts = [ 53 ];
+  networking.firewall.allowedUDPPorts = [ 53 ];
 
   services.adguardhome = {
     enable = true;
@@ -11,7 +11,7 @@
     port = 5380;
 
     # settings.http.address = "0.0.0.0:${toString port}";
-    settings.dns.bind_hosts = ["0.0.0.0"];
+    settings.dns.bind_hosts = [ "0.0.0.0" ];
 
     # Resolve the download-client host (tuckles VM on the NAS) on the LAN.
     settings.filtering.rewrites = [

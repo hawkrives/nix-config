@@ -5,7 +5,9 @@ let
   synology = "192.168.1.194";
   nfsMount =
     sharePath:
-    { readOnly ? false }:
+    {
+      readOnly ? false,
+    }:
     {
       fsType = "nfs";
       device = sharePath;

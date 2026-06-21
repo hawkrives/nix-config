@@ -10,7 +10,12 @@
       "100.64.0.0/10" # Tailscale CGNAT range (remote admin of the WebUI)
       "127.0.0.1"
     ];
-    portMappings = [ { from = 6001; to = 6001; } ];
+    portMappings = [
+      {
+        from = 6001;
+        to = 6001;
+      }
+    ];
   };
 
   services.qbittorrent = {

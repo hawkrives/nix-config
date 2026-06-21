@@ -68,8 +68,7 @@
         inherit inputs;
         nixpkgs.config = {
           allowUnfree = true;
-          allowInsecurePredicate =
-            pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+          allowInsecurePredicate = pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
         };
         nixpkgs.overlays = [
           (final: prev: {
