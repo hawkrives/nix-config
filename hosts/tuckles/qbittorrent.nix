@@ -34,5 +34,16 @@
   # actually loads.
   systemd.services.mullvad.restartTriggers = [ config.age.secrets.wg-mullvad-tuckles.file ];
 
+  # qBittorrent downloads to a local TempPath (Session\TempPath in its seeded
+  # config) before moving completed files to the per-category NFS save path. But
+  # /var/lib/qBittorrent is root-owned and the temp/complete dirs were never
+  # created, so qB couldn't write incomplete data and every torrent went to the
+  # `error` state with 0 progress. Create them owned by the service user, the
+  # same way sabnzbd.nix does for SAB.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/qBittorrent/incomplete 0755 qbittorrent qbittorrent -"
+    "d /var/lib/qBittorrent/complete 0755 qbittorrent qbittorrent -"
+  ];
+
   networking.firewall.allowedTCPPorts = [ 6001 ];
 }

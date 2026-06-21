@@ -1,3 +1,6 @@
 result
 netrc
 docs/superpowers/
+
+# scratch dump file used for piping sudo command output back to Claude
+/output
