@@ -112,12 +112,19 @@ in
 
   systemd.services.soularr = {
     description = "Soularr — drive slskd (Soulseek) from Lidarr's wanted list";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    # Soularr builds the per-album import folder under the NFS download dir and
-    # moves slskd's completed files there. A short-lived oneshot, so requiring the
-    # mount is fine (unlike long-running slskd).
-    unitConfig.RequiresMountsFor = [ "/mnt/music" ];
+    # Pull the music mount up at start (for ReadWritePaths) and order after it,
+    # but with Wants/After — NOT RequiresMountsFor. A run can exceed the NFS 5m
+    # idle-unmount (the search phase doesn't touch /mnt), and a hard Requires
+    # would make systemd kill soularr when the mount idle-unmounts (it did: a
+    # 6.5m CJK-churning run got SIGTERM'd). Wants doesn't propagate the stop.
+    after = [
+      "network-online.target"
+      "mnt-music.mount"
+    ];
+    wants = [
+      "network-online.target"
+      "mnt-music.mount"
+    ];
     serviceConfig = {
       Type = "oneshot";
       DynamicUser = true;
