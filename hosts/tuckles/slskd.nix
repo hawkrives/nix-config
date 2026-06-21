@@ -82,6 +82,24 @@ in
 
   networking.firewall.allowedTCPPorts = [ 5030 ]; # web UI on the LAN (via the netns port-map)
 
+  # tsnsrv embeds Tailscale, so its backend dials carry Tailscale's fwmark
+  # (0x80000); the vpn-confinement netns rules drop marked packets, so tsnsrv
+  # can't reach slskd directly at the netns bridge (192.168.15.1:5030 times out)
+  # even though plain unmarked services (a curl, the qui app reaching qB) reach
+  # it fine. Bridge it with a plain socat forwarder on localhost:5031 and point
+  # the slsk tsnsrv node at that (see tsnsrv.nix).
+  systemd.services.slskd-web-proxy = {
+    description = "localhost:5031 -> slskd web UI in the mullvad netns (for tsnsrv)";
+    after = [ "slskd.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat TCP4-LISTEN:5031,bind=127.0.0.1,fork,reuseaddr TCP4:192.168.15.1:5030";
+      DynamicUser = true;
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
+
   systemd.tmpfiles.rules = [
     "d /var/lib/slskd/incomplete 0755 ${cfg.user} ${cfg.group} -"
   ];
