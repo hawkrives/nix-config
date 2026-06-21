@@ -95,14 +95,14 @@ in
 
   # ── Bazarr (:6767) ────────────────────────────────────────────────
   services.bazarr = {
-    # enable = true;
+    enable = true;
     openFirewall = true;
   };
   services.tsnsrv.services.bazarr-nm.urlParts.port = config.services.bazarr.listenPort;
 
   # ── Overseerr (:5055) —────────────────────────────────────────────
   services.overseerr = {
-    # enable = true;
+    enable = true;
     openFirewall = true;
   };
   services.tsnsrv.services.seerr-nm.urlParts.port = config.services.overseerr.port;
