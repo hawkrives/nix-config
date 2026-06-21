@@ -10,9 +10,8 @@
     # precedence, while preserving everything else in the ini.
     allowConfigWrite = true;
     settings.misc = {
-      host = "0.0.0.0";
-      port = 6000;
-      ipv6_hosting = true; # also listen on IPv6 (so tuckles.local — which resolves to v6 — works)
+      host = "::"; # dual-stack: an IPv6 ANY socket also accepts IPv4 (v4-mapped) on Linux,
+      port = 6000; # so both 192.168.1.66:6000 and tuckles.local (IPv6) reach SAB
       host_whitelist = "sabnzbd,tuckles,tuckles.local,sabnzbd.vaquita-woodpecker.ts.net,tuckles.vaquita-woodpecker.ts.net";
     };
   };
