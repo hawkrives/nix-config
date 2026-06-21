@@ -20,7 +20,10 @@
     ./sabnzbd.nix
     ./qbittorrent.nix
     ./qui.nix
+    ./tsnsrv.nix
     ./backups.nix
+
+    inputs.tsnsrv.nixosModules.default
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
