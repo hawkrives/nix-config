@@ -51,4 +51,8 @@ in
 
   # qui (alternate qBittorrent web UI) session secret (tuckles).
   "qui-session-secret.age".publicKeys = users ++ [ tuckles ];
+
+  # Bare tailscale OAuth client secret (no ?ephemeral query) for tsnsrv's OAuth
+  # key minting on tuckles. Same OAuth client as tailscale-authkey-tuckles.
+  "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
 }

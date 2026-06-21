@@ -4,10 +4,11 @@
     enable = true;
 
     defaults = {
-      # Reuse the existing tailscale OAuth client secret (scoped to
-      # tag:container,tag:servarr). tsnsrv reads it via systemd LoadCredential as
-      # root, so the root-owned agenix secret needs no permission changes.
-      authKeyPath = config.age.secrets.tailscale-authkey-tuckles.path;
+      # Same OAuth client as the main tailscale node, but the *bare* secret
+      # (no ?ephemeral query) — tsnsrv mints its own key via the OAuth token
+      # endpoint and the query suffix would 401 it. tsnsrv reads it via systemd
+      # LoadCredential as root, so the root-owned agenix secret needs no perms.
+      authKeyPath = config.age.secrets.tsnsrv-authkey-tuckles.path;
       tags = [
         "tag:container"
         "tag:servarr"
