@@ -9,8 +9,6 @@
       "192.168.1.0/24" # LAN (where the *arr on nutmeg reach the WebUI)
       "100.64.0.0/10" # Tailscale CGNAT range (remote admin of the WebUI)
       "127.0.0.1"
-      "fd9c:c16f:be01:47ef::/64" # LAN ULA (IPv6) — stable; tuckles.local resolves here
-      "::1"
     ];
     portMappings = [
       {
