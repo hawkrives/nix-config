@@ -2,10 +2,8 @@
 {
   services.sabnzbd = {
     enable = true;
-    # Use the new settings-based interface. configFile = null silences the
-    # `configFile is deprecated` warning (it otherwise defaults to the legacy
-    # path because this host's stateVersion is < 26.05).
-    configFile = null;
+    # The settings-based interface is the default at this host's stateVersion
+    # (>= 26.05), so configFile already defaults to null (no deprecation warning).
     # Keep the runtime ini writable so the web UI and the seeded config
     # (servers/categories, migrated from the old install) persist; the module
     # merges the declarative `settings` below in on each start, taking

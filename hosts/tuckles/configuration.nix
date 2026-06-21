@@ -81,5 +81,5 @@
   age.secrets.wg-mullvad-tuckles.file = ../../secrets/wg-mullvad-tuckles.age;
   age.secrets.tailscale-authkey-tuckles.file = ../../secrets/tailscale-authkey-tuckles.age;
 
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.11";
 }
