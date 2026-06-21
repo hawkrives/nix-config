@@ -12,6 +12,22 @@
 
     # settings.http.address = "0.0.0.0:${toString port}";
     settings.dns.bind_hosts = ["0.0.0.0"];
+
+    # Resolve the download-client host (tuckles VM on the NAS) on the LAN.
+    settings.filtering.rewrites = [
+      {
+        domain = "tuckles";
+        answer = "192.168.1.195";
+      }
+      {
+        domain = "sabnzbd";
+        answer = "192.168.1.195";
+      }
+      {
+        domain = "qbittorrent";
+        answer = "192.168.1.195";
+      }
+    ];
   };
 
   services.tsnsrv.services.ag.urlParts.port = config.services.adguardhome.port;
