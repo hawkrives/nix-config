@@ -1,5 +1,5 @@
 diff --git a/soularr.py b/soularr.py
-index 9af0857..22db1d0 100644
+index 9af0857..3935041 100644
 --- a/soularr.py
 +++ b/soularr.py
 @@ -12,6 +12,7 @@ import operator
@@ -10,6 +10,15 @@ index 9af0857..22db1d0 100644
  from datetime import datetime
  import copy
  import music_tag
+@@ -370,7 +371,7 @@ def check_for_match(tracks, allowed_filetype, file_dirs, username):
+                 else:
+                     directory = slskd.users.directory(username=username, directory=file_dir)
+             except Exception:
+-                logger.exception(f'Error getting directory from user: "{username}"')
++                logger.warning(f'Skipping user "{username}": could not read directory listing')
+                 broken_user.append(username)
+                 logger.debug(f"Updated broken users {broken_user}")
+                 return False, {}, ""
 @@ -430,6 +431,73 @@ def filter_list(albums):
          return None
  
