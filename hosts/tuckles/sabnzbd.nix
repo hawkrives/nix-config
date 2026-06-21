@@ -2,11 +2,23 @@
 {
   services.sabnzbd = {
     enable = true;
-    # configFile defaults to /var/lib/sabnzbd/sabnzbd.ini; the runtime ini is
-    # seeded once from the migrated old config (not managed declaratively).
+    # Use the new settings-based interface. configFile = null silences the
+    # `configFile is deprecated` warning (it otherwise defaults to the legacy
+    # path because this host's stateVersion is < 26.05).
+    configFile = null;
+    # Keep the runtime ini writable so the web UI and the seeded config
+    # (servers/categories, migrated from the old install) persist; the module
+    # merges the declarative `settings` below in on each start, taking
+    # precedence, while preserving everything else in the ini.
+    allowConfigWrite = true;
+    settings.misc = {
+      host = "0.0.0.0";
+      port = 6000;
+      host_whitelist = "sabnzbd,tuckles,sabnzbd.vaquita-woodpecker.ts.net,tuckles.vaquita-woodpecker.ts.net";
+    };
   };
 
-  # SAB listens on 6000 (set in the seeded ini). Open it on the LAN.
+  # SAB listens on 6000 (enforced via settings.misc.port above). Open it on the LAN.
   networking.firewall.allowedTCPPorts = [ 6000 ];
 
   systemd.tmpfiles.rules = [
