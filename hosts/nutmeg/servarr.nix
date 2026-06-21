@@ -34,10 +34,10 @@ in
   fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { };
 
   fileSystems."/var/lib/lidarr/.config/Lidarr/MediaCover" =
-    synologyMount "/volume1/app-lidarr/MediaCover"
+    synologyMount "/volume1/app-servarr/lidarr/MediaCover"
       { };
   fileSystems."/var/lib/lidarr/.config/Lidarr/Backups" =
-    synologyMount "/volume1/app-lidarr/Backups"
+    synologyMount "/volume1/app-servarr/lidarr/Backups"
       { };
 
   fileSystems."/var/lib/radarr/.config/Radarr/MediaCover" =
