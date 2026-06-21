@@ -48,4 +48,7 @@ in
 
   # Tailscale auth key for tuckles.
   "tailscale-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
+
+  # qui (alternate qBittorrent web UI) session secret (tuckles).
+  "qui-session-secret.age".publicKeys = users ++ [ tuckles ];
 }

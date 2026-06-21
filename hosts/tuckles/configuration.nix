@@ -19,6 +19,7 @@
     ./storage.nix
     ./sabnzbd.nix
     ./qbittorrent.nix
+    ./qui.nix
     ./backups.nix
   ];
 
@@ -87,6 +88,7 @@
 
   age.secrets.wg-mullvad-tuckles.file = ../../secrets/wg-mullvad-tuckles.age;
   age.secrets.tailscale-authkey-tuckles.file = ../../secrets/tailscale-authkey-tuckles.age;
+  age.secrets.qui-session-secret.file = ../../secrets/qui-session-secret.age;
 
   system.stateVersion = "26.11";
 }
