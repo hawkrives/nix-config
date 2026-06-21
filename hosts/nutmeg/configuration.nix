@@ -26,6 +26,7 @@
     ./plex.nix
     ./servarr.nix
     ./recyclarr.nix
+    ./soulseek.nix
     ./tailscale.nix
     ./syncthing.nix
     ./paperless.nix
