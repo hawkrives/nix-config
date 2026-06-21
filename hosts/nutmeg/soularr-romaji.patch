@@ -1,0 +1,121 @@
+diff --git a/soularr.py b/soularr.py
+index 9af0857..22db1d0 100644
+--- a/soularr.py
++++ b/soularr.py
+@@ -12,6 +12,7 @@ import operator
+ import configparser
+ import logging
+ import json
++import requests
+ from datetime import datetime
+ import copy
+ import music_tag
+@@ -430,6 +431,73 @@ def filter_list(albums):
+         return None
+ 
+ 
++# --- romaji search patch: also find Latin/romaji-named folders for CJK albums ---
++_mb_alias_cache = {}
++
++
++def _has_cjk(text):
++    for ch in text or "":
++        o = ord(ch)
++        if (
++            0x3040 <= o <= 0x30FF  # Hiragana + Katakana
++            or 0x3400 <= o <= 0x4DBF  # CJK Ext A
++            or 0x4E00 <= o <= 0x9FFF  # CJK Unified
++            or 0xAC00 <= o <= 0xD7A3  # Hangul syllables
++            or 0xF900 <= o <= 0xFAFF  # CJK Compatibility Ideographs
++            or 0xFF00 <= o <= 0xFFEF  # Fullwidth / halfwidth forms
++        ):
++            return True
++    return False
++
++
++def _mb_latin_alias(mbid, entity):
++    """Best Latin-script alias for a MusicBrainz artist/release-group, or None."""
++    if not mbid:
++        return None
++    key = (entity, mbid)
++    if key in _mb_alias_cache:
++        return _mb_alias_cache[key]
++    result = None
++    try:
++        time.sleep(1)  # MusicBrainz rate limit: 1 request/second
++        resp = requests.get(
++            "https://musicbrainz.org/ws/2/" + entity + "/" + mbid,
++            params={"inc": "aliases", "fmt": "json"},
++            headers={"User-Agent": "soularr-romaji/1.0 ( https://github.com/mrusse/soularr )"},
++            timeout=15,
++        )
++        if resp.ok:
++            aliases = resp.json().get("aliases") or []
++            latin = [a for a in aliases if a.get("name") and not _has_cjk(a["name"])]
++            primary = [a for a in latin if a.get("primary")]
++            picks = primary or latin
++            if picks:
++                result = picks[0]["name"]
++    except Exception:
++        logger.debug("MusicBrainz alias lookup failed for %s %s", entity, mbid, exc_info=True)
++    _mb_alias_cache[key] = result
++    return result
++
++
++def romaji_query_for(album, native_query):
++    """Latin/romaji search query for a CJK album, or None if not applicable."""
++    artist = album["artist"]["artistName"]
++    title = album["title"]
++    if not (_has_cjk(artist) or _has_cjk(title)):
++        return None
++    latin_artist = _mb_latin_alias(album["artist"].get("foreignArtistId"), "artist") if _has_cjk(artist) else artist
++    latin_title = _mb_latin_alias(album.get("foreignAlbumId"), "release-group") if _has_cjk(title) else title
++    latin_artist = latin_artist or artist
++    latin_title = latin_title or title
++    # If MusicBrainz had no Latin alias for the CJK part(s), nothing to add.
++    if _has_cjk(latin_artist) and _has_cjk(latin_title):
++        return None
++    query = " ".join((latin_artist + " " + latin_title).split())
++    if query.lower() == (native_query or "").lower():
++        return None
++    return query
++
++
+ def search_for_album(album):
+     album_title = album["title"]
+     artist_name = album["artist"]["artistName"]
+@@ -481,6 +549,34 @@ def search_for_album(album):
+     if delete_searches:
+         slskd.searches.delete(search["id"])
+ 
++    # --- romaji patch: also search a Latin/romaji query for CJK albums ---
++    if config.getboolean("Search Settings", "romaji_search", fallback=True):
++        romaji_query = romaji_query_for(album, query)
++        if romaji_query:
++            logger.info(f"Searching romaji query: {romaji_query}")
++            try:
++                romaji_search = slskd.searches.search_text(
++                    searchText=romaji_query,
++                    searchTimeout=config.getint("Search Settings", "search_timeout", fallback=5000),
++                    filterResponses=True,
++                    maximumPeerQueueLength=config.getint("Search Settings", "maximum_peer_queue", fallback=50),
++                    minimumPeerUploadSpeed=config.getint("Search Settings", "minimum_peer_upload_speed", fallback=0),
++                )
++                time.sleep(5)
++                romaji_start = time.time()
++                while slskd.searches.state(romaji_search["id"], False)["state"] == "InProgress":
++                    time.sleep(1)
++                    if (time.time() - romaji_start) > config.getint("Search Settings", "search_timeout", fallback=5000):
++                        break
++                romaji_results = slskd.searches.search_responses(romaji_search["id"])
++                logger.info(f"Romaji search returned {len(romaji_results)} results")
++                if delete_searches:
++                    slskd.searches.delete(romaji_search["id"])
++                search_results = list(search_results) + list(romaji_results)
++            except Exception:
++                logger.exception(f"Romaji search failed: {romaji_query}")
++    # --- end romaji patch ---
++
+     if not len(search_results) > 0:
+         return False
+ 

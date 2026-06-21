@@ -42,6 +42,11 @@ let
       rev = "f9e0ab922fd928a6d5d39cc9ddc0b0734006ddac";
       hash = "sha256-gtz99+DiFjJZuq54qo5C+5Exx++S+ePzldgDM9NHAOA=";
     };
+    # Romaji-search patch: for CJK albums, also search Soulseek with the
+    # Latin/romaji alias pulled from the MusicBrainz API (artist/release-group
+    # foreign IDs Lidarr already provides). Search augmentation only — matching is
+    # unchanged. Toggled by [Search Settings] romaji_search (default true).
+    patches = [ ./soularr-romaji.patch ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     pythonEnv = pkgs.python3.withPackages (_: [
       music-tag
@@ -49,6 +54,7 @@ let
       py.pyarr
       py.flask
       py.waitress
+      py.requests # used by the romaji patch's MusicBrainz lookups
     ]);
     installPhase = ''
       runHook preInstall
@@ -99,6 +105,7 @@ let
     number_of_albums_to_grab = 5
     search_source = missing
     failed_import_denylist = True
+    romaji_search = True
 
     [Download Settings]
     download_filtering = True
