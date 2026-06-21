@@ -9,6 +9,7 @@
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
+    flake.nixosModules.synology-mounts
     # flake.nixosModules.veilid-shared
     # flake.nixosModules.pocket-id
     # flake.nixosModules.pomerium
