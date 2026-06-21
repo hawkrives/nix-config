@@ -73,7 +73,9 @@ in
   services.tsnsrv.services.sonarr-nm.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
-  services.prowlarr = apiKey "prowlarr";
+  services.prowlarr = apiKey "prowlarr" // {
+    enable = true;
+  };
   services.tsnsrv.services.prowlarr-nm.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
