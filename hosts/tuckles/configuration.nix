@@ -34,6 +34,8 @@
     "sd_mod"
     "ata_piix"
     "virtio_pci"
+    "virtio_blk" # the virtio disk (/dev/vda) block driver — without it the
+    "virtio_scsi" # initrd can't see the disk and root mount times out
   ];
   # Synology VMM's virtual GPU stalls the kernel's KMS console mid-boot; disable
   # mode-setting so the (headless) console keeps working. Without this the
