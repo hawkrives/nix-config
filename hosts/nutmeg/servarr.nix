@@ -39,6 +39,20 @@ in
   fileSystems."/var/lib/lidarr/.config/Lidarr/Backups" =
     synologyMount "/volume1/app-lidarr/Backups"
       { };
+
+  fileSystems."/var/lib/radarr/.config/Radarr/MediaCover" =
+    synologyMount "/volume1/app-servarr/radarr/MediaCover"
+      { };
+  fileSystems."/var/lib/radarr/.config/Radarr/Backups" =
+    synologyMount "/volume1/app-servarr/radarr/Backups"
+      { };
+  fileSystems."/var/lib/sonarr/.config/NzbDrone/MediaCover" =
+    synologyMount "/volume1/app-servarr/sonarr/MediaCover"
+      { };
+  fileSystems."/var/lib/sonarr/.config/NzbDrone/Backups" =
+    synologyMount "/volume1/app-servarr/sonarr/Backups"
+      { };
+
   fileSystems."/mnt/servarr" = synologyMount "/volume1/app-servarr" { };
 
   age.secrets.radarr-api-key.file = ../../secrets/radarr-api-key.age;
