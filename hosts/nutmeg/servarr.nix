@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   config,
   synologyMount,
   ...
@@ -110,10 +111,65 @@ in
   };
   services.tsnsrv.services.bazarr-nm.urlParts.port = config.services.bazarr.listenPort;
 
+  # Bazarr has no declarative-config option (it owns config.yaml at runtime), but
+  # the one thing we *do* want pinned — its link to radarr/sonarr, including the
+  # API keys — are secrets that belong in ragenix. Inject them (plus loopback) on
+  # every start with a YAML-aware edit, so the connection lives in git and the
+  # keys never sit in plaintext. Everything else in config.yaml stays runtime-
+  # managed. Runs as root ('+') to read the root-owned secrets, then hands the
+  # file back to bazarr. No-ops until bazarr has created the radarr/sonarr
+  # sections, so it enforces rather than bootstraps.
+  systemd.services.bazarr.serviceConfig.ExecStartPre =
+    let
+      pin = pkgs.writeShellScript "bazarr-pin-arr" ''
+        set -euo pipefail
+        cfg=${config.services.bazarr.dataDir}/config/config.yaml
+        [ -f "$cfg" ] || exit 0
+        ${pkgs.yq-go}/bin/yq -e '.radarr and .sonarr' "$cfg" >/dev/null 2>&1 || exit 0
+        rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
+        skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
+        RKEY="$rkey" SKEY="$skey" ${pkgs.yq-go}/bin/yq -i '
+            .radarr.ip = "127.0.0.1" | .radarr.apikey = strenv(RKEY)
+          | .sonarr.ip = "127.0.0.1" | .sonarr.apikey = strenv(SKEY)
+        ' "$cfg"
+        ${pkgs.coreutils}/bin/chown ${config.services.bazarr.user}:${config.services.bazarr.group} "$cfg"
+      '';
+    in
+    [ "+${pin}" ];
+
   # ── Overseerr (:5055) —────────────────────────────────────────────
   services.overseerr = {
     enable = true;
     openFirewall = true;
   };
   services.tsnsrv.services.seerr-nm.urlParts.port = config.services.overseerr.port;
+
+  # Same idea as bazarr: overseerr owns settings.json at runtime (no declarative
+  # config option), but its radarr/sonarr API keys are secrets that belong in
+  # ragenix. Pin the *arr connections (+ loopback for plex) on every start. It's
+  # DynamicUser, so the file is owned by a dynamic uid under /var/lib/private —
+  # we run as root ('+') to read the secrets and rewrite the file in place
+  # (truncate-in-place via cat keeps the dynamic-uid ownership). No-ops until the
+  # servers exist, so it enforces rather than bootstraps. The plex *token* is
+  # still a runtime OAuth thing (the 401 watchlist error) — not managed here.
+  systemd.services.overseerr.serviceConfig.ExecStartPre =
+    let
+      pin = pkgs.writeShellScript "overseerr-pin-arr" ''
+        set -euo pipefail
+        cfg=/var/lib/overseerr/settings.json
+        [ -f "$cfg" ] || exit 0
+        ${pkgs.jq}/bin/jq -e '(.radarr | length > 0) and (.sonarr | length > 0)' "$cfg" >/dev/null 2>&1 || exit 0
+        rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
+        skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
+        tmp=$(${pkgs.coreutils}/bin/mktemp)
+        ${pkgs.jq}/bin/jq --arg rk "$rkey" --arg sk "$skey" '
+            .plex.ip = "127.0.0.1"
+          | .radarr[0].hostname = "127.0.0.1" | .radarr[0].apiKey = $rk
+          | .sonarr[0].hostname = "127.0.0.1" | .sonarr[0].apiKey = $sk
+        ' "$cfg" > "$tmp"
+        ${pkgs.coreutils}/bin/cat "$tmp" > "$cfg"
+        ${pkgs.coreutils}/bin/rm -f "$tmp"
+      '';
+    in
+    [ "+${pin}" ];
 }
