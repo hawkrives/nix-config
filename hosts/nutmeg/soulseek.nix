@@ -114,11 +114,20 @@ in
     description = "Soularr — drive slskd (Soulseek) from Lidarr's wanted list";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
+    # Soularr builds the per-album import folder under the NFS download dir and
+    # moves slskd's completed files there. A short-lived oneshot, so requiring the
+    # mount is fine (unlike long-running slskd).
+    unitConfig.RequiresMountsFor = [ "/mnt/music" ];
     serviceConfig = {
       Type = "oneshot";
       DynamicUser = true;
       StateDirectory = "soularr";
       WorkingDirectory = "/var/lib/soularr";
+      # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve
+      # out the download dir. And gid 100 ("users") to write the setgid 1036:100
+      # tree, so the files Lidarr later hardlink-imports inherit the shared group.
+      ReadWritePaths = [ "/mnt/music/soulseek/complete" ];
+      SupplementaryGroups = [ "users" ];
       # Both keys exposed to the (non-root) service via systemd credentials.
       LoadCredential = [
         "lidarr-key:${config.age.secrets.lidarr-api-key.path}"
