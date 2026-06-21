@@ -43,6 +43,12 @@ in
   # prowlarr API key, injected via environmentFiles (nutmeg).
   "prowlarr-api-key.age".publicKeys = users ++ [ nutmeg ];
 
+  # Bare radarr/sonarr API keys (value only, no KEY= prefix) for recyclarr, whose
+  # `_secret` LoadCredential substitution wants the raw key. Same keys as the
+  # *-api-key.age env-files above, just unwrapped (nutmeg).
+  "radarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
+  "sonarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
+
   # Mullvad WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
   "wg-mullvad-tuckles.age".publicKeys = users ++ [ tuckles ];
 
