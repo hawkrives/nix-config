@@ -28,5 +28,13 @@
       host = "127.0.0.1";
       port = config.services.sabnzbd.settings.misc.port;
     };
+
+    # slskd web UI at https://slsk.vaquita-woodpecker.ts.net -> 192.168.15.1:5030.
+    # slskd runs *inside* the mullvad netns, so reach it on the netns bridge addr
+    # (the DNAT port-map is PREROUTING-only; localhost won't enter the namespace).
+    services.slsk.urlParts = {
+      host = "192.168.15.1";
+      port = config.services.slskd.settings.web.port;
+    };
   };
 }
