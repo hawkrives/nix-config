@@ -47,11 +47,15 @@ in
   age.secrets.lidarr-api-key.file = ../../secrets/lidarr-api-key.age;
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
-  services.radarr = apiKey "radarr";
+  services.radarr = apiKey "radarr" // {
+    enable = true;
+  };
   services.tsnsrv.services.radarr-nm.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
-  services.sonarr = apiKey "sonarr";
+  services.sonarr = apiKey "sonarr" // {
+    enable = true;
+  };
   services.tsnsrv.services.sonarr-nm.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
