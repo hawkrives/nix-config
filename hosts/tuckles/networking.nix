@@ -8,11 +8,13 @@
     linkConfig.RequiredForOnline = "routable";
   };
 
-  # Tailscale (LAN + tailnet).
+  # Tailscale (LAN + tailnet). The auth key is an OAuth client secret, so the
+  # node must advertise the tags the client is scoped to.
   services.tailscale = {
     enable = true;
     openFirewall = true;
     authKeyFile = config.age.secrets.tailscale-authkey-tuckles.path;
+    extraUpFlags = [ "--advertise-tags=tag:container,tag:servarr" ];
   };
   networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
 }

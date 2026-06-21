@@ -14,11 +14,11 @@ let
   # /etc/ssh/ssh_host_ed25519_key)
   nutmeg = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRtF1Gu1NN25zb3ZWL+D2XBn2i0FszefxLVMwhItgOb";
   techcyte = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO";
-  # tuckles host key — fill in after first boot (cat /etc/ssh/ssh_host_ed25519_key.pub), then `ragenix --rekey`
-  tuckles = "ssh-ed25519 AAAA_REPLACE_AFTER_INSTALL";
+  tuckles = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaiGtVceXg9xJh0+jIIhFKZtnlNdPaWCZqSp0KNsb6r";
   systems = [
     nutmeg
     techcyte
+    tuckles
   ];
 in
 {
@@ -44,8 +44,8 @@ in
   "prowlarr-api-key.age".publicKeys = users ++ [ nutmeg ];
 
   # Mullvad WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
-  "wg-mullvad-tuckles.age".publicKeys = users; # add ++ [ tuckles ] after the host key is known
+  "wg-mullvad-tuckles.age".publicKeys = users ++ [ tuckles ];
 
   # Tailscale auth key for tuckles.
-  "tailscale-authkey-tuckles.age".publicKeys = users; # add ++ [ tuckles ] after the host key is known
+  "tailscale-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
 }
