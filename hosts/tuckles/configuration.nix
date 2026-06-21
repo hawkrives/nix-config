@@ -34,6 +34,10 @@
     "ata_piix"
     "virtio_pci"
   ];
+  # Synology VMM's virtual GPU stalls the kernel's KMS console mid-boot; disable
+  # mode-setting so the (headless) console keeps working. Without this the
+  # installed system hangs right after `reached target Timer Units`.
+  boot.kernelParams = [ "nomodeset" ];
 
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
