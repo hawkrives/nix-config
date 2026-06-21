@@ -12,6 +12,7 @@
     settings.misc = {
       host = "0.0.0.0";
       port = 6000;
+      ipv6_hosting = true; # also listen on IPv6 (so tuckles.local — which resolves to v6 — works)
       host_whitelist = "sabnzbd,tuckles,tuckles.local,sabnzbd.vaquita-woodpecker.ts.net,tuckles.vaquita-woodpecker.ts.net";
     };
   };
