@@ -19,6 +19,7 @@
     ./storage.nix
     ./sabnzbd.nix
     ./qbittorrent.nix
+    ./slskd.nix
     ./qui.nix
     ./tsnsrv.nix
     ./backups.nix

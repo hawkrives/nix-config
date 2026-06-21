@@ -15,6 +15,11 @@
         from = 6001;
         to = 6001;
       }
+      {
+        # slskd web UI (slskd.nix) shares this namespace; expose its port to the LAN.
+        from = 5030;
+        to = 5030;
+      }
     ];
   };
 
