@@ -51,12 +51,18 @@ let
 in
 {
   fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
-  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { readOnly = true; };
-  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { readOnly = true; };
-  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" { readOnly = true; };
-  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { readOnly = true; };
+  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { };
+  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { };
+  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" { };
+  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { };
 
-  fileSystems."/var/lib/lidarr/.config/Lidarr/MediaCover" = synologyMount "/volume1/app-lidarr/MediaCover" { };
+  fileSystems."/var/lib/lidarr/.config/Lidarr/MediaCover" =
+    synologyMount "/volume1/app-lidarr/MediaCover"
+      { };
+  fileSystems."/var/lib/lidarr/.config/Lidarr/Backups" =
+    synologyMount "/volume1/app-lidarr/Backups"
+      { };
+  fileSystems."/mnt/servarr" = synologyMount "/volume1/app-servarr" { };
 
   age.secrets.radarr-api-key.file = ../../secrets/radarr-api-key.age;
   age.secrets.sonarr-api-key.file = ../../secrets/sonarr-api-key.age;
