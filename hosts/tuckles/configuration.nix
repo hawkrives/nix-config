@@ -2,6 +2,7 @@
   flake,
   hostName,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -9,13 +10,24 @@
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
+    inputs.disko.nixosModules.default
+    flake.nixosModules.synology-mounts
+    ./disk.nix
+    ./networking.nix
+    ./storage.nix
+    ./sabnzbd.nix
+    ./qbittorrent.nix
+    ./backups.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName;
   networking.useNetworkd = true;
 
-  boot.loader.grub.enable = true;
+  boot.loader.grub = {
+    enable = true;
+    device = "/dev/vda";
+  };
   boot.initrd.availableKernelModules = [
     "ahci"
     "sd_mod"
