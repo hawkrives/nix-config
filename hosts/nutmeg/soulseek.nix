@@ -155,7 +155,10 @@ in
           ${configTemplate} > /var/lib/soularr/config.ini
         ${pkgs.coreutils}/bin/chmod 600 /var/lib/soularr/config.ini
       '';
-      ExecStart = "${soularr}/bin/soularr --config-dir /var/lib/soularr --var-dir /var/lib/soularr";
+      # --no-lock-file: systemd already serializes oneshot runs, and soularr's own
+      # lock file is left stale if a run is SIGTERM'd (e.g. by an idle-unmount),
+      # which then silently exits every subsequent run with code 1.
+      ExecStart = "${soularr}/bin/soularr --config-dir /var/lib/soularr --var-dir /var/lib/soularr --no-lock-file";
     };
   };
 
