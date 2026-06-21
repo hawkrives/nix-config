@@ -53,8 +53,8 @@
     };
 
     vpn-confinement = {
+      # NOTE: this flake declares no inputs of its own, so no `inputs.nixpkgs.follows`.
       url = "github:Maroka-chan/VPN-Confinement";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # if we ever get an M-series server:

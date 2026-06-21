@@ -11,7 +11,7 @@
       dest=/mnt/servarr/backups/tuckles
       mkdir -p "$dest"
       rsync -a --delete /var/lib/sabnzbd/ "$dest/sabnzbd/"
-      rsync -a --delete /var/lib/qbittorrent/ "$dest/qbittorrent/"
+      rsync -a --delete /var/lib/qBittorrent/ "$dest/qbittorrent/"
     '';
   };
 
