@@ -4,11 +4,15 @@
     enable = true;
 
     defaults = {
-      # Manual setup (mirrors nutmeg): place an OAuth client secret scoped to
-      # tag:tsnsrv-tuckles at this path (mode 0400, owned by the tsnsrv user).
-      authKeyPath = "/etc/tsnsrv/authkey";
-      tags = [ "tag:tsnsrv-tuckles" ];
-      ephemeral = true;
+      # Reuse the existing tailscale OAuth client secret (scoped to
+      # tag:container,tag:servarr). tsnsrv reads it via systemd LoadCredential as
+      # root, so the root-owned agenix secret needs no permission changes.
+      authKeyPath = config.age.secrets.tailscale-authkey-tuckles.path;
+      tags = [
+        "tag:container"
+        "tag:servarr"
+      ];
+      ephemeral = false; # the reused OAuth key is ?ephemeral=false
       urlParts.host = "localhost";
     };
 
