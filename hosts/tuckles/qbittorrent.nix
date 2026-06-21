@@ -28,5 +28,11 @@
     vpnNamespace = "mullvad";
   };
 
+  # The wg config secret's content can change (e.g. swapping Mullvad city)
+  # without the unit definition changing, so systemd wouldn't restart the
+  # namespace on its own. Restart it when the secret changes so the new config
+  # actually loads.
+  systemd.services.mullvad.restartTriggers = [ config.age.secrets.wg-mullvad-tuckles.file ];
+
   networking.firewall.allowedTCPPorts = [ 6001 ];
 }
