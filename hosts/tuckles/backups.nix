@@ -1,25 +1,34 @@
-{ pkgs, synologyMount, ... }:
+{ synologyMount, ... }:
 {
-  # Mount the app-servarr share read-write for backups.
+  # Mount the app-servarr share read-write; it's the backup destination.
   fileSystems."/mnt/servarr" = synologyMount "/volume1/app-servarr" { };
 
-  systemd.services.download-client-config-backup = {
-    description = "Back up SAB/qB config dirs to the NAS";
-    path = [ pkgs.rsync ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      dest=/mnt/servarr/backups/tuckles
-      mkdir -p "$dest"
-      rsync -a --delete /var/lib/sabnzbd/ "$dest/sabnzbd/"
-      rsync -a --delete /var/lib/qBittorrent/ "$dest/qbittorrent/"
-    '';
-  };
-
-  systemd.timers.download-client-config-backup = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
+  services.serviceBackup = {
+    enable = true;
+    # dest defaults to /mnt/servarr/backups/tuckles
+    jobs = {
+      sabnzbd = {
+        root = "/var/lib/sabnzbd";
+        sqlite = [ "admin/history1.db" ];
+        # keep sabnzbd.ini + admin/*.sab + nzbs/; drop the bulky/transient dirs.
+        excludes = [ "Downloads" "logs" "backups" "incomplete" "complete" ];
+      };
+      qbittorrent = {
+        root = "/var/lib/qBittorrent";
+        # qBittorrent/{config/*.conf,data/BT_backup}; skip the download scratch dirs.
+        excludes = [ "incomplete" "complete" ];
+      };
+      slskd = {
+        # Config is rendered into /run; the data/*.db files are the real state.
+        root = "/var/lib/slskd/data";
+        sqlite = [ "transfers.db" "messaging.db" "events.db" "search.db" ];
+        excludes = [ "shares.local.bak.db" ]; # regenerable share index (also *.db-excluded)
+      };
+      qui = {
+        root = "/var/lib/qui";
+        sqlite = [ "qui.db" ]; # instances + cross-seed config set via the UI
+        path = "config.toml";
+      };
     };
   };
 }
