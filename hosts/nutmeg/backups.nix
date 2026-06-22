@@ -9,22 +9,22 @@ in
     jobs = {
       sonarr = {
         root = config.services.sonarr.dataDir; # /var/lib/sonarr/.config/NzbDrone
-        sqlite = [ "sonarr.db" "logs.db" ];
+        sqlite = [ "sonarr.db" ];
         excludes = arrExcludes;
       };
       radarr = {
         root = config.services.radarr.dataDir; # /var/lib/radarr/.config/Radarr
-        sqlite = [ "radarr.db" "logs.db" ];
+        sqlite = [ "radarr.db" ];
         excludes = arrExcludes;
       };
       lidarr = {
         root = config.services.lidarr.dataDir; # /var/lib/lidarr/.config/Lidarr
-        sqlite = [ "lidarr.db" "logs.db" ];
+        sqlite = [ "lidarr.db" ];
         excludes = arrExcludes;
       };
       prowlarr = {
         root = config.services.prowlarr.dataDir; # /var/lib/prowlarr (DynamicUser-symlinked)
-        sqlite = [ "prowlarr.db" "logs.db" ];
+        sqlite = [ "prowlarr.db" ];
         excludes = arrExcludes;
       };
       bazarr = {
