@@ -37,6 +37,7 @@
     ./micasa.nix
     ./minecraft.nix
     ./tsnsrv.nix
+    ./backups.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
     inputs.tsnsrv.nixosModules.default
