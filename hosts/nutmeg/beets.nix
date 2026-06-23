@@ -20,30 +20,42 @@ let
     import = {
       copy = false; # NEVER relocate/rename — Lidarr tracks paths in its own DB
       move = false;
-      write = true; # embed tags (incl. artist_sort / albumartist_sort) in place
-      incremental = true; # remember done dirs; cheap to re-walk the whole tree
+      write = true; # embed canonical tags in place
+      incremental = true; # `import -A` skips already-added dirs; cheap to re-walk
       quiet = true; # non-interactive
-      quiet_fallback = "skip"; # uncertain match? skip it — never guess a wrong sort
       resume = false;
       log = "/var/lib/beets/import.log";
     };
-
-    # MBIDs Lidarr embeds make matches near-exact; auto-accept strong ones.
-    match.strong_rec_thresh = 0.1;
 
     # Bonus — the other half of Lidarr #2105: write ORIGINALDATE/ORIGINALYEAR so a
     # remaster sorts by the album's original release, not the reissue date.
     original_date = true;
 
-    # `musicbrainz` is the autotagger/candidate source — default-enabled, but
-    # setting `plugins` at all overrides that default, so it MUST be listed
-    # explicitly or every album matches 0 candidates and skips. `mbsync` adds the
-    # on-demand `beet mbsync -W` re-pull later.
+    # `musicbrainz` (default-enabled, but listing `plugins` overrides the default
+    # so it must be named) is the MB lookup that `mbsync` uses to pull canonical
+    # data by the embedded MBID.
     plugins = [
       "musicbrainz"
       "mbsync"
     ];
   };
+
+  # mbsync mode: don't fuzzy-match (which skips collaborative/partial albums) —
+  # trust the MBID Lidarr embedded and pull MB-canonical data from it.
+  #   1. import -A: add new albums *as-is* (no matching → no skips), recording
+  #      their embedded MBIDs. `incremental` skips already-added dirs (no network).
+  #   2. mbsync: re-fetch by MBID and write canonical tags (incl. *_sort), but only
+  #      for items not yet synced (empty artist_sort), so steady-state runs don't
+  #      re-hit MusicBrainz for the whole library.
+  beetsSync = pkgs.writeShellScript "beets-sync-run" ''
+    set -euo pipefail
+    beet=${pkgs.beets}/bin/beet
+    "$beet" import --noautotag --quiet /mnt/music/data
+    # --nomove is critical: mbsync renames files to the beets path format by
+    # default when they're inside the library `directory` (= /mnt/music/data),
+    # which would destroy Lidarr's layout. We only ever rewrite tags in place.
+    "$beet" mbsync --nomove 'artist_sort::^$'
+  '';
 
   # Lidarr's "On Import"/"On Upgrade" custom script. It does NOT run beet itself —
   # it pokes the one beets-sync unit, so the timer and Lidarr can never spawn two
@@ -71,10 +83,13 @@ let
       ${pkgs.coreutils}/bin/sleep 1
     done
 
-    # 1. stop Lidarr scrubbing foreign tags (it deletes beets' *_sort tags). Leave
-    #    writeAudioTags alone — the MBIDs Lidarr writes help beets match.
+    # 1. Lidarr tagging policy:
+    #    - scrubAudioTags=false: stop it deleting beets' *_sort (and other) tags.
+    #    - writeAudioTags=newFiles: stamp tags (incl. MBIDs) on import only, not on a
+    #      continuous "sync" — so Lidarr seeds the MBID beets needs but stops
+    #      reverting beets' canonical artist/title back to its own massaged values.
     req "$api/config/metadataprovider" \
-      | jq '.scrubAudioTags = false' \
+      | jq '.scrubAudioTags = false | .writeAudioTags = "newFiles"' \
       | req -X PUT "$api/config/metadataprovider" -H 'Content-Type: application/json' -d @- >/dev/null
 
     # 2. upsert the beets-sync custom-script connection (idempotent by name)
@@ -119,9 +134,9 @@ in
     });
   '';
 
-  # ── beets-sync: tag the library in place (adds the sort tags Lidarr omits) ──
+  # ── beets-sync: write MB-canonical tags in place from each file's MBID ──
   systemd.services.beets-sync = {
-    description = "Embed sort-name tags Lidarr omits (beets, in place)";
+    description = "Write MB-canonical tags (incl. sort-names) via beets mbsync";
     # Wants/After, NOT Requires: the NFS share idle-unmounts after 5m and a hard
     # mount dep would SIGTERM a long run — same lesson as soularr. beets reads
     # /mnt continuously so it won't actually idle out, but stay safe.
@@ -139,13 +154,9 @@ in
       Group = "beets";
       SupplementaryGroups = [ "users" ];
       Environment = "BEETSDIR=/var/lib/beets";
-      # First run walks the whole tree at MusicBrainz's ~1 req/s — can take hours.
+      # First run mbsyncs the whole library at MusicBrainz's ~1 req/s — hours.
       TimeoutStartSec = "infinity";
-      # -R / --incremental-skip-later: don't record *skipped* albums in the
-      # incremental state, so a transiently-skipped album (low-confidence match,
-      # MB blip) is retried next run instead of being stuck forever. Matched
-      # albums are still recorded, so steady-state runs only re-check the skip set.
-      ExecStart = "${pkgs.beets}/bin/beet import --quiet --incremental-skip-later /mnt/music/data";
+      ExecStart = beetsSync;
     };
   };
 
