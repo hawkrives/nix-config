@@ -26,6 +26,7 @@
     ./home-assistant-matter.nix
     ./plex.nix
     ./servarr.nix
+    ./beets.nix
     ./recyclarr.nix
     ./soulseek.nix
     ./tailscale.nix
