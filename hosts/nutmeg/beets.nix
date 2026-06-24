@@ -124,6 +124,9 @@ in
   ];
 
   # Let the lidarr user start (only) this one unit, for the custom-script trigger.
+  # polkit must be explicitly enabled — extraConfig alone is inert, so without
+  # this the lidarr user's `systemctl start` is denied ("Access denied").
+  security.polkit.enable = true;
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.systemd1.manage-units" &&
