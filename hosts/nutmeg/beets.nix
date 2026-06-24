@@ -160,6 +160,11 @@ in
       User = "beets";
       Group = "beets";
       SupplementaryGroups = [ "users" ];
+      # Match the *arr services: keep the group-write bit on anything beets
+      # touches so the shared gid-100 model holds (see servarr.nix). beets writes
+      # tags in place (move=false) rather than creating files, so this mostly
+      # future-proofs it, but it stays consistent with the rest of the stack.
+      UMask = "0007";
       Environment = "BEETSDIR=/var/lib/beets";
       # First run mbsyncs the whole library at MusicBrainz's ~1 req/s — hours.
       TimeoutStartSec = "infinity";

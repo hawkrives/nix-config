@@ -19,6 +19,15 @@ in
   age.secrets.slskd-env.file = ../../secrets/slskd-env.age;
   age.secrets.slskd-api-key.file = ../../secrets/slskd-api-key.age;
 
+  # slskd runs as its own user (group "slskd") but must read the NAS music
+  # library to share it — those files are group "users" (gid 100) with "other"
+  # denied (drwxrws--- / -rw-rw----), so without "users" slskd falls through to
+  # "other" and can't read them ("File not shared" on every upload). Same shared
+  # gid-100 reasoning as the *arr users in servarr.nix; NFS sec=sys passes the
+  # supplementary gid through (PrivateUsers is forced off below to preserve it).
+  # It also covers writing downloads into /mnt/music/soulseek/complete.
+  users.users.slskd.extraGroups = [ "users" ];
+
   services.slskd = {
     enable = true;
     # Soulseek account creds (SLSKD_SLSK_USERNAME / SLSKD_SLSK_PASSWORD) come

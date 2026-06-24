@@ -37,6 +37,24 @@ in
   users.users.sonarr.extraGroups = [ "users" ];
   users.users.radarr.extraGroups = [ "users" ];
   users.users.lidarr.extraGroups = [ "users" ];
+  # bazarr writes sidecar subtitles next to the media in /mnt/{shows,movies},
+  # so it needs the same group-write access as the *arr that own those trees.
+  users.users.bazarr.extraGroups = [ "users" ];
+
+  # …but group membership is only half of it: the shared model also needs every
+  # file/dir these services create to carry the group-write bit, so the *next*
+  # service user can write it (e.g. beets retagging a track Lidarr just imported,
+  # or Lidarr creating an album folder under an artist dir). systemd's default
+  # UMask=0022 strips group-write, producing drwxr-s--- / -rw-r----- under the
+  # media tree — which silently breaks imports into freshly created folders and
+  # blocks beets-sync from rewriting tags. 0007 reproduces the tree's existing
+  # drwxrws--- / -rw-rw---- (group-write, "other" denied) for everything new.
+  # mkForce: the upstream servarr modules pin UMask = "0022" directly (no
+  # mkDefault), so a plain assignment conflicts at eval — override it outright.
+  systemd.services.lidarr.serviceConfig.UMask = lib.mkForce "0007";
+  systemd.services.sonarr.serviceConfig.UMask = lib.mkForce "0007";
+  systemd.services.radarr.serviceConfig.UMask = lib.mkForce "0007";
+  systemd.services.bazarr.serviceConfig.UMask = lib.mkForce "0007";
 
   fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
   fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { };

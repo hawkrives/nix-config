@@ -28,6 +28,13 @@
     webuiPort = 6001;
   };
 
+  # Same shared-gid reasoning as sabnzbd / the *arr: qB moves completed torrents
+  # to NFS save paths under /mnt/{shows,movies}. Join "users" (gid 100) so it can
+  # write there with mapping off, and UMask 0007 keeps files group-accessible so
+  # the *arr can import and Plex can read them.
+  users.users.qbittorrent.extraGroups = [ "users" ];
+  systemd.services.qbittorrent.serviceConfig.UMask = "0007";
+
   systemd.services.qbittorrent.vpnConfinement = {
     enable = true;
     vpnNamespace = "mullvad";

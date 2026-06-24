@@ -16,6 +16,16 @@
     };
   };
 
+  # SAB writes completed downloads into the NFS media shares (/mnt/shows,
+  # /mnt/movies) the *arr import from. Those trees grant write via the "users"
+  # group (gid 100); with NFS user-mapping off SAB writes as its own uid, so it
+  # must join "users" or it lands in "other" and can't write the 0770 shares.
+  # UMask 0007 keeps what it creates group read+writable so the *arr can
+  # hardlink/import and Plex can read it — the default 0022 left staging files
+  # non-group-writable (and the old 0600/0700 leftovers came from this gap).
+  users.users.sabnzbd.extraGroups = [ "users" ];
+  systemd.services.sabnzbd.serviceConfig.UMask = "0007";
+
   # SAB listens on 6000 (enforced via settings.misc.port above). Open it on the LAN.
   networking.firewall.allowedTCPPorts = [ 6000 ];
 
