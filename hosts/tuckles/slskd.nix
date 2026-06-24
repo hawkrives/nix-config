@@ -75,6 +75,12 @@ in
       PrivateUsers = lib.mkForce false;
       PrivateMounts = lib.mkForce false;
       RestrictNamespaces = lib.mkForce false;
+      # Downloads land in /mnt/music/soulseek/complete, which Lidarr then *moves*
+      # into the library — a move deletes the source, which needs group-write on
+      # the download dir slskd created. Default UMask=0022 makes them drwxr-sr-x
+      # (no group-write), so Lidarr's import fails on DeleteFile. 0007 matches the
+      # rest of the stack so the download tree is group-writable from creation.
+      UMask = "0007";
       RuntimeDirectory = "slskd"; # /run/slskd for the patched config
       ExecStartPre = lib.mkBefore [
         ("+" + (pkgs.writeShellScript "slskd-render-config" ''
