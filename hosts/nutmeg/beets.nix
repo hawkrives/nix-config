@@ -23,6 +23,10 @@ let
       write = true; # embed canonical tags in place
       incremental = true; # `import -A` skips already-added dirs; cheap to re-walk
       quiet = true; # non-interactive
+      # Don't skip same-titled albums (e.g. Weezer Blue [1994] vs Red [2008]):
+      # beets dedups on albumartist+album, not MBID, so distinct same-named
+      # releases would otherwise be skipped and never mbsync'd. Keep both.
+      duplicate_action = "keep";
       resume = false;
       log = "/var/lib/beets/import.log";
     };
