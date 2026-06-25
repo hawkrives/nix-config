@@ -7,7 +7,7 @@ let
   py = pkgs.python3Packages;
 
   # music-tag and slskd-api aren't in nixpkgs; build them from PyPI.
-  music-tag = py.buildPythonPackage rec {
+  music-tag = py.buildPythonPackage {
     pname = "music-tag";
     version = "0.4.3";
     pyproject = true;
@@ -20,7 +20,7 @@ let
     doCheck = false;
   };
 
-  slskd-api = py.buildPythonPackage rec {
+  slskd-api = py.buildPythonPackage {
     pname = "slskd-api";
     version = "0.1.5";
     # Use the prebuilt wheel — the sdist build needs setuptools-git-versioning.
@@ -94,15 +94,15 @@ let
     accepted_formats = CD,Digital Media,Vinyl
 
     [Search Settings]
-    search_timeout = 5000
+    search_timeout = 10000
     maximum_peer_queue = 50
     minimum_peer_upload_speed = 0
     minimum_filename_match_ratio = 0.8
-    minimum_search_interval = 5
+    minimum_search_interval = 10
     allowed_filetypes = flac,mp3 320
     album_prepend_artist = False
     search_type = incrementing_page
-    number_of_albums_to_grab = 5
+    number_of_albums_to_grab = 8
     search_source = missing
     failed_import_denylist = True
     romaji_search = True
@@ -142,6 +142,16 @@ in
       # tree, so the files Lidarr later hardlink-imports inherit the shared group.
       ReadWritePaths = [ "/mnt/music/soulseek/complete" ];
       SupplementaryGroups = [ "users" ];
+      # soularr builds its own "Artist - Album (Year)" temp folder (os.mkdir) and
+      # moves the downloaded tracks into it before triggering Lidarr's import.
+      # Lidarr's import is move-mode: it hardlinks each track into the library and
+      # then DeleteFile()s the source — which needs group-write on *this* folder.
+      # The default UMask=0022 makes it drwxr-sr-x (no group-write), so the delete
+      # fails with "Permission denied"; Lidarr then drops the track (no DB row)
+      # even though the library copy already landed, and soularr files the album
+      # under failed_imports. 0007 makes the temp folder group-writable from
+      # creation — same fix and reasoning as slskd's UMask (see tuckles/slskd.nix).
+      UMask = "0007";
       # Both keys exposed to the (non-root) service via systemd credentials.
       LoadCredential = [
         "lidarr-key:${config.age.secrets.lidarr-api-key.path}"

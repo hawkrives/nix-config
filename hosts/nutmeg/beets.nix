@@ -96,6 +96,17 @@ let
       | jq '.scrubAudioTags = false | .writeAudioTags = "newFiles"' \
       | req -X PUT "$api/config/metadataprovider" -H 'Content-Type: application/json' -d @- >/dev/null
 
+    # Disable "Change File Date": fileDate=albumReleaseDate stamps each track's
+    # mtime via utimensat, which POSIX allows only the file's *owner* to do — a
+    # group-writer gets EPERM ("Operation not permitted"). In the shared model
+    # files are owned by whoever downloaded them (slskd/sab/…), not Lidarr, so
+    # this failed on nearly every import once NFS user-mapping was turned off
+    # (with mapping on, everything was owned by the squash uid Lidarr also wrote
+    # as, so it used to work). It's cosmetic — turn it off to stop the noise.
+    req "$api/config/mediamanagement" \
+      | jq '.fileDate = "none"' \
+      | req -X PUT "$api/config/mediamanagement" -H 'Content-Type: application/json' -d @- >/dev/null
+
     # 2. upsert the beets-sync custom-script connection (idempotent by name)
     if ! req "$api/notification" | jq -e '.[] | select(.name == "beets-sync")' >/dev/null; then
       req "$api/notification/schema" \
