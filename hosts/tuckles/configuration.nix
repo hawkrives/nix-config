@@ -70,8 +70,8 @@
   };
 
   environment.systemPackages = with pkgs; [
-    helix
     curl
+    btop
   ];
 
   programs.nh = {
