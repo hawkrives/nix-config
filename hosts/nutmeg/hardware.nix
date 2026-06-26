@@ -4,15 +4,26 @@ let
 in
 {
   # [networking]
-  # experimental; use systemd-networkd to manage interfaces
   networking.useNetworkd = true;
-  # systemd-resolved listens on :53, conflicting with adguard-home
-  services.resolved.enable = false;
-  networking.resolvconf.enable = false;
+  services.resolved.enable = true;
 
-  environment.etc."resolv.conf".text = ''
-    nameserver 127.0.0.1
-  '';
+  # have nutmeg resolve through adguardhome, but keep a
+  # fallback around in case adguard is down
+  services.resolved.settings.Resolve.Domains = [ "~." ];
+  services.resolved.settings.Resolve.FallbackDNS = [
+    "1.1.1.1"
+    "2606:4700:4700::1111"
+  ];
+  networking.nameservers = [ "192.168.1.228" ];
+
+  systemd.network.networks."10-lan" = {
+    matchConfig.Name = "enp1s0f0";
+    networkConfig = {
+      DHCP = "ipv4";
+      IPv6AcceptRA = true;
+    };
+    ipv6AcceptRAConfig.Token = "static:::228";
+  };
 
   # [booting]
   boot.loader.systemd-boot.enable = true;
