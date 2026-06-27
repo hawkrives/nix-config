@@ -45,6 +45,12 @@
   # live bind keeps the mount referenced, so it won't idle-unmount underneath.
   systemd.services.podman-aurral.unitConfig.RequiresMountsFor = "/mnt/music";
 
-  # Expose on the tailnet, like the other apps.
-  services.tsnsrv.services.aurral.urlParts.port = 3001;
+  # Expose on the tailnet, like the other apps. Aurral's node backend binds
+  # IPv4-only (0.0.0.0:3001), so point tsnsrv at 127.0.0.1 explicitly — the
+  # default "localhost" resolves to ::1 first and the proxy gets connection
+  # refused (unlike the *arr apps, which bind dual-stack "*").
+  services.tsnsrv.services.aurral.urlParts = {
+    host = "127.0.0.1";
+    port = 3001;
+  };
 }
