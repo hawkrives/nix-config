@@ -23,6 +23,13 @@ in
       IPv6AcceptRA = true;
     };
     ipv6AcceptRAConfig.Token = "static:::228";
+    # Pin the global ::228 statically so it survives gaps between the router's
+    # RAs — the whole LAN is told to use this address for DNS (adguard), so it
+    # must not lapse. The SLAAC token above still derives the same address from
+    # the RA; this just guarantees it's always present.
+    # NOTE: update this if the ISP-delegated prefix ever changes (currently
+    # 2600:2b00:9b16:6d01::/64).
+    address = [ "2600:2b00:9b16:6d01::228/64" ];
   };
 
   # [booting]
