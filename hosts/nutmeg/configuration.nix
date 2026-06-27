@@ -22,6 +22,7 @@
 
     # modules
     ./adguard.nix
+    ./aurral.nix
     ./home-assistant.nix
     ./home-assistant-matter.nix
     ./plex.nix
