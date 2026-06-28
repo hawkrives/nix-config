@@ -113,6 +113,50 @@ in
   };
   services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
 
+  # ── Daily *arr backup enforcement ─────────────────────────────────
+  # Each app's "Backup Interval" is set to 1 day (daily scheduled backups,
+  # auto-pruned by its own retention). But that interval lives in the app's
+  # SQLite DB — exactly the kind of stateful setting that drifted and lost the
+  # Lidarr track-naming formats. This daily timer re-pins backupInterval=1 via
+  # each API so the daily-backup behaviour can't silently regress. Same "enforce
+  # a runtime-managed setting on a schedule" idea as the bazarr/seerr pins below.
+  #
+  # We re-pin the interval rather than POSTing the Backup command directly:
+  # command-triggered backups are stored as type "Manual", which the *arr never
+  # prune by retention — daily manual backups would grow the NAS Backups/ dirs
+  # unbounded (Lidarr's are ~190 MB each). Pinning lets the app's own scheduler
+  # create and prune the daily backups. Runs as root to read /run/agenix keys.
+  systemd.services.arr-backup-pin = {
+    description = "Re-assert daily backup interval (backupInterval=1) on each *arr";
+    after = [ "network.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      set -u
+      pin() { # name port apiver keyfile
+        local name=$1 port=$2 ver=$3 key base cur body
+        key=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' "$4")
+        base="http://localhost:$port/api/$ver/config/host"
+        cur=$(${pkgs.curl}/bin/curl -fsSL -H "X-Api-Key: $key" "$base") || { echo "$name: GET failed"; return; }
+        body=$(${pkgs.jq}/bin/jq '.backupInterval = 1' <<<"$cur")
+        ${pkgs.curl}/bin/curl -fsSL -X PUT -H "X-Api-Key: $key" -H "Content-Type: application/json" \
+          -d "$body" "$base" >/dev/null && echo "$name: backupInterval pinned to 1" || echo "$name: PUT failed"
+      }
+      pin radarr   ${toString config.services.radarr.settings.server.port}   v3 ${config.age.secrets.radarr-api-key.path}
+      pin sonarr   ${toString config.services.sonarr.settings.server.port}   v3 ${config.age.secrets.sonarr-api-key.path}
+      pin prowlarr ${toString config.services.prowlarr.settings.server.port} v1 ${config.age.secrets.prowlarr-api-key.path}
+      pin lidarr   ${toString config.services.lidarr.settings.server.port}   v1 ${config.age.secrets.lidarr-api-key.path}
+    '';
+  };
+  systemd.timers.arr-backup-pin = {
+    description = "Daily: re-assert *arr backup interval";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "20m";
+    };
+  };
+
   # ── Recyclarr ─────────────────────────────────────────────────────
   # services.recyclarr.enable = true;
 
