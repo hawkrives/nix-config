@@ -42,6 +42,15 @@ in
         sqlite = [ "tautulli.db" ];
         path = "config.ini";
       };
+      jellyfin = {
+        root = config.services.jellyfin.dataDir; # /var/lib/jellyfin
+        sqlite = [
+          "data/library.db"
+          "data/jellyfin.db"
+        ];
+        path = "config"; # system.xml, network.xml, encoding.xml
+        excludes = [ "metadata" "transcodes" "data/subtitles" ]; # regenerable
+      };
       plex = {
         root = "${config.services.plex.dataDir}/Plex Media Server";
         sqlite = [
