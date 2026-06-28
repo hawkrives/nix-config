@@ -81,7 +81,13 @@ in
     dataDir = "/var/lib/tautulli";
   };
 
-  services.tsnsrv.services.tautulli.urlParts.port = config.services.tautulli.port;
+  # Tautulli binds IPv4-only (0.0.0.0:8181), so point tsnsrv at 127.0.0.1
+  # explicitly — the default "localhost" resolves to ::1 first and the proxy
+  # gets connection refused (same workaround as jellyfin/aurral).
+  services.tsnsrv.services.tautulli.urlParts = {
+    host = "127.0.0.1";
+    port = config.services.tautulli.port;
+  };
   services.tsnsrv.services.plex.urlParts.port = 32400;
 
   # Plex reads the same NAS media tree, which is group-owned by gid 100 ("users")
