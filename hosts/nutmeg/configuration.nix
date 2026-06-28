@@ -63,6 +63,12 @@
     shell = pkgs.fish;
   };
 
+  # Passwordless sudo on this box (nutmeg). Scoped here rather than in the shared
+  # host-server module so it doesn't relax sudo on every server. natsume is the
+  # only wheel member here (techcyte is not), so this effectively grants it to
+  # natsume; host-server keeps execWheelOnly on.
+  security.sudo.wheelNeedsPassword = false;
+
   users.groups.techcyte = { };
   users.users.techcyte = {
     isNormalUser = true;
