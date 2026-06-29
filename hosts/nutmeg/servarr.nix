@@ -173,27 +173,38 @@ in
   };
   services.tsnsrv.services.bazarr.urlParts.port = config.services.bazarr.listenPort;
 
-  # Bazarr has no declarative-config option (it owns config.yaml at runtime), but
-  # the one thing we *do* want pinned — its link to radarr/sonarr, including the
-  # API keys — are secrets that belong in ragenix. Inject them (plus loopback) on
-  # every start with a YAML-aware edit, so the connection lives in git and the
-  # keys never sit in plaintext. Everything else in config.yaml stays runtime-
-  # managed. Runs as root ('+') to read the root-owned secrets, then hands the
-  # file back to bazarr. No-ops until bazarr has created the radarr/sonarr
-  # sections, so it enforces rather than bootstraps.
+  # Bazarr has no declarative-config option (it owns config.yaml at runtime), so
+  # we enforce two things on every start with YAML-aware edits:
+  #
+  #   1. general.ip = "::" — bind dual-stack so tsnsrv can reach it. The NixOS
+  #      module passes only --port, so the listen address comes from config.yaml,
+  #      which defaults to 0.0.0.0 (IPv4-only). tsnsrv's default "localhost"
+  #      upstream resolves to ::1 first and gets connection refused. Binding ::
+  #      (with net.ipv6.bindv6only=0) accepts both IPv6 and IPv4-mapped, so
+  #      [::1]:6767 works — a real fix rather than the 127.0.0.1 tsnsrv pin used
+  #      for tautulli/jellyfin/aurral (which lack an equivalent bind knob).
+  #
+  #   2. the radarr/sonarr link + API keys — secrets that belong in ragenix.
+  #      Injecting them here keeps the connection in git while the keys never sit
+  #      in plaintext. No-ops until bazarr has created those sections.
+  #
+  # Runs as root ('+') to read the root-owned secrets, then hands the file back
+  # to bazarr. Enforces rather than bootstraps (skips if config.yaml is absent).
   systemd.services.bazarr.serviceConfig.ExecStartPre =
     let
-      pin = pkgs.writeShellScript "bazarr-pin-arr" ''
+      pin = pkgs.writeShellScript "bazarr-pin" ''
         set -euo pipefail
         cfg=${config.services.bazarr.dataDir}/config/config.yaml
         [ -f "$cfg" ] || exit 0
-        ${pkgs.yq-go}/bin/yq -e '.radarr and .sonarr' "$cfg" >/dev/null 2>&1 || exit 0
-        rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
-        skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
-        RKEY="$rkey" SKEY="$skey" ${pkgs.yq-go}/bin/yq -i '
-            .radarr.ip = "127.0.0.1" | .radarr.apikey = strenv(RKEY)
-          | .sonarr.ip = "127.0.0.1" | .sonarr.apikey = strenv(SKEY)
-        ' "$cfg"
+        ${pkgs.yq-go}/bin/yq -i '.general.ip = "::"' "$cfg"
+        if ${pkgs.yq-go}/bin/yq -e '.radarr and .sonarr' "$cfg" >/dev/null 2>&1; then
+          rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
+          skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
+          RKEY="$rkey" SKEY="$skey" ${pkgs.yq-go}/bin/yq -i '
+              .radarr.ip = "127.0.0.1" | .radarr.apikey = strenv(RKEY)
+            | .sonarr.ip = "127.0.0.1" | .sonarr.apikey = strenv(SKEY)
+          ' "$cfg"
+        fi
         ${pkgs.coreutils}/bin/chown ${config.services.bazarr.user}:${config.services.bazarr.group} "$cfg"
       '';
     in
