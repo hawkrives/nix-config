@@ -35,7 +35,6 @@
     ./tailscale.nix
     ./syncthing.nix
     ./paperless.nix
-    ./nix-serve.nix
     ./peertube.nix
     ./discourse.nix
     ./micasa.nix
