@@ -50,7 +50,9 @@
   users.users.nixremote = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
-      # TASK 6: nutmeg / tuckles / techcyte host public keys
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRtF1Gu1NN25zb3ZWL+D2XBn2i0FszefxLVMwhItgOb" # nutmeg
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaiGtVceXg9xJh0+jIIhFKZtnlNdPaWCZqSp0KNsb6r" # tuckles
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO" # techcyte (mac, push + pull)
     ];
   };
   nix.settings.trusted-users = [ "nixremote" ];
