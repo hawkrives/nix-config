@@ -15,10 +15,12 @@ let
   nutmeg = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRtF1Gu1NN25zb3ZWL+D2XBn2i0FszefxLVMwhItgOb";
   techcyte = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO";
   tuckles = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaiGtVceXg9xJh0+jIIhFKZtnlNdPaWCZqSp0KNsb6r";
+  pantry = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBiUQ0Plm2ceonVERAP0m5NoEH39J3jCsuxQgOxW1K67";
   systems = [
     nutmeg
     techcyte
     tuckles
+    pantry
   ];
 in
 {
@@ -60,6 +62,9 @@ in
 
   # Tailscale auth key for tuckles.
   "tailscale-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
+
+  # Tailscale auth key for pantry (cache VM).
+  "tailscale-authkey-pantry.age".publicKeys = users ++ [ pantry ];
 
   # qui (alternate qBittorrent web UI) session secret (tuckles).
   "qui-session-secret.age".publicKeys = users ++ [ tuckles ];
