@@ -13,9 +13,8 @@
   services.tailscale = {
     enable = true;
     openFirewall = true;
-    # TASK 5: uncomment once secrets/tailscale-authkey-pantry.age exists (Task 4).
-    # authKeyFile = config.age.secrets.tailscale-authkey-pantry.path;
-    extraUpFlags = [ "--advertise-tags=tag:container" ];
+    authKeyFile = config.age.secrets.tailscale-authkey-pantry.path;
+    extraUpFlags = [ "--advertise-tags=tag:pantry" ];
   };
   networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
 }

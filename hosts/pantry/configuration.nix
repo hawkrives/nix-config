@@ -84,8 +84,7 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  # TASK 5: uncomment once secrets/tailscale-authkey-pantry.age exists (Task 4).
-  # age.secrets.tailscale-authkey-pantry.file = ../../secrets/tailscale-authkey-pantry.age;
+  age.secrets.tailscale-authkey-pantry.file = ../../secrets/tailscale-authkey-pantry.age;
 
   system.stateVersion = "26.11";
 }
