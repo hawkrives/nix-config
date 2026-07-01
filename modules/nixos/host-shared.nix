@@ -2,6 +2,8 @@
   pkgs,
   inputs,
   perSystem,
+  lib,
+  config,
   ...
 }: {
   # config settings for both NixOS- and Darwin-based systems
@@ -57,11 +59,24 @@
     # TODO I used to have this - needed?
     # allowed-users = ["root" "natsume"];
 
-    # support pulling things from lix and flakehub
-    extra-substituters = [
-      "https://cache.nixos.org"
-      "https://nix-community.cachix.org"
-    ];
+    # auto-GC mid-build when free space runs low, so a heavy build self-cleans
+    # instead of filling the disk (esp. nutmeg's small SSD): 5 GiB low-water,
+    # free up to 20 GiB.
+    min-free = 5 * 1024 * 1024 * 1024;
+    max-free = 20 * 1024 * 1024 * 1024;
+
+    # support pulling things from lix and flakehub, plus the pantry cache (over
+    # the tailnet; the host-key is pinned so no known_hosts is needed). pantry
+    # doesn't substitute from itself. nutmeg runs --accept-dns=false so we use
+    # pantry's stable tailnet IP rather than its MagicDNS name.
+    extra-substituters =
+      [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+      ]
+      ++ lib.optionals (config.networking.hostName != "pantry") [
+        "ssh-ng://nixremote@100.120.197.118?ssh-key=/etc/ssh/ssh_host_ed25519_key&base64-ssh-public-host-key=c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUJpVVEwUGxtMmNlb25WRVJBUDBtNU5vRUgzOUozakNzdXhRZ094VzFLNjc="
+      ];
     extra-trusted-public-keys =
       [
         "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
@@ -73,6 +88,7 @@
         "nutmeg:6F0E+NkIvpTI0d4QSvrDb3+LYhrQwXkYjqgI9etpuEw="
         "potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts="
         "Techcyte-DGQJV434PF:2Xo6QORWHHSNQHveplJ1Fq1Ji8GXwtm7FsD4l/tM/0I="
+        "tuckles:QXDvYTGgHgAIo/EzWTn/UcTuKZEP1MqsQsX9/3apQsc="
       ];
   };
 }
