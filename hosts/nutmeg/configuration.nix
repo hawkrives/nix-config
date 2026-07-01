@@ -13,6 +13,7 @@
     flake.nixosModules.synology-mounts
     flake.nixosModules.service-backup
     flake.nixosModules.mdns
+    flake.nixosModules.cache-push
     # flake.nixosModules.veilid-shared
     # flake.nixosModules.pocket-id
     # flake.nixosModules.pomerium

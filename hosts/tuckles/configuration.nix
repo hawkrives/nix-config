@@ -15,6 +15,7 @@
     flake.nixosModules.synology-mounts
     flake.nixosModules.service-backup
     flake.nixosModules.mdns
+    flake.nixosModules.cache-push
     ./disk.nix
     ./networking.nix
     ./storage.nix

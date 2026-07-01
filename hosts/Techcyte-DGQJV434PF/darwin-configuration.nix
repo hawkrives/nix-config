@@ -7,6 +7,7 @@
   imports = [
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
+    inputs.self.nixosModules.cache-push
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
