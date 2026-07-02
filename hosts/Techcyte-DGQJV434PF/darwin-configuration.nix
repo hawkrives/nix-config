@@ -8,6 +8,7 @@
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
     inputs.self.nixosModules.cache-push
+    inputs.self.nixosModules.pantry-builder
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
