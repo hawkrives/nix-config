@@ -278,7 +278,6 @@
     pkgs.htmlq
     pkgs.hyperfine
     pkgs.imagemagick
-    pkgs.jjui
     # pkgs.jj-fzf
     pkgs.jless
     pkgs.lazyjj

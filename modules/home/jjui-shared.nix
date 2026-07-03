@@ -1,9 +1,6 @@
 {...}: {
   programs.jjui = {
     enable = true;
-    # jjui itself is installed via home-shared's package list (shared across
-    # hosts), so this module only manages configuration.
-    package = null;
 
     settings = {
       ui = {
