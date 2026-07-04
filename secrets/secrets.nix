@@ -72,4 +72,8 @@ in
   # Bare tailscale OAuth client secret (no ?ephemeral query) for tsnsrv's OAuth
   # key minting on tuckles. Same OAuth client as tailscale-authkey-tuckles.
   "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
+
+  # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
+  # injected via environmentFile (nutmeg).
+  "slime-chat-env.age".publicKeys = users ++ [ nutmeg ];
 }

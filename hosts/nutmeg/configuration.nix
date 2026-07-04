@@ -38,6 +38,7 @@
     ./discourse.nix
     ./micasa.nix
     ./minecraft.nix
+    ./slime-chat.nix
     ./tsnsrv.nix
     ./backups.nix
 

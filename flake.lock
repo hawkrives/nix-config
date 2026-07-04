@@ -464,6 +464,7 @@
         "nix-minecraft": "nix-minecraft",
         "nixpkgs": "nixpkgs_2",
         "ragenix": "ragenix",
+        "slime-chat": "slime-chat",
         "systems": "systems_3",
         "tsnsrv": "tsnsrv",
         "vpn-confinement": "vpn-confinement"
@@ -488,6 +489,26 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "slime-chat": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783128169,
+        "narHash": "sha256-dhEIyZeTHYAHXncAUBNbzwAUhtSVcyqGorPx0Uyka4I=",
+        "ref": "refs/heads/main",
+        "rev": "92755c4ad67ca309ca8eca8dd6d50899f0723062",
+        "revCount": 193,
+        "type": "git",
+        "url": "https://github.com/hawkrives/slime2-twitch-chat"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://github.com/hawkrives/slime2-twitch-chat"
       }
     },
     "systems": {

@@ -57,6 +57,11 @@
       url = "github:Maroka-chan/VPN-Confinement";
     };
 
+    slime-chat = {
+      url = "git+https://github.com/hawkrives/slime2-twitch-chat";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
