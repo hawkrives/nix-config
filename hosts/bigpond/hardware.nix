@@ -8,9 +8,14 @@
     # T2 kernel patches + apple-bce (keyboard/trackpad/audio bridge), Touch Bar,
     # APFS. Load-bearing for T2 support; no custom kernel flake needed.
     inputs.hardware.nixosModules.apple-t2
-    # Fan-control daemon for T2 Macs. NOTE: nixosModules is plural (verified via
-    # `nix flake show github:GnomedDev/T2FanRD`).
-    inputs.t2fanrd.nixosModules.t2fanrd
+    # NOTE: t2fanrd (a TUNED fan curve) is DEFERRED. Its cargo-vendor build hits
+    # crates.io's 403'd legacy `api/v1/.../download` endpoint on this nixpkgs pin,
+    # and bumping nixpkgs to fix it moves the kernel off the soopy cache (forcing a
+    # from-source compile). The apple-t2 kernel already includes applesmc T2 fan
+    # support, so fans WORK; thermald handles thermals. Re-add
+    # `inputs.t2fanrd.nixosModules.t2fanrd` + `services.t2fanrd.enable` in a
+    # follow-up once a nixpkgs update brings BOTH a cached kernel and the
+    # static.crates.io fetcher. (The `t2fanrd` flake input stays, primed for that.)
   ];
 
   # The apple-t2 module compiles a patched kernel (and audio-patched
@@ -23,11 +28,9 @@
     "cache.soopy.moe-1:0RZVsQeR+GOh0VQI9rvnHz55nVXkFardDqfm4+afjPo="
   ];
 
-  # Active fan control under sustained build load. Default auto-config; tune the
-  # curve later in /etc/t2fand.conf if needed.
-  services.t2fanrd.enable = true;
-
-  # Intel thermal daemon — avoid throttling/overheating during long builds.
+  # Intel thermal daemon — avoid throttling/overheating during long builds. Fans
+  # themselves are driven by the kernel's applesmc T2 support; the tuned t2fanrd
+  # curve is deferred (see imports note).
   services.thermald.enable = true;
 
   # Headless laptop: never suspend, and ignore the (closed) lid.
