@@ -46,7 +46,7 @@
 
   # host-server.nix enables `powerManagement.powertop.enable` (runs
   # `powertop --auto-tune`), which can autosuspend the USB-C ethernet adapter and
-  # drop the network on this headless box. Force it off; thermald + t2fanrd handle
-  # thermals.
+  # drop the network on this headless box. Force it off; thermald + the kernel's
+  # applesmc fan support handle thermals.
   powerManagement.powertop.enable = lib.mkForce false;
 }
