@@ -429,6 +429,22 @@
         "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1754214453,
+        "narHash": "sha256-Q/I2xJn/j1wpkGhWkQnm20nShYnG7TI99foDBpXm1SY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "5b09dc45f24cf32316283e62aec81ffee3c3e376",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "ragenix": {
       "inputs": {
         "agenix": "agenix",
@@ -466,6 +482,7 @@
         "ragenix": "ragenix",
         "slime-chat": "slime-chat",
         "systems": "systems_3",
+        "t2fanrd": "t2fanrd",
         "tsnsrv": "tsnsrv",
         "vpn-confinement": "vpn-confinement"
       }
@@ -553,6 +570,24 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "t2fanrd": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1777412856,
+        "narHash": "sha256-WrcIo3y9uFCuzgzbxc465FBS3zAZMQlfYszefkOUCWc=",
+        "owner": "GnomedDev",
+        "repo": "T2FanRD",
+        "rev": "48baf962697ec3d4d969c74cf601ee8e15b7aeaa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "GnomedDev",
+        "repo": "T2FanRD",
         "type": "github"
       }
     },

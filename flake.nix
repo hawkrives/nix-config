@@ -62,6 +62,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    t2fanrd = {
+      # Fan-control daemon for T2 Macs (bigpond). Imported by hosts/bigpond.
+      url = "github:GnomedDev/T2FanRD";
+    };
+
     # if we ever get an M-series server:
     # nixos-apple-silicon.url = "github:nix-community/nixos-apple-silicon";
   };
