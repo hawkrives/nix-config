@@ -306,7 +306,7 @@
     pkgs.trippy
     pkgs.unzip
     pkgs.watch
-    pkgs.watchexec
+    # pkgs.watchexec
     pkgs.wget
     pkgs.xh
     pkgs.xz
