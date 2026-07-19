@@ -1,4 +1,11 @@
 {config, ...}: {
+  # Long-lived Home Assistant access token (ragenix). Decrypts to
+  # /run/agenix/hass-token (root-owned, 0400) for driving the HA REST/WebSocket
+  # API — the *supported* way to edit dashboards, config entries and registries,
+  # instead of hand-editing /var/lib/home-assistant/.storage (which can corrupt
+  # the store). See docs/home-assistant.md.
+  age.secrets.hass-token.file = ../../secrets/hass-token.age;
+
   # TODO: move to home-manager?
   users.groups.homeassistant = {
     gid = 10010;

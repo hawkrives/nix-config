@@ -81,4 +81,8 @@ in
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
   # injected via environmentFile (nutmeg).
   "slime-chat-env.age".publicKeys = users ++ [ nutmeg ];
+
+  # Home Assistant long-lived access token (raw JWT, no trailing newline) for
+  # driving the HA REST/WebSocket API instead of hand-editing .storage (nutmeg).
+  "hass-token.age".publicKeys = users ++ [ nutmeg ];
 }
