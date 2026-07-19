@@ -14,10 +14,12 @@
   services.slime-chat = {
     enable = true;
 
-    # 9100 is taken by the hand-run local copy (see the `# for slime` firewall
-    # block in configuration.nix), so the packaged service lives on 9111.
-    # Reached over the tailnet via tsnsrv below, so no LAN firewall hole.
-    port = 9111;
+    # The hand-run local copy that used to hold 9100 has been retired, and its
+    # database migrated into this service's /var/lib/slime-chat. So the packaged
+    # service now takes the module's default port (9100). The `# for slime`
+    # firewall block in configuration.nix keeps 9100 open on the LAN; the service
+    # is also reachable over the tailnet via tsnsrv below.
+    # (port omitted -> module default 9100)
 
     environmentFile = config.age.secrets.slime-chat-env.path;
 
