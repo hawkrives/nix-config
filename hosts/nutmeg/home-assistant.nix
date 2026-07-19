@@ -29,7 +29,9 @@
   virtualisation.oci-containers.containers.homeassistant = {
     image = "ghcr.io/home-assistant/home-assistant:stable";
     autoStart = true;
-    user = "${toString config.users.users.homeassistant.uid}:${toString config.users.groups.homeassistant.gid}";
+    # Runs as root (the image default) so the --cap-add NET_ADMIN/NET_RAW below
+    # become *effective* — a non-root user can't raise them into its permitted
+    # set, which left Bluetooth adapter management without permissions.
     volumes = [
       "${config.users.users.homeassistant.home}:/config"
       "/run/dbus:/run/dbus:ro"
