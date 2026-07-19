@@ -59,12 +59,13 @@ in
   hardware.cpu.intel.updateMicrocode = true;
 
   # [swap]
-  # disable disk swap and enable `zramSwap` to use a compressed block device in RAM
-  swapDevices = [ ];
-  zramSwap = {
-    enable = true;
-    memoryPercent = 25;
-  };
+  # Disk swap backing zswap (compression + oomd configured in host-shared).
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 8 * 1024; # MiB
+    }
+  ];
 
   # [filesystems]
   fileSystems."/" = {

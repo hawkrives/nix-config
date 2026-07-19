@@ -51,11 +51,13 @@
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  swapDevices = [ ];
-  zramSwap = {
-    enable = true;
-    memoryPercent = 25;
-  };
+  # Disk swap backing zswap (compression + oomd live in host-shared).
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 4 * 1024; # MiB
+    }
+  ];
 
   users.users.haru = {
     isNormalUser = true;

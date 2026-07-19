@@ -30,11 +30,15 @@
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  swapDevices = [ ];
-  zramSwap = {
-    enable = true;
-    memoryPercent = 25;
-  };
+  # Disk swap backing zswap (compression + oomd live in host-shared). Sized
+  # generously: this 15 GiB box is a Nix remote builder, so swap is where heavy
+  # parallel builds overflow instead of OOMing.
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 8 * 1024; # MiB
+    }
+  ];
 
   # Builder parallelism cap: keep heavy parallel builds from starving future
   # co-located services on this 15 GiB box (see spec). Tune if builds feel slow.
