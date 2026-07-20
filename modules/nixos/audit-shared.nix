@@ -8,6 +8,16 @@
     "-a exit,always -F arch=b64 -S execve"
   ];
 
+  # Don't fsync audit.log on every batch of records. auditd's flush is
+  # record-count based (no time knob), so "none" hands writeback to the kernel,
+  # which batches dirty pages to disk within ~dirty_expire_centisecs (~30s here).
+  # This removes the per-record fsync -> ext4 journal commit that dominated disk
+  # writes; it does not reduce the log's data volume (that's the execve rule).
+  # Tradeoff: a crash can lose up to the last writeback window of audit records.
+  security.auditd.settings = {
+    flush = "none";
+  };
+
   services.logrotate.settings = {
     header = {};
 
