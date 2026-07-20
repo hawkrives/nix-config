@@ -16,6 +16,14 @@
     AcceptEnv COLORTERM
   '';
 
+  # Don't restart the running per-connection sshd instance during activation.
+  # These hosts are deployed remotely over SSH; restarting sshd@<connid> mid
+  # `switch-to-configuration` would kill the deploy's own session before it
+  # finishes, aborting activation with units left half-stopped (e.g. avahi).
+  # Existing sessions keep the old sshd until they disconnect; new connections
+  # pick up the new binary via the socket. See the openssh bump deploy race.
+  systemd.services."sshd@".restartIfChanged = false;
+
   # allow you to track your highest uptimes
   services.uptimed.enable = true;
 
