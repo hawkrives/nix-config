@@ -34,6 +34,14 @@
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
 
+  # Build only the locales we actually use instead of all ~350 (~220 MB of
+  # glibc-locales). These are headless en_US servers; C.UTF-8 is kept because
+  # some software expects it.
+  i18n.supportedLocales = [
+    "en_US.UTF-8/UTF-8"
+    "C.UTF-8/UTF-8"
+  ];
+
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_US.UTF-8";
     LC_IDENTIFICATION = "en_US.UTF-8";
