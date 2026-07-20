@@ -22,3 +22,9 @@ run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
 
 [tasks."nutmeg"]
 run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
+
+[tasks."tuckles"]
+run = 'nh os switch .#tuckles --target-host "haru@$MISE_TASK_NAME.local" -e passwordless --ask'
+
+[tasks."pantry"]
+run = 'nh os switch .#pantry --target-host nix@pantry.local -e passwordless --ask'
