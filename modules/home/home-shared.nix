@@ -297,8 +297,9 @@
     pkgs.shellcheck
     pkgs.shfmt
     pkgs.skopeo
-    pkgs.soupault
-    pkgs.sqlit-tui
+    # sqlit-tui bundles mysql-connector-python, which drags the full mysql
+    # client (~300 MB) into the closure. sqlite-interactive covers SQLite needs.
+    # pkgs.sqlit-tui
     pkgs.sqlite-interactive
     pkgs.terraform
     pkgs.tokei

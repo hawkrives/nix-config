@@ -10,7 +10,12 @@
     domain = "paperless-1.vaquita-woodpecker.ts.net";
 
     consumptionDirIsPublic = true;
-    configureTika = true;
+
+    # Tika + gotenberg convert office documents (docx, html, etc.) to PDF, which
+    # drags in LibreOffice (~1.4 GB) and Chromium (~690 MB). We only feed PDFs
+    # and scans to paperless, so leave it off.
+    configureTika = false;
+
     database.createLocally = true;
 
     # TODO: set mediaDir to NAS folder?
@@ -28,7 +33,9 @@
         "desktop.ini"
       ];
 
-      # PAPERLESS_OCR_LANGUAGE = "deu+eng";
+      # Setting this trims tesseract's trained data to just these languages
+      # (+ eng/osd/equ, always included), instead of shipping all ~130 (~1 GB).
+      PAPERLESS_OCR_LANGUAGE = "eng+jpn";
       PAPERLESS_OCR_USER_ARGS = {
         optimize = 1;
         pdfa_image_compression = "lossless";
