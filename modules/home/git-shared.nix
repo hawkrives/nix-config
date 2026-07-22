@@ -144,6 +144,7 @@
     ".mise.toml"
     ".serena/"
     ".claude/*.local.json"
+    ".superpowers/"
   ];
 
   programs.git.attributes = [
