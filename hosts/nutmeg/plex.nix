@@ -101,7 +101,7 @@ in
   fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { };
   fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" { };
 
-  fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
+  # fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
 
   # need uid/gid to match the NAS
   # users.groups.servarr.gid = 1050;
