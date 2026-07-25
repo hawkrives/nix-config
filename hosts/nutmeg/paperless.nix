@@ -7,7 +7,7 @@
     enable = true;
     passwordFile = config.age.secrets.paperless-admin-pass.path;
 
-    domain = "paperless-1.vaquita-woodpecker.ts.net";
+    domain = "paperless.vaquita-woodpecker.ts.net";
 
     consumptionDirIsPublic = true;
 
