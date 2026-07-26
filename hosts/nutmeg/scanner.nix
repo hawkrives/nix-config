@@ -5,9 +5,18 @@ let
   stagingDir = "/var/lib/adf-autoscan";
 
   # Pages whose greyscale standard deviation falls below this are treated as
-  # blank and dropped. Calibrated against a real blank feeder page in Task 4;
-  # see the plan for the measurement procedure before changing it.
-  blankThreshold = "0.06";
+  # blank and dropped. Measured on this scanner at 300dpi colour:
+  #   empty scan bed (misfeed)     0.0025  <- dropped
+  #   real blank paper back        0.0143  <- KEPT (see below)
+  #   back of a cheque             0.0358  <- real content: watermark + endorsement
+  #   normal text pages            0.117 - 0.243
+  # Deliberately set below the real-blank value, so effectively only genuinely
+  # empty captures are dropped. A cheque back measures just 0.0358, so the gap
+  # between "blank paper" and "real but sparse content" is only ~2.5x — far too
+  # narrow to split safely. Dropping a real page is data loss; keeping a blank
+  # one is a minor annoyance, so this errs hard toward keeping. Consequence:
+  # single-sided sheets scanned duplex deposit their blank backs into paperless.
+  blankThreshold = "0.005";
 
   adf-scan-once = pkgs.writeShellApplication {
     name = "adf-scan-once";
