@@ -117,8 +117,8 @@ let
       idle_poll=20
       idle_grace=20
       armed_poll=5
-      batch_poll=5
-      batch_grace=5
+      batch_poll=2
+      batch_grace=2
       batch_window=60
 
       last_scan=0
