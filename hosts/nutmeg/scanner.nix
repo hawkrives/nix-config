@@ -24,7 +24,8 @@ let
       #
       # Exit codes are a contract with adf-autoscan:
       #   0  deposited a PDF
-      #   10 nothing fed
+      #   10 nothing fed (also covers the scanner being offline, since
+      #      scanimage then fails and produces no pages)
       #   11 fed pages, all blank, no PDF
 
       work="$(mktemp -d "${stagingDir}/work.XXXXXXXX")"
@@ -36,21 +37,15 @@ let
       # backends. Scope them to scanimage via this wrapper instead.
       sane_env() { env SANE_CONFIG_DIR=/etc/sane-config LD_LIBRARY_PATH=/etc/sane-libs "$@"; }
 
-      # Resolve the airscan device by discovery. Its name carries a
-      # discovery-order index (airscan:e0:...) that is NOT stable across
-      # reboots, so it must never be hardcoded.
-      device="$(sane_env scanimage -L 2>/dev/null | grep -oE "airscan:[^']*EPSON[^']*" | head -n 1 || true)"
-      if [ -z "$device" ]; then
-        echo "adf-scan-once: no airscan EPSON device found (scanner offline?)" >&2
-        exit 12
-      fi
-      echo "adf-scan-once: using device $device"
-
-      # scanimage --batch always exits non-zero when the feeder empties, so its
-      # status is logged but never used to decide success.
+      # No --device-name: `escl` is disabled so exactly one SANE device exists,
+      # and scanimage auto-selects it. This is deliberate, not an oversight.
+      # sane-airscan's device names carry a per-process discovery index
+      # (airscan:e0:, airscan:e1:, ...) that is assigned at discovery time and
+      # is NOT valid in a different process — naming the device here caused
+      # "open of device ... failed: Invalid argument" in testing. Letting one
+      # scanimage process both discover and open avoids the race entirely.
       rc=0
       sane_env scanimage \
-        --device-name "$device" \
         --source "ADF Duplex" \
         --mode Color \
         --resolution 300 \
