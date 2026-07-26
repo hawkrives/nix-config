@@ -36,10 +36,15 @@
       # Setting this trims tesseract's trained data to just these languages
       # (+ eng/osd/equ, always included), instead of shipping all ~130 (~1 GB).
       PAPERLESS_OCR_LANGUAGE = "eng+jpn";
+      # Scans arrive as 300dpi colour JPEGs. Lossless storage of those produces
+      # very large archive files, so re-encode as JPEG inside the PDF/A.
       PAPERLESS_OCR_USER_ARGS = {
         optimize = 1;
-        pdfa_image_compression = "lossless";
+        pdfa_image_compression = "jpeg";
       };
+
+      # Feeder scans can arrive rotated; orient them from detected text.
+      PAPERLESS_OCR_ROTATE_PAGES = true;
     };
   };
 
