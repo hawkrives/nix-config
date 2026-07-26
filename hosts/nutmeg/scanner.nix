@@ -251,6 +251,28 @@ in
 
   environment.systemPackages = [ adf-scan-once ];
 
+  # Web UI for everything the feeder cannot do: books, passports, receipts, and
+  # any scan needing non-default settings. Writes finished files straight into
+  # the paperless consumption directory.
+  services.scanservjs = {
+    enable = true;
+    settings = {
+      host = "127.0.0.1";
+      port = 8090;
+      outputDirectory = consumeDir;
+      ocrLanguage = "eng";
+    };
+  };
+
+  # scanservjs runs as its own user; the consume dir is mode 777 so it can
+  # write, and paperless can unlink what it did not create (no sticky bit).
+  # Expose on the tailnet: https://scan.<tailnet>.ts.net -> 127.0.0.1:8090.
+  # 127.0.0.1 rather than "localhost" avoids resolving to ::1 first.
+  services.tsnsrv.services.scan.urlParts = {
+    host = "127.0.0.1";
+    port = 8090;
+  };
+
   # Staging lives on the same filesystem as the consume dir so the final move
   # is an atomic rename rather than a copy.
   systemd.tmpfiles.rules = [
