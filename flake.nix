@@ -59,7 +59,7 @@
 
     slime-chat = {
       url = "git+https://github.com/hawkrives/slime2-twitch-chat";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     t2fanrd = {
