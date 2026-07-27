@@ -1,7 +1,4 @@
-{ config, ... }:
-let
-  broadcomDriver = config.boot.kernelPackages.broadcom_sta;
-in
+{ ... }:
 {
   # [networking]
   networking.useNetworkd = true;
@@ -50,11 +47,24 @@ in
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [
     "kvm-intel"
-    "wl"
   ];
-  boot.extraModulePackages = [ broadcomDriver ];
+
+  # NOTE: the Broadcom STA driver (`wl` + broadcom_sta) used to live here, for
+  # this Mac mini's BCM4331 wifi card. It was dropped: nutmeg has never used
+  # wifi (it's on enp1s0f0, and wlp2s0 carried literally zero packets), while
+  # the driver is unmaintained, out-of-tree, taints the kernel, and disables
+  # kernel security mitigations where it runs ("Unpatched return thunk in use"
+  # on every boot). It's also a known lockup source on these Broadcom Macs,
+  # which matters given nutmeg's history of silent hard stops — see
+  # ./crash-diagnostics.nix. If wifi is ever actually needed here, restore
+  # broadcom_sta *and* the broadcom-sta allowInsecurePredicate in flake.nix.
+  #
+  # This does NOT affect bluetooth: hci0 is a separate USB device driven by
+  # btusb + btbcm firmware, not by wl.
 
   # [firmware]
+  # Load-bearing for bluetooth: this is what supplies the btbcm firmware that
+  # hci0 needs (matter/home-assistant depend on it).
   hardware.enableRedistributableFirmware = true;
   hardware.cpu.intel.updateMicrocode = true;
 

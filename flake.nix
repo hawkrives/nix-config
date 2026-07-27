@@ -80,7 +80,8 @@
         inherit inputs;
         nixpkgs.config = {
           allowUnfree = true;
-          allowInsecurePredicate = pkg: (builtins.parseDrvName pkg.name).name == "broadcom-sta";
+          # (the broadcom-sta allowInsecurePredicate that used to live here went
+          # away with nutmeg's `wl` driver — see hosts/nutmeg/hardware.nix)
         };
         nixpkgs.overlays = [
           (final: prev: {

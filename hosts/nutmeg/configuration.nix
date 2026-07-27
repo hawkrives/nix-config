@@ -19,6 +19,7 @@
 
     # configuration
     ./hardware.nix
+    ./crash-diagnostics.nix
 
     # modules
     ./adguard.nix
