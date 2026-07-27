@@ -33,7 +33,6 @@
     ./recyclarr.nix
     ./soulseek.nix
     ./tailscale.nix
-    ./syncthing.nix
     ./paperless.nix
     ./scanner.nix
     ./peertube.nix
