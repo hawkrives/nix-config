@@ -48,13 +48,28 @@
     enableUserSlices = true;
   };
 
+  # [disk] cap the journal. journald's default ceiling is 10% of the filesystem,
+  # which on nutmeg's 187G root meant ~18G of headroom and a journal that had
+  # grown to 4G unnoticed. These hosts are not log-archival machines — anything
+  # worth keeping past a few weeks belongs in a backup, not the ring buffer.
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+    MaxRetentionSec=1month
+  '';
+
   # enables the "virtualisation.oci-containers.containers" namespace for running containers
   virtualisation.oci-containers.backend = "podman";
   virtualisation.podman = {
     enable = true;
 
-    # periodically prune Podman resources
+    # periodically prune Podman resources. `--all` is load-bearing: the bare
+    # `podman system prune` this runs by default only reaps *dangling* images,
+    # so images that are still tagged but no longer referenced by a container
+    # accumulate forever (nutmeg had 4.9G of them). Note this deliberately does
+    # NOT pass `--volumes` — named volumes hold real service state, and pruning
+    # them because nothing is currently running would be data loss.
     autoPrune.enable = true;
+    autoPrune.flags = [ "--all" ];
     # Create a `docker` alias for podman, to use it as a drop-in replacement
     dockerCompat = true;
 

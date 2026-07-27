@@ -101,7 +101,25 @@ in
   fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { };
   fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" { };
 
-  # fileSystems."/var/lib/plex/backup" = synologyMount "/volume1/app-plex" { };
+  # Plex's Butler task backs up the library + blobs DBs here every 3 days and
+  # keeps several rotations (~1.6G each), which had quietly eaten 6.3G of the
+  # root SSD. Park it on the NAS instead. The Preferences key
+  # (ButlerDatabaseBackupPath) still says /var/lib/plex/backup — we move the
+  # mountpoint under it rather than repointing Plex, so there's no UI/API state
+  # to keep in sync.
+  #
+  # There is no /volume1/app-plex export (that's why the old attempt here was
+  # commented out), so this lives under app-servarr next to the serviceBackup
+  # output. It is deliberately NOT ${serviceBackup.dest}/plex: that directory is
+  # an rsync --delete target (see modules/nixos/service-backup.nix) and dropping
+  # unrelated files into it invites them being reaped.
+  #
+  # This is complementary to the serviceBackup plex job, not redundant with it:
+  # that job overwrites a single copy each night, so it has no history, whereas
+  # Butler keeps dated rotations to fall back to if a corrupt DB gets backed up.
+  fileSystems."/var/lib/plex/backup" =
+    synologyMount "/volume1/app-servarr/plex/butler-backups"
+      { };
 
   # need uid/gid to match the NAS
   # users.groups.servarr.gid = 1050;
