@@ -59,16 +59,10 @@ in
         ];
         path = "Preferences.xml"; # never rsync the Cache/Metadata/Media trees
       };
-      # Canary, not a primary backup. HA's backups dir is itself an NFS mount
-      # (see home-assistant.nix), so on a healthy system this rsyncs the NAS to
-      # the NAS and copies nothing. Its job is to notice the failure mode we
-      # can't otherwise see: if the container ever binds the mountpoint before
-      # the mount is up, HA writes its tars to the local disk hidden underneath,
-      # and this pulls them onto the NAS instead of losing them silently.
-      #
-      # Tradeoff: when the mount IS healthy this keeps a second 2.4G copy on the
-      # same NAS volume, which buys nothing beyond the canary. Drop this job if
-      # that annoys you more than the silent-fallback risk does.
+      # HA writes its automatic backups to this local dir and prunes its own
+      # retention (see home-assistant.nix); this is their only offsite copy.
+      # Nothing here holds an NFS mount, so unlike the rest of the fleet the
+      # tars are already local — this job just mirrors them to the NAS.
       home-assistant = {
         root = config.users.users.homeassistant.home;
         path = "backups";

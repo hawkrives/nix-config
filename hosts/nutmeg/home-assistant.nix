@@ -1,6 +1,5 @@
 {
   config,
-  synologyMount,
   ...
 }: {
   # Long-lived Home Assistant access token (ragenix). Decrypts to
@@ -55,14 +54,6 @@
     user = "${toString config.users.users.homeassistant.uid}:${toString config.users.groups.homeassistant.gid}";
     volumes = [
       "${config.users.users.homeassistant.home}:/config"
-      # Bind the NAS-backed backups dir EXPLICITLY, even though it already sits
-      # under /config via the line above. Podman binds with rprivate
-      # propagation, so the parent bind captures whatever is at
-      # <home>/backups at container-start time and never sees later host-side
-      # (un)mounts. Naming it as its own volume makes podman resolve — and so
-      # trigger the automount for — that exact path when the container starts.
-      # See the fileSystems entry and unit ordering below.
-      "${config.users.users.homeassistant.home}/backups:/config/backups"
       "/run/dbus:/run/dbus:ro"
     ];
     labels = {
@@ -75,17 +66,12 @@
     ];
   };
 
-  # HA's automatic backups are ~160M each and it keeps every one it is told to;
-  # 15 dailies had grown to 2.4G on the root SSD. Park them on the NAS.
-  fileSystems."/var/lib/home-assistant/backups" =
-    synologyMount "/volume1/app-servarr/home-assistant/backups"
-      { };
-
-  # Without this the container can win the race at boot and bind an *unmounted*
-  # /var/lib/home-assistant/backups, at which point HA happily writes backups to
-  # the local dir hidden underneath the mountpoint — a failure that stays
-  # invisible until the day you need a restore. RequiresMountsFor pulls in the
-  # automount unit and orders us after it.
-  systemd.services.podman-homeassistant.unitConfig.RequiresMountsFor =
-    "/var/lib/home-assistant/backups";
+  # HA's automatic backups (~160M each, ~15 kept ≈ 2.4G) live on the local root
+  # SSD, where HA manages its own retention. They were once an NFS automount
+  # here, but hard-Requiring that mount (RequiresMountsFor) let its 5-minute
+  # idle-unmount cascade a clean stop onto HA — and failed HA's start at boot
+  # whenever the NAS wasn't reachable yet. HA now depends on nothing over the
+  # network. The offsite copy comes the same way every other service's does:
+  # the service-backup timer rsyncs /var/lib/home-assistant/backups to the NAS
+  # nightly. See hosts/nutmeg/backups.nix.
 }
