@@ -2,7 +2,7 @@
 # per-channel `--download-archive` dedups. Downloads land group-owned by `users`
 # (setgid dest dir + UMask 0002) so Plex/Jellyfin can read them. Optionally
 # writes .info.json/thumbnail metadata and generates Kodi/Jellyfin .nfo files.
-{ lib, config, pkgs, ... }:
+{ lib, config, pkgs, utils, ... }:
 let
   cfg = config.services.channelArchive;
 
@@ -83,9 +83,13 @@ let
       '';
     in {
       description = "Archive channel ${name} with yt-dlp";
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      unitConfig.RequiresMountsFor = [ ch.destination ];
+      # Soft Wants/After on the mount unit (NOT RequiresMountsFor) — a run can
+      # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
+      # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
+      # doesn't propagate the stop; the automount transparently re-mounts on
+      # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
+      after = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
+      wants = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
       path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 ];
       serviceConfig = {
         Type = "oneshot";
@@ -93,6 +97,13 @@ let
         SupplementaryGroups = [ "users" ];
         UMask = "0002";
         ExecStartPre = "+${preStart}";
+        # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve out
+        # the destination so yt-dlp can write videos, archive.txt, and metadata.
+        ReadWritePaths = [ ch.destination ];
+        # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
+        # DynamicUser state dir, else the read-only HOME emits cache warnings.
+        StateDirectory = "channel-archive-${name}";
+        Environment = [ "HOME=/var/lib/channel-archive-${name}" ];
       };
       script = ''
         set -uo pipefail
