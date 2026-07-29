@@ -35,6 +35,7 @@
     };
 
     aliases = {
+      ui = ["util" "exec" "jjui"];
       # tug is from https://github.com/jj-vcs/jj/discussions/2425
       tug-closest = ["bookmark" "move" "--from" "closest_bookmark(@)" "--to" "closest_nonempty(@)"];
       # from https://andre.arko.net/2025/09/28/stupid-jj-tricks/
