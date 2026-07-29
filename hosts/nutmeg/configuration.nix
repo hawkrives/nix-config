@@ -12,6 +12,7 @@
     flake.nixosModules.host-nixos
     flake.nixosModules.synology-mounts
     flake.nixosModules.service-backup
+    flake.nixosModules.service-channel-archive
     flake.nixosModules.cache-push
     # flake.nixosModules.veilid-shared
     # flake.nixosModules.pocket-id
@@ -30,6 +31,7 @@
     ./jellyfin.nix
     ./servarr.nix
     ./beets.nix
+    ./channel-archive.nix
     ./recyclarr.nix
     ./soulseek.nix
     ./tailscale.nix
