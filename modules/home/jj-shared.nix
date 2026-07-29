@@ -16,10 +16,10 @@
       email = pkgs.lib.mkDefault "hawkrives@fastmail.fm";
     };
 
-    experimental-advance-branches = {
-      enabled-branches = ["glob:*"];
-      disabled-branches = ["main" "master" "trunk" "glob:push-*"];
-    };
+    # experimental-advance-branches = {
+    #   enabled-branches = ["glob:*"];
+    #   disabled-branches = ["main" "master" "trunk" "glob:push-*"];
+    # };
 
     ui = {
       default-command = "log";
