@@ -140,7 +140,10 @@ let
         ExecStartPre = preStart;
         # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve out
         # the destination so yt-dlp can write videos, archive.txt, and metadata.
-        ReadWritePaths = [ ch.destination ];
+        # Quoted: ReadWritePaths is a space-separated list, so a destination with
+        # a space (e.g. "/mnt/channels/Settei Seven") would otherwise be split
+        # into two bogus paths. systemd unquotes this back to the single path.
+        ReadWritePaths = [ ''"${ch.destination}"'' ];
         # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
         # DynamicUser state dir, else the read-only HOME emits cache warnings.
         StateDirectory = "channel-archive-${name}";
