@@ -65,6 +65,10 @@ let
     let
       metaArgs = lib.optionals ch.writeMetadata [
         "--write-info-json"
+        # Per-video metadata only: without this, yt-dlp also writes a
+        # playlist-level "<channel> [<id>].info.json", and nfo.py then emits a
+        # junk .nfo for the playlist itself. Suppress the playlist metafiles.
+        "--no-write-playlist-metafiles"
         "--write-thumbnail"
         "--convert-thumbnails" "jpg"
         "--embed-metadata"
