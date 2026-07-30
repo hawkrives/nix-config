@@ -35,30 +35,55 @@ def build_nfo(info):
     date = _fmt_date(info.get("upload_date"))
     add("premiered", date)
     add("aired", date)
+    if date:
+        add("year", date[:4])  # Plex populates the year field from <year>, not <premiered>
     uploader = info.get("uploader") or info.get("channel")
     add("studio", uploader)
     add("director", uploader)
     duration = info.get("duration")
     if isinstance(duration, (int, float)) and duration > 0:
         add("runtime", round(duration / 60))
+    # Genre: YouTube exposes it in `categories`; Twitch VODs don't, but the
+    # game(s) played are the `chapters[].title` segments — unify both.
+    genres = []
+    cats = info.get("categories")
+    if isinstance(cats, list):
+        genres.extend(c for c in cats if c)
+    chapters = info.get("chapters")
+    if isinstance(chapters, list):
+        genres.extend(
+            ch.get("title") for ch in chapters if isinstance(ch, dict) and ch.get("title")
+        )
+    for g in dict.fromkeys(genres):  # de-dup, preserve order
+        add("genre", g)
+    tags = info.get("tags")
+    if isinstance(tags, list):
+        for t in dict.fromkeys(t for t in tags if t):  # de-dup, preserve order
+            add("tag", t)
     vid = info.get("id")
     if vid:
+        extractor = (info.get("extractor") or "").lower()
+        uid_type = "twitch" if "twitch" in extractor else "youtube"
         lines.append(
-            f'  <uniqueid type="youtube" default="true">{escape(str(vid))}</uniqueid>'
+            f'  <uniqueid type="{uid_type}" default="true">{escape(str(vid))}</uniqueid>'
         )
     lines.append("</movie>")
     lines.append("")  # trailing newline
     return "\n".join(lines)
 
 
-def generate_dir(directory):
-    """Write a .nfo for each .info.json lacking one. Return count written."""
+def generate_dir(directory, force=False):
+    """Write a .nfo for each .info.json lacking one. Return count written.
+
+    With force=True, overwrite existing .nfo files (e.g. to pick up schema
+    changes like the added <year> tag).
+    """
     d = Path(directory)
     written = 0
     for info_path in sorted(d.glob("*" + INFO_SUFFIX)):
         base = info_path.name[: -len(INFO_SUFFIX)]
         nfo_path = info_path.with_name(base + ".nfo")
-        if nfo_path.exists():
+        if nfo_path.exists() and not force:
             continue
         try:
             info = json.loads(info_path.read_text(encoding="utf-8"))
@@ -71,10 +96,12 @@ def generate_dir(directory):
 
 
 def main(argv):
+    force = "--force" in argv
+    argv = [a for a in argv if a != "--force"]
     if len(argv) != 2:
-        print("usage: nfo.py <directory>", file=sys.stderr)
+        print("usage: nfo.py <directory> [--force]", file=sys.stderr)
         return 2
-    n = generate_dir(argv[1])
+    n = generate_dir(argv[1], force=force)
     print(f"generated {n} .nfo file(s)")
     return 0
 
