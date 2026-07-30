@@ -1,7 +1,13 @@
 # Incremental yt-dlp channel archiver. One oneshot service + timer per channel;
-# per-channel `--download-archive` dedups. Downloads land group-owned by `users`
-# (setgid dest dir + UMask 0002) so Plex/Jellyfin can read them. Optionally
-# writes .info.json/thumbnail metadata and generates Kodi/Jellyfin .nfo files.
+# per-channel `--download-archive` dedups. `baseDir` (/mnt/channels) is a
+# root-squash NFS export, so this module cannot chown/chmod/create dirs there
+# even as root — each channel's destination dir must already exist on the NAS,
+# owned by group `users` and group-writable. Downloads land world-readable
+# (UMask 0022 -> 644 files) matching the rest of the tree, so Plex/Jellyfin
+# read them via the `other` bit; SupplementaryGroups=[ "users" ] is what lets
+# the service itself write into the group-writable dest dir and append
+# archive.txt. Optionally writes .info.json/thumbnail metadata and generates
+# Kodi/Jellyfin .nfo files.
 { lib, config, pkgs, utils, ... }:
 let
   cfg = config.services.channelArchive;
@@ -76,10 +82,21 @@ let
         ++ ch.extraArgs
         ++ [ ch.url ]
       ));
-      # `+` prefix runs ExecStartPre as root (not the DynamicUser) so it can
-      # create the dir under /mnt/channels and set it setgid root:users.
+      # /mnt/channels is a root-squash NFS export: even root can't chown/chmod
+      # there, so we can't create/fix up the destination dir ourselves. Instead,
+      # fail fast (before yt-dlp runs) if it's missing or not writable. Runs
+      # with NO `+` prefix — inside the sandbox as the DynamicUser, through
+      # ReadWritePaths — so the `-w` check reflects what yt-dlp will actually
+      # see, not root's (irrelevant, root-squashed) view of the mount.
       preStart = pkgs.writeShellScript "channel-archive-${name}-pre" ''
-        install -d -m 2775 -o root -g users ${lib.escapeShellArg ch.destination}
+        if [ ! -d ${lib.escapeShellArg ch.destination} ]; then
+          echo "channel-archive: destination ${ch.destination} does not exist — create it on the NAS (group 'users', group-writable) first" >&2
+          exit 1
+        fi
+        if [ ! -w ${lib.escapeShellArg ch.destination} ]; then
+          echo "channel-archive: destination ${ch.destination} not writable by the service user (needs group 'users' + group-write)" >&2
+          exit 1
+        fi
       '';
     in {
       description = "Archive channel ${name} with yt-dlp";
@@ -94,9 +111,17 @@ let
       serviceConfig = {
         Type = "oneshot";
         DynamicUser = true;
+        # Grants group-write into the (pre-existing, group `users`) destination
+        # dir and append access to its group-writable archive.txt — this, not
+        # ownership, is how the DynamicUser can write under root-squash NFS.
         SupplementaryGroups = [ "users" ];
-        UMask = "0002";
-        ExecStartPre = "+${preStart}";
+        # 0022 -> files land 644 (other-readable), matching the existing
+        # youtube/pinchflat tree, so Plex/Jellyfin (reading via `other`, not
+        # group) can see new downloads regardless of their own group membership.
+        UMask = "0022";
+        # No `+` prefix: must run as the DynamicUser inside the sandbox (see
+        # preStart above) so its writability check is meaningful.
+        ExecStartPre = preStart;
         # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve out
         # the destination so yt-dlp can write videos, archive.txt, and metadata.
         ReadWritePaths = [ ch.destination ];
