@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
 # One-time Phase-2 migration for services.channelArchive. For each channel,
 # consolidate its pinchflat/<UC> + youtube/<UC> copies into a friendly dir,
-# dedup by video-id (keep the pinchflat copy — it has sidecars), and seed
-# archive.txt with the union of ids so the module never re-downloads them.
+# dedup by video-id (keep the pinchflat copy — it has sidecars), keep only
+# English subtitles, and seed archive.txt with the union of ids so the module
+# never re-downloads them.
 #
-# Run AS plex (owns /mnt/channels; root is NFS-squashed here):
-#   sudo -u plex env DRYRUN=1 bash channel-archive-migrate.sh   # coarse preview
-#   sudo -u plex bash channel-archive-migrate.sh                 # perform
+# RUN ON THE SYNOLOGY as root, over SSH. The NAS NFS export is all_squash, so
+# every write from the nutmeg client becomes uid 1024 and can't touch the 755
+# NAS dirs — only the NAS itself has real write access. Via SSH to the NAS:
+#   sudo env DRYRUN=1 CHANNELS_ROOT=/volume1/media-channels bash channel-archive-migrate.sh  # preview
+#   sudo env CHANNELS_ROOT=/volume1/media-channels bash channel-archive-migrate.sh           # perform
+#
+# Each dest dir is created group-writable + setgid + group users(100), so the
+# nutmeg module (writing as the squashed 1024:users) can add downloads later
+# and Plex/Jellyfin can read them.
 #
 # CHANNELS_ROOT overrides /mnt/channels (tests point it at a temp dir).
-# DRYRUN=1 prints intended ops without touching the fs (coarse: does not
-# simulate dedup/seed against a not-yet-populated dest).
+# DRYRUN=1 prints intended ops without touching the fs.
 #
 # Re-runs are safe: seed_archive() is non-destructive (skips any dest that
-# already has an archive.txt, so it never re-derives/clobbers ids from
-# on-disk filenames once the module has started downloading), and dedup
-# keys (collect_ids) are snapshotted only from pinchflat VIDEO files, never
-# from sidecars, so an orphan sidecar can never cause a real video to be
-# deleted.
+# already has an archive.txt, so it never clobbers ids the module has since
+# appended), and dedup keys (collect_ids) are snapshotted only from pinchflat
+# VIDEO files, never sidecars, so an orphan sidecar can't delete a real video.
+#
+# Portable: pure-bash parameter expansion (no GNU find -printf, basename, or
+# sed), so it runs on DSM's bash as well as GNU/Linux.
 set -uo pipefail
 
 ROOT="${CHANNELS_ROOT:-/mnt/channels}"
@@ -35,7 +42,7 @@ CHANNELS=(
 
 log() { printf '%s\n' "$*"; }
 run() { if [ "$DRYRUN" = 1 ]; then log "  DRY: $*"; else "$@"; fi; }
-id_of() { local b; b="$(basename -- "$1")"; printf '%s' "${b%%.*}"; }
+id_of() { local b="${1##*/}"; printf '%s' "${b%%.*}"; }
 
 # Subtitle handling: pinchflat pulled auto-translated subs in ~100 languages
 # (.srt/.vtt) per video. Keep only English tracks (en / en-orig / en-*), drop
@@ -44,21 +51,27 @@ id_of() { local b; b="$(basename -- "$1")"; printf '%s' "${b%%.*}"; }
 is_sub() { case "$1" in *.srt | *.vtt) return 0 ;; *) return 1 ;; esac; }
 is_english_sub() { local x="${1%.srt}"; x="${x%.vtt}"; case "${x##*.}" in en | en-* | en_*) return 0 ;; *) return 1 ;; esac; }
 
-# Populate the pf_ids assoc array (declared by the caller) with the video-ids
-# already present in $1. Used to snapshot pinchflat's ids *before* the youtube
-# loop starts moving files in, so youtube siblings (e.g. a .vtt moved ahead of
-# its .mp4 by glob order) never get mistaken for a pinchflat original.
-# Only VIDEO files (same extensions seed_archive uses) are counted — sidecars
-# (.info.json/.nfo/-thumb.jpg) must never contribute a dedup key, or an
-# orphan sidecar with no matching video would cause a real, sidecar-less
-# youtube video of the same id to be wrongly deleted.
+# Print the video-id (basename up to first '.') of each video file directly
+# under $1, one per line. Pure-glob, no GNU find.
+video_ids_in() {
+  local dir="$1" f b
+  for f in "$dir"/*.mp4 "$dir"/*.mkv "$dir"/*.webm; do
+    [ -e "$f" ] || continue
+    b="${f##*/}"
+    printf '%s\n' "${b%%.*}"
+  done
+}
+
+# Snapshot pinchflat's VIDEO ids into the caller's pf_ids assoc array *before*
+# the youtube loop moves files in, so a youtube sibling (e.g. a .vtt sorting
+# ahead of its .mp4) is never mistaken for a pinchflat original. VIDEO files
+# only — an orphan sidecar must never contribute a dedup key, else a real,
+# sidecar-less youtube video of the same id would be wrongly deleted.
 collect_ids() {
-  local dir="$1" id
+  local id
   while IFS= read -r id; do
     [ -n "$id" ] && pf_ids["$id"]=1
-  done < <(find "$dir" -maxdepth 1 -type f \
-             \( -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \) \
-             -printf '%f\n' 2>/dev/null | sed 's/\..*$//')
+  done < <(video_ids_in "$1")
 }
 
 seed_archive() {
@@ -66,11 +79,10 @@ seed_archive() {
   local archive="$dest/archive.txt"
   if [ -e "$archive" ]; then log "  archive.txt exists, leaving as-is -> $archive"; return; fi
   if [ "$DRYRUN" = 1 ]; then log "  DRY: would seed archive.txt -> $archive"; return; fi
-  find "$dest" -maxdepth 1 -type f \
-       \( -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \) \
-       -printf '%f\n' 2>/dev/null | sed 's/\..*$//' | sort -u \
-    | sed 's/^/youtube /' > "$archive"
+  local id
+  video_ids_in "$dest" | sort -u | while IFS= read -r id; do printf 'youtube %s\n' "$id"; done > "$archive"
   chmod 664 "$archive"
+  chgrp 100 "$archive" 2>/dev/null || true
   log "  seeded $(wc -l < "$archive") ids -> $archive"
 }
 
@@ -81,26 +93,25 @@ migrate_one() {
   local -A pf_ids=()
   log "=== $name  ($uc) ==="
   run mkdir -p "$dest"
-  run chmod 775 "$dest"
+  # setgid + group-writable + group users(100): lets the nutmeg module (writing
+  # as the squashed 1024:users) create files here, inheriting group users.
+  run chgrp 100 "$dest"
+  run chmod 2775 "$dest"
   if [ -d "$pf" ]; then
     for f in "$pf"/*; do
       [ -e "$f" ] || continue
-      bn="$(basename -- "$f")"
+      bn="${f##*/}"
       if is_sub "$bn" && ! is_english_sub "$bn"; then
         run rm -f -- "$f"; dropped=$((dropped+1)); continue
       fi
       run mv -- "$f" "$dest/"; moved=$((moved+1))
     done
   fi
-  # Snapshot pinchflat's ids *before* the youtube loop mutates $dest, so a
-  # youtube file never gets deduped against a sibling moved earlier in the
-  # same loop (e.g. a .vtt sorting ahead of its .mp4) — only against a true
-  # pinchflat original.
   [ "$DRYRUN" != 1 ] && collect_ids "$dest"
   if [ -d "$yt" ]; then
     for f in "$yt"/*; do
       [ -e "$f" ] || continue
-      bn="$(basename -- "$f")"
+      bn="${f##*/}"
       if is_sub "$bn" && ! is_english_sub "$bn"; then
         run rm -f -- "$f"; dropped=$((dropped+1)); continue
       fi
