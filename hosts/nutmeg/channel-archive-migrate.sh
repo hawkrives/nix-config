@@ -43,7 +43,8 @@ collect_ids() {
 }
 
 seed_archive() {
-  local dest="$1" archive="$dest/archive.txt"
+  local dest="$1"
+  local archive="$dest/archive.txt"
   if [ "$DRYRUN" = 1 ]; then log "  DRY: would seed archive.txt -> $archive"; return; fi
   find "$dest" -maxdepth 1 -type f \
        \( -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \) \
