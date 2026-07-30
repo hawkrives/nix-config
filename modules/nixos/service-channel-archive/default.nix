@@ -16,6 +16,16 @@ let
 
   channelModule = lib.types.submodule ({ name, ... }: {
     options = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether to render this channel's service + timer. Default false, so a
+          channel can be declared (staged) in config without archiving until
+          flipped to true — useful for tracking a backlog of channels to enable
+          in batches.
+        '';
+      };
       url = lib.mkOption {
         type = lib.types.str;
         description = "Channel or playlist URL passed to yt-dlp.";
@@ -223,12 +233,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Only enabled channels render units; declared-but-disabled ones are inert.
     systemd.services = lib.mapAttrs'
       (name: ch: lib.nameValuePair (serviceName name) (mkService name ch))
-      cfg.channels;
+      (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
 
     systemd.timers = lib.mapAttrs'
       (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch))
-      cfg.channels;
+      (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
   };
 }
