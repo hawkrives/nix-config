@@ -37,6 +37,13 @@ log() { printf '%s\n' "$*"; }
 run() { if [ "$DRYRUN" = 1 ]; then log "  DRY: $*"; else "$@"; fi; }
 id_of() { local b; b="$(basename -- "$1")"; printf '%s' "${b%%.*}"; }
 
+# Subtitle handling: pinchflat pulled auto-translated subs in ~100 languages
+# (.srt/.vtt) per video. Keep only English tracks (en / en-orig / en-*), drop
+# the rest — consistent with the module's no-subtitles policy and to keep
+# Plex/Jellyfin from showing 100+ subtitle tracks per video.
+is_sub() { case "$1" in *.srt | *.vtt) return 0 ;; *) return 1 ;; esac; }
+is_english_sub() { local x="${1%.srt}"; x="${x%.vtt}"; case "${x##*.}" in en | en-* | en_*) return 0 ;; *) return 1 ;; esac; }
+
 # Populate the pf_ids assoc array (declared by the caller) with the video-ids
 # already present in $1. Used to snapshot pinchflat's ids *before* the youtube
 # loop starts moving files in, so youtube siblings (e.g. a .vtt moved ahead of
@@ -70,7 +77,7 @@ seed_archive() {
 migrate_one() {
   local uc="$1" name="$2"
   local dest="$ROOT/$name" pf="$ROOT/pinchflat/$uc" yt="$ROOT/youtube/$uc"
-  local moved=0 deduped=0 f id
+  local moved=0 deduped=0 dropped=0 f id bn
   local -A pf_ids=()
   log "=== $name  ($uc) ==="
   run mkdir -p "$dest"
@@ -78,6 +85,10 @@ migrate_one() {
   if [ -d "$pf" ]; then
     for f in "$pf"/*; do
       [ -e "$f" ] || continue
+      bn="$(basename -- "$f")"
+      if is_sub "$bn" && ! is_english_sub "$bn"; then
+        run rm -f -- "$f"; dropped=$((dropped+1)); continue
+      fi
       run mv -- "$f" "$dest/"; moved=$((moved+1))
     done
   fi
@@ -89,6 +100,10 @@ migrate_one() {
   if [ -d "$yt" ]; then
     for f in "$yt"/*; do
       [ -e "$f" ] || continue
+      bn="$(basename -- "$f")"
+      if is_sub "$bn" && ! is_english_sub "$bn"; then
+        run rm -f -- "$f"; dropped=$((dropped+1)); continue
+      fi
       id="$(id_of "$f")"
       if [ "$DRYRUN" != 1 ] && [ -n "${pf_ids[$id]:-}" ]; then
         run rm -f -- "$f"; deduped=$((deduped+1))
@@ -100,7 +115,7 @@ migrate_one() {
   seed_archive "$dest"
   [ -d "$pf" ] && { run rmdir "$pf" 2>/dev/null || log "  note: $pf not empty, left in place"; }
   [ -d "$yt" ] && { run rmdir "$yt" 2>/dev/null || log "  note: $yt not empty, left in place"; }
-  log "  moved=$moved deduped=$deduped"
+  log "  moved=$moved deduped=$deduped dropped-subs=$dropped"
 }
 
 main() {
