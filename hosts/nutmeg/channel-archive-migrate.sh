@@ -49,7 +49,10 @@ id_of() { local b="${1##*/}"; printf '%s' "${b%%.*}"; }
 # the rest — consistent with the module's no-subtitles policy and to keep
 # Plex/Jellyfin from showing 100+ subtitle tracks per video.
 is_sub() { case "$1" in *.srt | *.vtt) return 0 ;; *) return 1 ;; esac; }
-is_english_sub() { local x="${1%.srt}"; x="${x%.vtt}"; case "${x##*.}" in en | en-* | en_*) return 0 ;; *) return 1 ;; esac; }
+is_english_sub() { local x="${1%.srt}"; x="${x%.vtt}"; case "${x##*.}" in en | en-orig | en-en* | en-[A-Z][A-Z]*) return 0 ;; *) return 1 ;; esac; }
+# ^ English only: keep en, en-orig, en-en* (en->en), en-<UPPERCASE region>
+#   (en-US/en-GB). Drop en-<lowercase-lang> translation targets (en-es-419,
+#   en-fr, en-de) — English translated to another language, not English.
 
 # Print the video-id (basename up to first '.') of each video file directly
 # under $1, one per line. Pure-glob, no GNU find.
