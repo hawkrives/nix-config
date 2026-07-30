@@ -32,6 +32,7 @@
     ./servarr.nix
     ./beets.nix
     ./channel-archive.nix
+    ./channel-archive-backlog.nix
     ./recyclarr.nix
     ./soulseek.nix
     ./tailscale.nix

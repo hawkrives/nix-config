@@ -182,7 +182,9 @@ let
     timerConfig = {
       OnCalendar = ch.schedule;
       Persistent = true;
-      RandomizedDelaySec = "1h";
+      # Wide spread so many channels don't all hit YouTube at once (raising
+      # bot-block risk) — each fires at a stable random offset within 18h.
+      RandomizedDelaySec = "18h";
     };
   };
 in
