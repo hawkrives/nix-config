@@ -11,6 +11,13 @@
 # CHANNELS_ROOT overrides /mnt/channels (tests point it at a temp dir).
 # DRYRUN=1 prints intended ops without touching the fs (coarse: does not
 # simulate dedup/seed against a not-yet-populated dest).
+#
+# Re-runs are safe: seed_archive() is non-destructive (skips any dest that
+# already has an archive.txt, so it never re-derives/clobbers ids from
+# on-disk filenames once the module has started downloading), and dedup
+# keys (collect_ids) are snapshotted only from pinchflat VIDEO files, never
+# from sidecars, so an orphan sidecar can never cause a real video to be
+# deleted.
 set -uo pipefail
 
 ROOT="${CHANNELS_ROOT:-/mnt/channels}"
@@ -34,17 +41,23 @@ id_of() { local b; b="$(basename -- "$1")"; printf '%s' "${b%%.*}"; }
 # already present in $1. Used to snapshot pinchflat's ids *before* the youtube
 # loop starts moving files in, so youtube siblings (e.g. a .vtt moved ahead of
 # its .mp4 by glob order) never get mistaken for a pinchflat original.
+# Only VIDEO files (same extensions seed_archive uses) are counted — sidecars
+# (.info.json/.nfo/-thumb.jpg) must never contribute a dedup key, or an
+# orphan sidecar with no matching video would cause a real, sidecar-less
+# youtube video of the same id to be wrongly deleted.
 collect_ids() {
-  local dir="$1" f
-  for f in "$dir"/*; do
-    [ -e "$f" ] || continue
-    pf_ids["$(id_of "$f")"]=1
-  done
+  local dir="$1" id
+  while IFS= read -r id; do
+    [ -n "$id" ] && pf_ids["$id"]=1
+  done < <(find "$dir" -maxdepth 1 -type f \
+             \( -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \) \
+             -printf '%f\n' 2>/dev/null | sed 's/\..*$//')
 }
 
 seed_archive() {
   local dest="$1"
   local archive="$dest/archive.txt"
+  if [ -e "$archive" ]; then log "  archive.txt exists, leaving as-is -> $archive"; return; fi
   if [ "$DRYRUN" = 1 ]; then log "  DRY: would seed archive.txt -> $archive"; return; fi
   find "$dest" -maxdepth 1 -type f \
        \( -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \) \
