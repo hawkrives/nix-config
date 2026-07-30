@@ -1,11 +1,14 @@
-# Staged (disabled) YouTube channel backlog — the 77 channels with >=20 on-disk
-# videos from the old /mnt/channels/youtube tree. All enable=false: declared for
-# tracking; activate in batches by flipping enable=true AND running the NAS
-# migration for that batch (see channel-archive-migrate.sh). Slugs derive from
-# the channel name (UC-id fallback for non-ASCII names); friendly name is the
-# destination. "needs cookies" marks 1000+/heavy channels that will trip
-# YouTube's bot-check on backfill until cookie auth is added. ~51 single-video
-# one-offs and 3 unavailable channels are intentionally omitted (static files).
+# Staged (disabled) YouTube channel backlog — the 75 channels with >=20 on-disk
+# videos from the old /mnt/channels/youtube tree whose channel still resolves on
+# YouTube. All enable=false: declared for tracking; activate in batches by
+# flipping enable=true AND running the NAS migration for that batch (see
+# channel-archive-migrate.sh). Slugs derive from the channel name (UC-id fallback
+# for non-ASCII names); friendly name is the destination. "needs cookies" marks
+# 1000+/heavy channels that trip YouTube's bot-check on backfill until cookie
+# auth is added. Omitted (left as static youtube/ files): ~51 single-video
+# one-offs, and 3 channels that no longer resolve (deleted/private) — including
+# two sizeable ones (UCfm4bBx0sW4NGAFzfGkLCMg ~52 vids, UCU9327_ngvVzoMAmnxQXrOQ
+# ~48 vids) whose videos are preserved on disk but can't be archived forward.
 { ... }:
 {
   services.channelArchive = {
@@ -387,12 +390,6 @@
       destination = "/mnt/channels/The Second Narrator Music";
       rateLimit = true;
     };
-    channels."unavailable" = {  # 52 vids
-      enable = false;
-      url = "https://www.youtube.com/channel/UCfm4bBx0sW4NGAFzfGkLCMg/videos";
-      destination = "/mnt/channels/(unavailable)";
-      rateLimit = true;
-    };
     channels."summoning-salt" = {  # 51 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCtUbO6rBht0daVIOGML3c8w/videos";
@@ -427,12 +424,6 @@
       enable = false;
       url = "https://www.youtube.com/channel/UCW3UeF_dWeNxbfMScx-v37g/videos";
       destination = "/mnt/channels/VanilluxePavilion";
-      rateLimit = true;
-    };
-    channels."unavailable-2" = {  # 48 vids
-      enable = false;
-      url = "https://www.youtube.com/channel/UCU9327_ngvVzoMAmnxQXrOQ/videos";
-      destination = "/mnt/channels/(unavailable)";
       rateLimit = true;
     };
     channels."harrypottercentral" = {  # 34 vids
