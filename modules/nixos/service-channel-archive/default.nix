@@ -56,6 +56,12 @@ let
         defaultText = lib.literalExpression "config.services.channelArchive.extraArgs";
         description = "Extra yt-dlp arguments for this channel.";
       };
+      rateLimit = lib.mkOption {
+        type = lib.types.bool;
+        default = cfg.rateLimit;
+        defaultText = lib.literalExpression "config.services.channelArchive.rateLimit";
+        description = "Inject polite YouTube pacing flags (--sleep-requests + --min/max-sleep-interval) to reduce rate-limit/bot-block risk.";
+      };
     };
   });
 
@@ -74,6 +80,11 @@ let
         "--embed-metadata"
       ];
       formatArgs = lib.optionals (ch.format != "") [ "-f" ch.format ];
+      rateLimitArgs = lib.optionals ch.rateLimit [
+        "--sleep-requests" "1.5"
+        "--min-sleep-interval" "5"
+        "--max-sleep-interval" "30"
+      ];
       ytdlpArgs = lib.concatStringsSep " " (map lib.escapeShellArg (
         [
           "--download-archive" "${ch.destination}/archive.txt"
@@ -83,6 +94,7 @@ let
         ]
         ++ formatArgs
         ++ metaArgs
+        ++ rateLimitArgs
         ++ ch.extraArgs
         ++ [ ch.url ]
       ));
@@ -111,7 +123,7 @@ let
       # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
       after = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
       wants = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
-      path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 ];
+      path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 pkgs.coreutils pkgs.gnugrep ];
       serviceConfig = {
         Type = "oneshot";
         DynamicUser = true;
@@ -137,7 +149,13 @@ let
       script = ''
         set -uo pipefail
         rc=0
-        yt-dlp ${ytdlpArgs} || rc=$?
+        out="$(mktemp)"
+        yt-dlp ${ytdlpArgs} 2>&1 | tee "$out" || rc=$?
+        if grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
+          echo "channel-archive: >>> BLOCKED/RATE-LIMITED by YouTube (429/403/bot-check) <<<" >&2
+          rc=75
+        fi
+        rm -f "$out"
         ${lib.optionalString ch.writeNfo ''
           python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
         ''}
@@ -188,6 +206,11 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ "--concurrent-fragments" "4" "--retries" "10" ];
       description = "Default extra yt-dlp arguments.";
+    };
+    rateLimit = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Default: inject polite YouTube pacing flags to reduce rate-limit/bot-block risk.";
     };
     channels = lib.mkOption {
       type = lib.types.attrsOf channelModule;
