@@ -95,6 +95,13 @@ let
         "--min-sleep-interval" "5"
         "--max-sleep-interval" "30"
       ];
+      # Skip live/premiere content: currently-live streams, scheduled premieres,
+      # and past-live VODs (was_live/post_live). Shorts need no filter — the
+      # channel URLs target the `/videos` tab, which never lists Shorts.
+      liveFilterArgs = [
+        "--match-filter"
+        "live_status != is_live & live_status != is_upcoming & live_status != was_live & live_status != post_live"
+      ];
       ytdlpArgs = lib.concatStringsSep " " (map lib.escapeShellArg (
         [
           "--download-archive" "${ch.destination}/archive.txt"
@@ -105,6 +112,7 @@ let
         ++ formatArgs
         ++ metaArgs
         ++ rateLimitArgs
+        ++ liveFilterArgs
         ++ ch.extraArgs
         ++ [ ch.url ]
       ));
