@@ -14,6 +14,7 @@ let
 
   nfoGenerator = ./nfo.py;
   restructureScript = ./restructure.py;
+  channelArtworkScript = ./channel-artwork.py;
 
   channelModule = lib.types.submodule ({ name, ... }: {
     options = {
@@ -147,7 +148,8 @@ let
       # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
       after = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
       wants = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
-      path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 pkgs.coreutils pkgs.gnugrep ];
+      path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 pkgs.coreutils pkgs.gnugrep ]
+        ++ lib.optionals ch.restructure [ pkgs.imagemagick pkgs.dejavu_fonts ];
       serviceConfig = {
         Type = "oneshot";
         DynamicUser = true;
@@ -191,6 +193,12 @@ let
         ''}
         ${lib.optionalString ch.restructure ''
           python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
+            ${lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"} \
+            --url ${lib.escapeShellArg cfg.plexUrl} \
+            ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
+            || true
+          CAW_FONT=${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans-Bold.ttf \
+          python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
             ${lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"} \
             --url ${lib.escapeShellArg cfg.plexUrl} \
             ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
