@@ -169,15 +169,15 @@ def plex_finalize(dest, created, section, url, token):
         folder = os.path.basename(dest.rstrip("/"))
         _api(url, token, f"/library/sections/{section}/refresh?path={urllib.parse.quote(dest)}")
         # settle: bounded poll on refresh activity (server-side ?wait=1 delay)
-        for _ in range(60):
-            acts = _api(url, token, "/activities")
-            busy = [a for a in acts.get("MediaContainer", {}).get("Activity", [])
-                    if "refresh" in (a.get("type") or "")]
+        for i in range(60):
             try:
                 _api(url, token, f"/library/sections/{section}?wait=1", method="GET")
             except Exception:
                 pass
-            if not busy:
+            acts = _api(url, token, "/activities")
+            busy = [a for a in acts.get("MediaContainer", {}).get("Activity", [])
+                    if "refresh" in (a.get("type") or "")]
+            if not busy and i >= 2:
                 break
         # locate the show for this folder
         shows = _api(url, token, f"/library/sections/{section}/all").get("MediaContainer", {}).get("Metadata", [])

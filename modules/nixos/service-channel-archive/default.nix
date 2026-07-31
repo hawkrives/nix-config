@@ -191,7 +191,7 @@ let
         ''}
         ${lib.optionalString ch.restructure ''
           python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
-            ${lib.optionalString (cfg.plexSection != null) "--section ${cfg.plexSection}"} \
+            ${lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"} \
             --url ${lib.escapeShellArg cfg.plexUrl} \
             ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
             || true
