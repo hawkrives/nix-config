@@ -4,3 +4,7 @@ docs/superpowers/
 
 # scratch dump file used for piping sudo command output back to Claude
 /output
+
+# Python bytecode cache
+__pycache__/
+*.pyc
