@@ -86,3 +86,26 @@ def test_restructure_idempotent_second_run_noop():
              "upload_date": "20250101"})
         assert len(r.restructure_dir(d)) == 1
         assert r.restructure_dir(d) == []  # nothing flat left
+
+def test_restructure_seq_by_video_id_not_title():
+    """seq ordered by video id, not filename/title.
+    Two videos same date: title "AAA" id "zzz", title "ZZZ" id "aaa".
+    id "aaa" sorts first -> seq 01, id "zzz" -> seq 02."""
+    with tempfile.TemporaryDirectory() as d:
+        folder = os.path.basename(d)
+        _mk(d, "AAA [zzz]", {"id": "zzz", "title": "AAA",
+             "extractor": "youtube", "upload_date": "20250604"})
+        _mk(d, "ZZZ [aaa]", {"id": "aaa", "title": "ZZZ",
+             "extractor": "youtube", "upload_date": "20250604"})
+        created = r.restructure_dir(d)
+        assert len(created) == 2
+        # id "aaa" processes first (sorts before "zzz") -> seq 01
+        aaa_ep = next(c for c in created if c["id"] == "aaa")
+        zzz_ep = next(c for c in created if c["id"] == "zzz")
+        assert aaa_ep["episode"] == 60401
+        assert zzz_ep["episode"] == 60402
+        # both in Season 2025
+        assert os.path.isfile(os.path.join(d, "Season 2025",
+            f"{folder} - S2025E060401 - ZZZ [aaa].mp4"))
+        assert os.path.isfile(os.path.join(d, "Season 2025",
+            f"{folder} - S2025E060402 - AAA [zzz].mp4"))

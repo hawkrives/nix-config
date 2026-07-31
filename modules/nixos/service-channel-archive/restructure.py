@@ -96,7 +96,10 @@ def _existing_seqs(dest):
                 continue
             num = mm.group(1)
             if season == 0:
-                ymd, seq = num[:8], int(num[8:10] or 0)
+                if len(num) >= 10:          # S00E<YYYYMMDD><NN>
+                    ymd, seq = num[:8], int(num[8:10])
+                else:                        # S00E<NN> (undated)
+                    ymd, seq = None, int(num)
             else:
                 # MMDDSS -> ymd key needs the year (season) + MMDD
                 mmdd, seq = num[:-2], int(num[-2:])
@@ -110,8 +113,8 @@ def restructure_dir(dest):
     folder = os.path.basename(dest)
     existing = _existing_seqs(dest)
     created = []
-    flat = sorted(f for f in os.listdir(dest) if f.endswith(".info.json"))
-    for jf in flat:
+    candidates = []
+    for jf in [f for f in os.listdir(dest) if f.endswith(".info.json")]:
         base = jf[: -len(".info.json")]
         vfile = next((os.path.join(dest, base + e) for e in VEXT
                       if os.path.exists(os.path.join(dest, base + e))), None)
@@ -122,6 +125,8 @@ def restructure_dir(dest):
         except (json.JSONDecodeError, OSError) as e:
             print(f"restructure: skip {base}: {e}", file=sys.stderr)
             continue
+        candidates.append((base, vfile, info))
+    for base, vfile, info in sorted(candidates, key=lambda t: str(t[2].get("id") or t[0])):
         p = plan_episode(info, existing)
         _, aired = date_of(info)
         vid = str(info.get("id") or base)
