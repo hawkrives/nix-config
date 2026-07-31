@@ -1,4 +1,4 @@
-import os, json, tempfile
+import os, json, tempfile, subprocess, sys
 import restructure as r
 
 def _mk(d, base, info):
@@ -109,3 +109,13 @@ def test_restructure_seq_by_video_id_not_title():
             f"{folder} - S2025E060401 - ZZZ [aaa].mp4"))
         assert os.path.isfile(os.path.join(d, "Season 2025",
             f"{folder} - S2025E060402 - AAA [zzz].mp4"))
+
+def test_cli_filesystem_only(tmp_path):
+    d = tmp_path / "chan"; d.mkdir()
+    (d / "A [a].mp4").write_text("v")
+    (d / "A [a].info.json").write_text(json.dumps(
+        {"id": "a", "title": "A", "extractor": "youtube", "upload_date": "20240102"}))
+    here = os.path.dirname(__file__)
+    rc = subprocess.run([sys.executable, os.path.join(here, "restructure.py"), str(d)]).returncode
+    assert rc == 0
+    assert (d / "Season 2024" / "chan - S2024E010201 - A [a].mp4").exists()

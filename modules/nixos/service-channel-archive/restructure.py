@@ -150,3 +150,91 @@ def restructure_dir(dest):
             os.remove(old_nfo)
         created.append({"season": p["season"], "episode": p["episode"], "id": vid, "path": dst})
     return created
+
+
+def _api(url, token, path, method="GET", data=None):
+    sep = "&" if "?" in path else "?"
+    req = urllib.request.Request(f"{url}{path}{sep}X-Plex-Token={token}",
+                                 data=data, method=method,
+                                 headers={"Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=120) as rsp:
+        body = rsp.read()
+        return json.loads(body) if body and method == "GET" else rsp.status
+
+
+def plex_finalize(dest, created, section, url, token):
+    """Best-effort: scan the dir, then select local thumb + set art for new eps.
+    Also self-heals any episode in this show still lacking a local thumb / own art."""
+    try:
+        folder = os.path.basename(dest.rstrip("/"))
+        _api(url, token, f"/library/sections/{section}/refresh?path={urllib.parse.quote(dest)}")
+        # settle: bounded poll on refresh activity (server-side ?wait=1 delay)
+        for _ in range(60):
+            acts = _api(url, token, "/activities")
+            busy = [a for a in acts.get("MediaContainer", {}).get("Activity", [])
+                    if "refresh" in (a.get("type") or "")]
+            try:
+                _api(url, token, f"/library/sections/{section}?wait=1", method="GET")
+            except Exception:
+                pass
+            if not busy:
+                break
+        # locate the show for this folder
+        shows = _api(url, token, f"/library/sections/{section}/all").get("MediaContainer", {}).get("Metadata", [])
+        srk = None
+        for s in shows:
+            leaves = _api(url, token, f"/library/metadata/{s['ratingKey']}/allLeaves").get("MediaContainer", {}).get("Metadata", [])
+            if leaves and f"/{folder}/" in (leaves[0].get("Media", [{}])[0].get("Part", [{}])[0].get("file", "")):
+                srk = s["ratingKey"]; all_leaves = leaves; break
+        if srk is None:
+            return
+        want = {(c["season"], c["episode"]) for c in created}
+        for ep in all_leaves:
+            rk = ep["ratingKey"]
+            key = (ep.get("parentIndex"), ep.get("index"))
+            new = key in want
+            # THUMB: select local/embedded if not already
+            posters = _api(url, token, f"/library/metadata/{rk}/posters").get("MediaContainer", {}).get("Metadata", [])
+            cand = next((p for p in posters if p.get("provider") == "local"), None) \
+                or next((p for p in posters if p.get("provider") == "embedded"), None)
+            if cand and not cand.get("selected"):
+                _api(url, token, f"/library/metadata/{rk}/poster?url=" + urllib.parse.quote(cand["ratingKey"], safe=""), method="PUT")
+            # ART: own still if missing (grandparent-inherited) or newly added
+            art = ep.get("art", "")
+            if new or not art.startswith(f"/library/metadata/{rk}/art"):
+                data = None
+                try:
+                    f = ep["Media"][0]["Part"][0]["file"]
+                    jpg = os.path.splitext(f)[0] + ".jpg"
+                    if os.path.isfile(jpg):
+                        data = open(jpg, "rb").read()
+                except Exception:
+                    pass
+                if data is None and ep.get("thumb"):
+                    try:
+                        data = urllib.request.urlopen(
+                            urllib.request.Request(f"{url}{ep['thumb']}?X-Plex-Token={token}"), timeout=120).read()
+                    except Exception:
+                        data = None
+                if data:
+                    _api(url, token, f"/library/metadata/{rk}/arts", method="POST", data=data)
+    except Exception as e:
+        print(f"restructure: plex finalize skipped ({e})", file=sys.stderr)
+
+
+def main(argv):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("dest")
+    ap.add_argument("--section"); ap.add_argument("--url")
+    ap.add_argument("--token-file")
+    a = ap.parse_args(argv)
+    created = restructure_dir(a.dest)
+    print(f"restructure: {len(created)} episode(s) filed")
+    if a.section and a.url and a.token_file and os.path.isfile(a.token_file):
+        token = open(a.token_file).read().strip()
+        plex_finalize(a.dest, created, a.section, a.url, token)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
