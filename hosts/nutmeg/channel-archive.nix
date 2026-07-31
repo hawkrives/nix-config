@@ -16,7 +16,10 @@
       # range=all is required — the default /clips view is "Top 7 Days" and
       # returns nothing; filter=clips&range=all enumerates the full back catalog.
       url = "https://www.twitch.tv/ditherdown/clips?filter=clips&range=all";
-      destination = "/mnt/channels/videos/ditherdown-clips";
+      # Clips land in the SAME folder as the VODs (shared archive.txt dedups by
+      # id; the two units fire at randomized offsets so they don't race). Clips
+      # are represented as Specials (Season 00) in the DitherDown show.
+      destination = "/mnt/channels/videos/ditherdown";
     };
     channels."settei-seven" = {
       enable = true;
