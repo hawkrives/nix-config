@@ -80,3 +80,68 @@ def build_episode_nfo(info, season, episode, aired):
         lines.append(f'  <uniqueid type="{_platform(info)}" default="true">{escape(str(vid))}</uniqueid>')
     lines += ["</episodedetails>", ""]
     return "\n".join(lines)
+
+
+def _existing_seqs(dest):
+    """Scan Season dirs for used within-day seqs so new eps append."""
+    existing = {}
+    for sd in glob.glob(dest + "/Season *"):
+        m = re.search(r"Season (\d+)", os.path.basename(sd))
+        if not m:
+            continue
+        season = int(m.group(1))
+        for f in os.listdir(sd):
+            mm = re.search(r" - S\d+E(\d+) - ", f)
+            if not mm:
+                continue
+            num = mm.group(1)
+            if season == 0:
+                ymd, seq = num[:8], int(num[8:10] or 0)
+            else:
+                # MMDDSS -> ymd key needs the year (season) + MMDD
+                mmdd, seq = num[:-2], int(num[-2:])
+                ymd = f"{season}{int(mmdd):04d}"
+            existing[(season, ymd)] = max(existing.get((season, ymd), 0), seq)
+    return existing
+
+
+def restructure_dir(dest):
+    dest = dest.rstrip("/")
+    folder = os.path.basename(dest)
+    existing = _existing_seqs(dest)
+    created = []
+    flat = sorted(f for f in os.listdir(dest) if f.endswith(".info.json"))
+    for jf in flat:
+        base = jf[: -len(".info.json")]
+        vfile = next((os.path.join(dest, base + e) for e in VEXT
+                      if os.path.exists(os.path.join(dest, base + e))), None)
+        if not vfile:
+            continue
+        try:
+            info = json.load(open(os.path.join(dest, jf), encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"restructure: skip {base}: {e}", file=sys.stderr)
+            continue
+        p = plan_episode(info, existing)
+        _, aired = date_of(info)
+        vid = str(info.get("id") or base)
+        idtag = f" [{vid}]"
+        prefix = f"{folder} - {p['token']} - "
+        stitle = btrunc(sanitize((info.get("title") or vid)),
+                        MAX_BASE - len(prefix.encode()) - len(idtag.encode())) or "Untitled"
+        newbase = prefix + stitle + idtag
+        sdir = os.path.join(dest, "Season 00" if p["season"] == 0 else f"Season {p['season']}")
+        os.makedirs(sdir, exist_ok=True)
+        dst = os.path.join(sdir, newbase)
+        os.rename(vfile, dst + os.path.splitext(vfile)[1])
+        for suf in (".jpg", ".info.json"):
+            src = os.path.join(dest, base + suf)
+            if os.path.exists(src):
+                os.rename(src, dst + suf)
+        with open(dst + ".nfo", "w", encoding="utf-8") as fh:
+            fh.write(build_episode_nfo(info, p["season"], p["episode"], aired))
+        old_nfo = os.path.join(dest, base + ".nfo")
+        if os.path.exists(old_nfo):
+            os.remove(old_nfo)
+        created.append({"season": p["season"], "episode": p["episode"], "id": vid, "path": dst})
+    return created

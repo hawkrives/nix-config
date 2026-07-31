@@ -1,4 +1,10 @@
+import os, json, tempfile
 import restructure as r
+
+def _mk(d, base, info):
+    open(os.path.join(d, base + ".mp4"), "w").write("v")
+    open(os.path.join(d, base + ".jpg"), "w").write("t")
+    json.dump(info, open(os.path.join(d, base + ".info.json"), "w"))
 
 def test_date_from_upload_date():
     assert r.date_of({"upload_date": "20250604"}) == ("20250604", "2025-06-04")
@@ -43,3 +49,40 @@ def test_nfo_has_season_episode_aired_uniqueid():
     assert "<aired>2025-06-04</aired>" in xml
     assert '<uniqueid type="youtube" default="true">vid1</uniqueid>' in xml
     assert "<genre>Gaming</genre>" in xml
+
+def test_restructure_files_regular_and_clip():
+    with tempfile.TemporaryDirectory() as d:
+        os.rename(d, d)  # keep name; folder basename used as prefix
+        _mk(d, "My Stream [aaa]", {"id": "aaa", "title": "My Stream",
+             "extractor": "twitch:vod", "upload_date": "20250604"})
+        _mk(d, "Cool Clip [bbb]", {"id": "bbb", "title": "Cool Clip",
+             "extractor": "twitch:clips", "upload_date": "20260527"})
+        folder = os.path.basename(d)
+        created = r.restructure_dir(d)
+        assert len(created) == 2
+        # VOD -> Season 2025, clip -> Season 00
+        assert os.path.isfile(os.path.join(d, "Season 2025",
+            f"{folder} - S2025E060401 - My Stream [aaa].mp4"))
+        assert os.path.isfile(os.path.join(d, "Season 00",
+            f"{folder} - S00E2026052701 - Cool Clip [bbb].mp4"))
+        # sidecars moved, nfo written, root cleaned
+        assert not [f for f in os.listdir(d) if f.endswith(".info.json")]
+
+def test_restructure_seq_against_existing_season_dir():
+    with tempfile.TemporaryDirectory() as d:
+        folder = os.path.basename(d)
+        os.makedirs(os.path.join(d, "Season 2025"))
+        # pre-existing ep on 2025-06-04 seq 01
+        open(os.path.join(d, "Season 2025",
+            f"{folder} - S2025E060401 - Old [old].mp4"), "w").write("v")
+        _mk(d, "New [new]", {"id": "new", "title": "New",
+             "extractor": "youtube", "upload_date": "20250604"})
+        created = r.restructure_dir(d)
+        assert created[0]["episode"] == 60402  # appended, not collided
+
+def test_restructure_idempotent_second_run_noop():
+    with tempfile.TemporaryDirectory() as d:
+        _mk(d, "X [x]", {"id": "x", "title": "X", "extractor": "youtube",
+             "upload_date": "20250101"})
+        assert len(r.restructure_dir(d)) == 1
+        assert r.restructure_dir(d) == []  # nothing flat left
