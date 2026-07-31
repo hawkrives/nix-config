@@ -9,7 +9,14 @@
     channels.ditherdown = {
       enable = true;
       url = "https://www.twitch.tv/ditherdown/videos?filter=archives&sort=time";
-      destination = "/mnt/channels/streams/ditherdown";
+      destination = "/mnt/channels/videos/ditherdown";
+    };
+    channels."ditherdown-clips" = {
+      enable = true;
+      # range=all is required — the default /clips view is "Top 7 Days" and
+      # returns nothing; filter=clips&range=all enumerates the full back catalog.
+      url = "https://www.twitch.tv/ditherdown/clips?filter=clips&range=all";
+      destination = "/mnt/channels/videos/ditherdown-clips";
     };
     channels."settei-seven" = {
       enable = true;
