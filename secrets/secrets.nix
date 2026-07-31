@@ -85,4 +85,8 @@ in
   # Home Assistant long-lived access token (raw JWT, no trailing newline) for
   # driving the HA REST/WebSocket API instead of hand-editing .storage (nutmeg).
   "hass-token.age".publicKeys = users ++ [ nutmeg ];
+
+  # Plex API token for channel-archive's post-download restructure step
+  # (nutmeg).
+  "plex-token.age".publicKeys = users ++ [ nutmeg ];
 }

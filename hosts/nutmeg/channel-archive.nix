@@ -2,14 +2,20 @@
 # /mnt/channels (streams/music/gaming/videos/learning/settei/... — for Plex
 # library scanning). Per-channel `enable` defaults false (module-wide); active
 # channels set enable=true. Staged backlog lives in channel-archive-backlog.nix.
-{ ... }:
+{ config, ... }:
 {
+  age.secrets.plex-token.file = ../../secrets/plex-token.age;
+
   services.channelArchive = {
     enable = true;
+    plexUrl = "http://localhost:32400";
+    plexSection = "37";
+    plexTokenFile = config.age.secrets.plex-token.path;
     channels.ditherdown = {
       enable = true;
       url = "https://www.twitch.tv/ditherdown/videos?filter=archives&sort=time";
       destination = "/mnt/channels/videos/ditherdown";
+      restructure = true;
     };
     channels."ditherdown-clips" = {
       enable = true;
@@ -20,12 +26,14 @@
       # id; the two units fire at randomized offsets so they don't race). Clips
       # are represented as Specials (Season 00) in the DitherDown show.
       destination = "/mnt/channels/videos/ditherdown";
+      restructure = true;
     };
     channels."settei-seven" = {
       enable = true;
       url = "https://www.youtube.com/channel/UCedsCHD4XKPg5YiK56jTypg/videos";
       destination = "/mnt/channels/videos/Settei Seven";
       rateLimit = true;
+      restructure = true;
     };
     channels."axell-the-swampert" = {
       enable = true;
@@ -50,6 +58,7 @@
       url = "https://www.youtube.com/channel/UCWoSKWs8h6lFdiEDAjuIfpA/videos";
       destination = "/mnt/channels/videos/Displaced Gamers";
       rateLimit = true;
+      restructure = true;
     };
     channels."caitlin-myers" = {
       enable = true;
