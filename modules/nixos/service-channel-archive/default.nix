@@ -108,19 +108,17 @@ let
         ++ ch.extraArgs
         ++ [ ch.url ]
       ));
-      # /mnt/channels is a root-squash NFS export: even root can't chown/chmod
-      # there, so we can't create/fix up the destination dir ourselves. Instead,
-      # fail fast (before yt-dlp runs) if it's missing or not writable. Runs
-      # with NO `+` prefix — inside the sandbox as the DynamicUser, through
-      # ReadWritePaths — so the `-w` check reflects what yt-dlp will actually
-      # see, not root's (irrelevant, root-squashed) view of the mount.
+      # /mnt/channels is an all_squash NFS export: every write (even root's) maps
+      # to the anon uid 1024:users. The parent bucket dir is group-writable to
+      # `users` and ReadWritePaths grants the sandbox that parent, so the service
+      # creates its own destination dir here — no manual NAS-side setup needed.
+      # Runs with NO `+` prefix — inside the sandbox as the DynamicUser
+      # (SupplementaryGroups=users) — so mkdir/`-w` match what yt-dlp will see.
+      # setgid on the parent propagates group `users` to the new dir.
       preStart = pkgs.writeShellScript "channel-archive-${name}-pre" ''
-        if [ ! -d ${lib.escapeShellArg ch.destination} ]; then
-          echo "channel-archive: destination ${ch.destination} does not exist — create it on the NAS (group 'users', group-writable) first" >&2
-          exit 1
-        fi
-        if [ ! -w ${lib.escapeShellArg ch.destination} ]; then
-          echo "channel-archive: destination ${ch.destination} not writable by the service user (needs group 'users' + group-write)" >&2
+        mkdir -p ${lib.escapeShellArg ch.destination} 2>/dev/null || true
+        if [ ! -d ${lib.escapeShellArg ch.destination} ] || [ ! -w ${lib.escapeShellArg ch.destination} ]; then
+          echo "channel-archive: destination ${ch.destination} missing or not writable — ensure its parent bucket exists on the NAS and is group-writable to 'users'" >&2
           exit 1
         fi
       '';
@@ -148,12 +146,14 @@ let
         # No `+` prefix: must run as the DynamicUser inside the sandbox (see
         # preStart above) so its writability check is meaningful.
         ExecStartPre = preStart;
-        # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve out
-        # the destination so yt-dlp can write videos, archive.txt, and metadata.
-        # Quoted: ReadWritePaths is a space-separated list, so a destination with
-        # a space (e.g. "/mnt/channels/Settei Seven") would otherwise be split
-        # into two bogus paths. systemd unquotes this back to the single path.
-        ReadWritePaths = [ ''"${ch.destination}"'' ];
+        # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve
+        # out the parent bucket (NOT just the dest) so the service can create its
+        # own destination dir under it (see preStart) as well as write videos,
+        # archive.txt, and metadata. Binding the parent — which always pre-exists
+        # — instead of the dest is what lets a brand-new channel work with zero
+        # manual NAS-side dir creation. Quoted as one token in case a bucket path
+        # ever contains a space; systemd unquotes it back to the single path.
+        ReadWritePaths = [ ''"${builtins.dirOf ch.destination}"'' ];
         # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
         # DynamicUser state dir, else the read-only HOME emits cache warnings.
         StateDirectory = "channel-archive-${name}";
