@@ -14,7 +14,7 @@
     channels."settei-seven" = {
       enable = true;
       url = "https://www.youtube.com/channel/UCedsCHD4XKPg5YiK56jTypg/videos";
-      destination = "/mnt/channels/settei/Settei Seven";
+      destination = "/mnt/channels/videos/Settei Seven";
       rateLimit = true;
     };
     channels."axell-the-swampert" = {
@@ -38,7 +38,7 @@
     channels."displaced-gamers" = {
       enable = true;
       url = "https://www.youtube.com/channel/UCWoSKWs8h6lFdiEDAjuIfpA/videos";
-      destination = "/mnt/channels/learning/Displaced Gamers";
+      destination = "/mnt/channels/videos/Displaced Gamers";
       rateLimit = true;
     };
     channels."caitlin-myers" = {
