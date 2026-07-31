@@ -47,5 +47,11 @@
       destination = "/mnt/channels/music/Caitlin Myers";
       rateLimit = true;
     };
+    channels."mia-asano" = {
+      enable = true;
+      url = "https://www.youtube.com/channel/UCn6Uk8gAGP4duP9HFCenj5g/videos";
+      destination = "/mnt/channels/music/Mia Asano";
+      rateLimit = true;
+    };
   };
 }
