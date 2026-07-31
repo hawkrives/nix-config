@@ -13,6 +13,7 @@ let
   cfg = config.services.channelArchive;
 
   nfoGenerator = ./nfo.py;
+  restructureScript = ./restructure.py;
 
   channelModule = lib.types.submodule ({ name, ... }: {
     options = {
@@ -60,6 +61,11 @@ let
         defaultText = lib.literalExpression "config.services.channelArchive.writeNfo";
         description = "Generate Kodi/Jellyfin .nfo from .info.json.";
       };
+      restructure = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "After download, reshape new files into the Plex date-based TV layout (Season/SxxExx) and finalize them in Plex. Opt-in; leave off for music/artist channels.";
+      };
       extraArgs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = cfg.extraArgs;
@@ -102,6 +108,8 @@ let
         "--match-filter"
         "live_status != is_live & live_status != is_upcoming & live_status != was_live & live_status != post_live"
       ];
+      credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null)
+        [ "plex-token:${cfg.plexTokenFile}" ];
       ytdlpArgs = lib.concatStringsSep " " (map lib.escapeShellArg (
         [
           "--download-archive" "${ch.destination}/archive.txt"
@@ -166,6 +174,7 @@ let
         # DynamicUser state dir, else the read-only HOME emits cache warnings.
         StateDirectory = "channel-archive-${name}";
         Environment = [ "HOME=/var/lib/channel-archive-${name}" ];
+        LoadCredential = credArgs;
       };
       script = ''
         set -uo pipefail
@@ -179,6 +188,13 @@ let
         rm -f "$out"
         ${lib.optionalString ch.writeNfo ''
           python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
+        ''}
+        ${lib.optionalString ch.restructure ''
+          python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
+            ${lib.optionalString (cfg.plexSection != null) "--section ${cfg.plexSection}"} \
+            --url ${lib.escapeShellArg cfg.plexUrl} \
+            ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
+            || true
         ''}
         exit "$rc"
       '';
@@ -239,6 +255,21 @@ in
       type = lib.types.attrsOf channelModule;
       default = { };
       description = "Channels to archive, keyed by name.";
+    };
+    plexUrl = lib.mkOption {
+      type = lib.types.str;
+      default = "http://localhost:32400";
+      description = "Plex base URL for restructure finalize.";
+    };
+    plexSection = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Plex library section id containing restructured shows.";
+    };
+    plexTokenFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Path to a file holding the Plex token (e.g. an age secret). Loaded into the unit via LoadCredential.";
     };
   };
 
