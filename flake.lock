@@ -526,11 +526,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1785989141,
-        "narHash": "sha256-V/IIpQFWjRS/S6xJXr4lhqaQhNcBgJwBZvgU1/fxPFk=",
+        "lastModified": 1786042693,
+        "narHash": "sha256-rFBrl6tP7krak3Hqlkx0JqULLWs2nXaMvnCHJqxYmBg=",
         "ref": "refs/heads/main",
-        "rev": "97fe978bf5c34a3fcec3b98135b22ec2af530f3a",
-        "revCount": 346,
+        "rev": "3dc0092212f6a5e1fcf459ce2f91ced7a6aeb585",
+        "revCount": 353,
         "type": "git",
         "url": "https://github.com/hawkrives/slime2-twitch-chat"
       },
