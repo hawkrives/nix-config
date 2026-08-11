@@ -62,6 +62,12 @@ let
         defaultText = lib.literalExpression "config.services.channelArchive.writeNfo";
         description = "Generate Kodi/Jellyfin .nfo from .info.json.";
       };
+      includeLive = lib.mkOption {
+        type = lib.types.bool;
+        default = cfg.includeLive;
+        defaultText = lib.literalExpression "config.services.channelArchive.includeLive";
+        description = "Download livestreams or not";
+      };
       restructure = lib.mkOption {
         type = lib.types.bool;
         default = false;
@@ -105,7 +111,7 @@ let
       # Skip live/premiere content: currently-live streams, scheduled premieres,
       # and past-live VODs (was_live/post_live). Shorts need no filter — the
       # channel URLs target the `/videos` tab, which never lists Shorts.
-      liveFilterArgs = [
+      liveFilterArgs = lib.optionals (!ch.includeLive) [
         "--match-filter"
         "live_status != is_live & live_status != is_upcoming & live_status != was_live & live_status != post_live"
       ];
@@ -248,6 +254,11 @@ in
       type = lib.types.bool;
       default = true;
       description = "Default: generate Kodi/Jellyfin .nfo from .info.json.";
+    };
+    includeLive = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Download livestreams or not";
     };
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;

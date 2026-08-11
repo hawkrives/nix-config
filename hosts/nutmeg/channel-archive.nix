@@ -11,16 +11,22 @@
     plexUrl = "http://localhost:32400";
     plexSection = "37";
     plexTokenFile = config.age.secrets.plex-token.path;
+    channels.arusan0117 = {
+      enable = true;
+      includeLive = true;
+      url = "https://www.twitch.tv/arusan0117/videos?filter=archives&sort=time";
+      destination = "/mnt/channels/videos/arusan0117";
+      restructure = true;
+    };
     channels.ditherdown = {
       enable = true;
+      includeLive = true;
       url = "https://www.twitch.tv/ditherdown/videos?filter=archives&sort=time";
       destination = "/mnt/channels/videos/ditherdown";
       restructure = true;
     };
     channels."ditherdown-clips" = {
       enable = true;
-      # range=all is required — the default /clips view is "Top 7 Days" and
-      # returns nothing; filter=clips&range=all enumerates the full back catalog.
       url = "https://www.twitch.tv/ditherdown/clips?filter=clips&range=all";
       # Clips land in the SAME folder as the VODs (shared archive.txt dedups by
       # id; the two units fire at randomized offsets so they don't race). Clips
