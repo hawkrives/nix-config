@@ -42,10 +42,21 @@ An IP rather than a hostname, either way: DSM containers cannot reliably resolve
 ```yaml
 services:
   beszel-agent:
-    image: henrygd/beszel-agent:latest
+    image: beszel-agent-smart:local
     container_name: beszel-agent
     restart: unless-stopped
     network_mode: host
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - /dev/sata1
+      - /dev/sata2
+      - /dev/sata3
+      - /dev/sata4
+      - /dev/sata5
+      - /dev/sata6
+      - /dev/sata7
+      - /dev/sata8
     volumes:
       - /volume1/docker/beszel-agent/data:/var/lib/beszel-agent
       - /volume1:/extra-filesystems/volume1:ro
@@ -54,7 +65,51 @@ services:
       TOKEN: ${BESZEL_TOKEN}
       KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds
       EXTRA_FILESYSTEMS: /extra-filesystems/volume1
+      SMART_DEVICES: /dev/sata1:sat,/dev/sata2:sat,/dev/sata3:sat,/dev/sata4:sat,/dev/sata5:sat,/dev/sata6:sat,/dev/sata7:sat,/dev/sata8:sat
+      EXCLUDE_SMART: /dev/nvme0n1
 ```
+
+## Per-drive SMART
+
+Out of the box this agent reported only the mdraid arrays (`md0`–`md6`), because
+beszel gets those from `/proc/mdstat` and needs no tooling. Per-drive health —
+temperature, power-on hours, reallocated sectors — took three things, each
+non-obvious:
+
+**A custom image.** `henrygd/beszel-agent` is distroless: it contains `/agent`
+and essentially nothing else. No `smartctl`, and no dynamic linker either, so
+bind-mounting DSM's `/usr/bin/smartctl` fails with `exec … no such file or
+directory` even though the file is plainly mounted. `image/Dockerfile` next to
+the compose file builds alpine + smartmontools + the upstream agent binary:
+
+```bash
+cd /volume1/docker/beszel-agent/image
+sudo /usr/local/bin/docker build -t beszel-agent-smart:local .
+```
+
+Rebuild that to pick up a newer agent — `docker compose pull` will not do it.
+
+**An explicit device list.** DSM's own smartctl is 6.5, whose `--scan` globs
+`/dev/discs/disc*`, a devfs path that has not existed in years; and DSM names
+disks `/dev/sataN`, not `/dev/sdX`, so even smartctl 7.5's scan finds nothing.
+`SMART_DEVICES` overrides discovery. Without it, no physical disk appears and
+nothing is logged to say why.
+
+**The `:sat` type.** Left to itself beszel probes these drives as SCSI, and its
+SCSI parser yields `state=UNKNOWN` with `temp=0` — while `smartctl` reports the
+drive fine either way, which makes this look like a permissions problem when it
+is a parser one. Forcing `:sat` makes all eight report.
+
+The NVMe cache device is deliberately excluded: reading its SMART data needs
+`CAP_SYS_ADMIN` (`NVME_IOCTL_ADMIN_CMD: Permission denied` without it), which is
+much broader than `CAP_SYS_RAWIO` and not worth granting on this machine for a
+cache disk. `md5` still reports that array's health. To enable it anyway, add
+`SYS_ADMIN` to `cap_add`, add `/dev/nvme0` and `/dev/nvme0n1` to `devices`, and
+drop the `EXCLUDE_SMART` line.
+
+SMART is polled on `SMART_INTERVAL`, which defaults to **1h** — so after any
+change here, expect up to an hour before the hub reflects it, or set
+`SMART_INTERVAL: 1m` temporarily while testing.
 
 `BESZEL_TOKEN` comes from `/volume1/docker/beszel-agent/.env`, which holds the
 hub's **universal** registration token (Hub UI → Settings → Tokens). That token is
@@ -74,7 +129,8 @@ agent itself.
 ```bash
 cd /volume1/docker/beszel-agent
 sudo /usr/local/bin/docker compose up -d       # start / apply changes
-sudo /usr/local/bin/docker compose pull        # upgrade the agent
+sudo /usr/local/bin/docker compose pull        # upgrade (but see "Per-drive SMART" — the
+                                              # local image needs a rebuild instead)
 sudo /usr/local/bin/docker logs beszel-agent   # registration + connection errors
 ```
 
