@@ -1,6 +1,9 @@
 # nix-config
 
-Personal NixOS / nix-darwin fleet (nutmeg, tuckles, pantry, bigpond, …).
+Personal NixOS / nix-darwin fleet (nutmeg, tuckles, pantry, …).
+
+Hosts parked out of the build live in [`hosts-disabled/`](hosts-disabled/README.md) —
+currently `bigpond`, whose machine is dead.
 
 ## Deploying
 
