@@ -53,12 +53,24 @@ An IP rather than a hostname, either way: DSM containers cannot reliably resolve
 ```yaml
 services:
   beszel-agent:
+    # Locally built: the upstream henrygd/beszel-agent image is distroless and
+    # ships no smartctl (and no dynamic linker, so DSM's own smartctl cannot be
+    # bind-mounted in either). See image/Dockerfile and docs/beszel-synology.md.
     image: beszel-agent-smart:local
     container_name: beszel-agent
     restart: unless-stopped
+    # Host networking so the container uses the NAS's LAN interface directly.
+    # (The NAS has no tailscale0 device, so the tailnet address is unreachable.)
     network_mode: host
+    # SMART needs to issue raw commands to the drives. SYS_RAWIO covers the eight
+    # SATA disks; the NVMe cache device additionally needs SYS_ADMIN, because
+    # NVME_IOCTL_ADMIN_CMD is gated on it. SYS_ADMIN is broad — close to root on
+    # the host for a network_mode: host container — and is granted deliberately
+    # for the full NVMe SMART record (wear level, available spare), not just its
+    # temperature. See docs/beszel-synology.md for the narrower alternative.
     cap_add:
       - SYS_RAWIO
+      - SYS_ADMIN
     devices:
       - /dev/sata1
       - /dev/sata2
@@ -68,16 +80,38 @@ services:
       - /dev/sata6
       - /dev/sata7
       - /dev/sata8
+      - /dev/nvme0
+      - /dev/nvme0n1
     volumes:
       - /volume1/docker/beszel-agent/data:/var/lib/beszel-agent
+      # Read-only mount so the agent can report volume1's disk usage.
       - /volume1:/extra-filesystems/volume1:ro
+      # Synthetic hwmon tree presenting the adt7490 board sensors in the layout
+      # gopsutil globs for. Synology's driver leaves those attributes on the i2c
+      # device node instead of /sys/class/hwmon/hwmonN, and gopsutil's fallback
+      # for that layout only fires when the primary glob finds nothing — which
+      # k10temp always populates. See docs/beszel-synology.md.
+      - /volume1/docker/beszel-agent/sensors:/sensors-sys:ro
     environment:
       HUB_URL: http://[2600:2b00:9b16:6d01::228]:8091
       TOKEN: ${BESZEL_TOKEN}
       KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds
       EXTRA_FILESYSTEMS: /extra-filesystems/volume1
+      # Overrides the sysfs root for sensor collection only — upstream threads
+      # this through a gopsutil context value rather than os.Setenv, so it does
+      # not affect the disk or network collectors.
+      SYS_SENSORS: /sensors-sys
+      # The dashboard temperature is max() across all sensors. That is the CPU
+      # today only because nothing else was reported; pin it so the headline
+      # number keeps meaning "CPU" now that three board sensors exist.
+      PRIMARY_SENSOR: k10temp
+      # DSM ships smartctl 6.5, whose --scan globs /dev/discs/disc* (a devfs path
+      # that has not existed in years), and DSM names disks /dev/sataN rather than
+      # /dev/sdX — so auto-detection finds no disks at all. List them explicitly.
+      # The :sat type matters: beszel probes these as SCSI otherwise and its SCSI
+      # parser returns state UNKNOWN with no temperature, even though smartctl
+      # itself reports fine either way.
       SMART_DEVICES: /dev/sata1:sat,/dev/sata2:sat,/dev/sata3:sat,/dev/sata4:sat,/dev/sata5:sat,/dev/sata6:sat,/dev/sata7:sat,/dev/sata8:sat
-      EXCLUDE_SMART: /dev/nvme0n1
 ```
 
 `BESZEL_TOKEN` comes from `/volume1/docker/beszel-agent/.env`, which holds the
@@ -142,16 +176,138 @@ SCSI parser yields `state=UNKNOWN` with `temp=0` — while `smartctl` reports th
 drive fine either way, which makes this look like a permissions problem when it
 is a parser one. Forcing `:sat` makes all eight report.
 
-The NVMe cache device is deliberately excluded: reading its SMART data needs
-`CAP_SYS_ADMIN` (`NVME_IOCTL_ADMIN_CMD: Permission denied` without it), which is
-much broader than `CAP_SYS_RAWIO` and not worth granting on this machine for a
-cache disk. `md5` still reports that array's health. To enable it anyway, add
-`SYS_ADMIN` to `cap_add`, add `/dev/nvme0` and `/dev/nvme0n1` to `devices`, and
-drop the `EXCLUDE_SMART` line.
+The NVMe cache device needs `CAP_SYS_ADMIN` on top of `CAP_SYS_RAWIO`, because
+`NVME_IOCTL_ADMIN_CMD` is gated on it (`Permission denied` without). This was
+originally declined as too broad for a cache disk, and was later granted anyway
+for the full SMART record — wear level and available spare, not just temperature.
+It is a real cost: `SYS_ADMIN` on a `network_mode: host` container is close to
+root on the host. DSM's own smartctl cannot substitute; version 6.5 fails on this
+device outright with `Read NVMe Identify Controller failed: NVMe Status 0x4002`,
+where the image's 7.5 succeeds.
+
+Worth knowing if that is ever reconsidered: the *temperature* alone was never
+actually blocked. DSM ships `synonvme --temperature-get /dev/nvme0n1`, root-only,
+which returns the same figure smartctl does (verified: both 31 °C). A root Task
+Scheduler job writing that value into the `sensors/` tree described below would
+put NVMe temperature on the chart with no capability grant at all. It buys only
+the temperature — no wear or spare — and reintroduces a periodic writer that can
+stall silently, which is why it was not the chosen route. Home Assistant's
+Synology integration already reports the same value via DSM's API, independently
+of beszel.
 
 SMART is polled on `SMART_INTERVAL`, which defaults to **1h** — so after any
 change here, expect up to an hour before the hub reflects it, or set
 `SMART_INTERVAL: 1m` temporarily while testing.
+
+## Board temperature sensors
+
+Out of the box this agent reported exactly one temperature: `k10temp`, the CPU.
+DSM's own Core.System API agrees — its `sys_temp` is the same number from the
+same source, so DSM offers no second opinion.
+
+The NAS also carries an `adt7490` fan/thermal controller on i2c at `1-002c` with
+three live channels, and beszel could not see any of them. The reason is neither
+permissions nor the container: **Synology's driver leaves the hwmon attributes on
+the device node** (`/sys/bus/i2c/devices/1-002c/`) instead of symlinking them into
+`/sys/class/hwmon/hwmon1/`, which holds only `device`, `power`, `subsystem` and
+`uevent` — not even a `name`.
+
+gopsutil has a fallback glob for exactly this layout —
+`/class/hwmon/hwmon*/device/temp*_input` — but it runs only when the **primary**
+glob returns zero files, and `k10temp` always populates the primary glob. So the
+fallback never fires. A natively-installed agent would hit the identical wall;
+this is a sysfs-layout problem, not a containerisation one.
+
+The fix is a synthetic hwmon tree at `/volume1/docker/beszel-agent/sensors/`,
+mounted read-only at `/sensors-sys` and selected with `SYS_SENSORS`. That variable
+overrides the sysfs root for sensor collection *only* — upstream threads it
+through a gopsutil context value rather than `os.Setenv`, so it cannot leak into
+the disk or network collectors.
+
+```
+sensors/class/hwmon/
+  hwmon0 -> /sys/class/hwmon/hwmon0          # whichever of the two is k10temp
+  hwmon1 -> /sys/class/hwmon/hwmon1          # the other; contributes no temp*_input
+  hwmon2/                                     # our labeled view of the adt7490
+    name        -> /sys/bus/i2c/devices/1-002c/name
+    temp1_input -> /sys/bus/i2c/devices/1-002c/temp1_input
+    temp1_label    (regular file: remote1)
+    temp2_input -> /sys/bus/i2c/devices/1-002c/temp2_input
+    temp2_label    (regular file: local)
+    temp3_input -> /sys/bus/i2c/devices/1-002c/temp3_input
+    temp3_label    (regular file: remote2)
+```
+
+Like `image/Dockerfile`, this tree lives only on `/volume1` and not in git.
+Recreate it with:
+
+```bash
+mkdir -p /volume1/docker/beszel-agent/sensors/class/hwmon/hwmon2
+cd /volume1/docker/beszel-agent/sensors/class/hwmon
+ln -s /sys/class/hwmon/hwmon0 hwmon0
+ln -s /sys/class/hwmon/hwmon1 hwmon1
+cd hwmon2
+ln -s /sys/bus/i2c/devices/1-002c/name        name
+ln -s /sys/bus/i2c/devices/1-002c/temp1_input temp1_input
+ln -s /sys/bus/i2c/devices/1-002c/temp2_input temp2_input
+ln -s /sys/bus/i2c/devices/1-002c/temp3_input temp3_input
+printf 'remote1\n' > temp1_label
+printf 'local\n'   > temp2_label
+printf 'remote2\n' > temp3_label
+```
+
+**Both class dirs are linked on purpose.** hwmon numbering is probe-order
+dependent; linking only today's `k10temp` would silently drop the CPU temperature
+if the two ever swapped. Whichever dir actually holds `temp1_input` gets picked up
+and named from its own `name` file — and conveniently, the adt7490's class dir has
+neither. The adt7490 itself comes in through the number-free i2c path. Nothing
+here is generated or refreshed, so there is no script to fail and no value that
+can go stale.
+
+**The `_label` files are the point.** gopsutil names a sensor `<name>_<label>`;
+with no label all three channels collapse to one key and beszel disambiguates them
+by array index (`adt7490`, `adt7490_1`, `adt7490_2`) — opaque, and dependent on
+glob order. The labels are the datasheet channel names, giving `adt7490_remote1`,
+`adt7490_local` and `adt7490_remote2`. `local` is the chip's own on-die sensor;
+where Synology wired the two remote diodes is unknown, and nothing DSM exposes
+would say. Compared against the idle SSDs in the same chassis (27–30 °C), all
+three channels run 5–18 °C hotter, so none of them is an intake/ambient sensor.
+
+**Do not rename these casually.** A renamed sensor starts a *new* series in the
+hub rather than continuing the old one, so the history splits.
+
+`PRIMARY_SENSOR: k10temp` is set alongside. The dashboard temperature is otherwise
+`max()` across all sensors, which was the CPU only because nothing else was
+reported; pinning it keeps the headline number meaning "CPU".
+
+## Why there is no systemd service tracking
+
+The other agents report systemd services; this one shows none, and that is a
+platform limit rather than a misconfiguration. Beszel enumerates units with
+`ListUnitsByPatterns`, a D-Bus method added in **systemd 230**. DSM 7.3.2 runs
+**systemd 219**:
+
+```
+$ sudo dbus-send --system --print-reply --dest=org.freedesktop.systemd1 \
+    /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager.ListUnitsByPatterns \
+    array:string:"loaded" array:string:"*.service"
+Error org.freedesktop.DBus.Error.UnknownMethod: Unknown method
+'ListUnitsByPatterns' or interface 'org.freedesktop.systemd1.Manager'.
+```
+
+Everything else is present and misleading: plain `ListUnits` works,
+`/run/dbus/system_bus_socket` and `/run/systemd/system` both exist, and there are
+384 loaded service units. So bind-mounting the D-Bus socket into the container
+would connect *successfully* and then report zero services — which looks like a
+broken config rather than an unsupported platform. Don't.
+
+Even with enumeration fixed, `CPUUsageNSec`, `TasksCurrent` and `MemoryPeak` do
+not exist in systemd 219 either, so per-service metrics would be largely blank;
+only `MemoryCurrent` and `ActiveEnterTimestamp` would populate.
+
+Patching a `ListUnits` fallback into the local image was considered and rejected:
+it means owning a fork, and turns "rebuild to pick up a newer agent" into "rebase
+the patch, then rebuild". Upstream is the right home for that fix.
 
 ## Operations
 
