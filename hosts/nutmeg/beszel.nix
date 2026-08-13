@@ -22,4 +22,10 @@
     host = "127.0.0.1";
     port = config.services.beszel.hub.port;
   };
+
+  # SMART health and drive temps for the Mac Mini's SATA SSD. This is opt-in per
+  # host because it grants the agent CAP_SYS_RAWIO/CAP_SYS_ADMIN and drops
+  # NoNewPrivileges + PrivateDevices — worth it on real hardware, pointless on
+  # the tuckles/pantry VMs.
+  services.beszel.agent.smartmon.enable = true;
 }

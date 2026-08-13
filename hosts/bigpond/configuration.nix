@@ -48,6 +48,10 @@
   # Tailscale auth key, decrypted at activation via this host's host key.
   age.secrets.tailscale-authkey-bigpond.file = ../../secrets/tailscale-authkey-bigpond.age;
 
+  # SMART health and drive temps for the MacBook's NVMe. Opt-in per host — see
+  # the comment in modules/nixos/beszel-agent.nix for why it isn't fleet-wide.
+  services.beszel.agent.smartmon.enable = true;
+
   # Primary admin user.
   users.users.pinklady = {
     isNormalUser = true;
