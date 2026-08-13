@@ -65,7 +65,7 @@
     t2fanrd = {
       # Fan-control daemon for T2 Macs (bigpond). Staged but NOT yet imported —
       # deferred until a nixpkgs update fixes its crates.io cargo-vendor fetch
-      # without moving the kernel off the soopy cache (see hosts/bigpond/hardware.nix).
+      # without moving the kernel off the soopy cache (see hosts-disabled/bigpond/hardware.nix).
       url = "github:GnomedDev/T2FanRD";
     };
 

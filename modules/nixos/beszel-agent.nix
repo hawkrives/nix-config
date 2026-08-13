@@ -3,18 +3,23 @@
 #
 # WebSocket mode: the agent dials *out* to the hub and self-registers with a
 # universal token, so nothing needs opening in the firewall — 45876 is not in
-# any allowedTCPPorts. It's not port-less, though: the journal shows the agent
-# binding an SSH server on :45876 at startup and stopping it once the
-# WebSocket connects, and it presumably re-binds it during a hub outage. It's
-# just never reachable from outside, so it doesn't matter. HUB_URL is nutmeg's
-# tailscale IP rather than a name because it has
-# to resolve identically everywhere: nutmeg itself runs --accept-dns=false so it
+# any allowedTCPPorts. It is not port-less, though: the journal shows it binding
+# an SSH server on :45876 at startup and stopping it once the WebSocket
+# connects, and it re-binds during a hub outage. While it holds that port it is
+# reachable from the tailnet like any other port on these hosts, since every one
+# of them sets trustedInterfaces = [ tailscale0 ], which accepts regardless of
+# allowedTCPPorts. Not from the LAN or the WAN. Authentication is the hub's key,
+# so this is acceptable — but it is not "no listening port".
+#
+# HUB_URL is nutmeg's tailscale address rather than a name because it has to
+# resolve identically everywhere: nutmeg itself runs --accept-dns=false so it
 # can't resolve MagicDNS names, and the Synology's Docker agent can't resolve
-# .local. The address is nutmeg's tailnet ULA rather than its CGNAT IPv4 —
-# stable per-node either way, and holds no secret.
+# .local. It is nutmeg's tailnet ULA rather than its CGNAT IPv4 — stable
+# per-node either way, and holds no secret.
 #
 # SMART monitoring is deliberately NOT enabled here — it loosens the systemd
-# sandbox, so it's opted into per host (nutmeg, bigpond) on real hardware only.
+# sandbox, so it's opted into per host on real hardware only: nutmeg today, and
+# bigpond whenever it comes back (it is parked in hosts-disabled/).
 { config, ... }:
 {
   age.secrets.beszel-token.file = ../../secrets/beszel-token.age;

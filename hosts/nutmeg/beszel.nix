@@ -11,9 +11,11 @@
   # every other LAN address still sees nothing.
   services.beszel.hub = {
     enable = true;
-    # The listener is dual-stack regardless of what's written here — nixpkgs
-    # builds --http='${host}:${port}', and ss shows *:8091 on the IPv6 side
-    # with nothing on IPv4. "[::]" just says what actually happens.
+    # A wildcard here gives a dual-stack socket: nixpkgs builds
+    # --http='${host}:${port}', and Go opens a wildcard listen as AF_INET6 with
+    # ipv6only=false, so ss shows *:8091 on the IPv6 side and nothing on IPv4.
+    # "0.0.0.0" behaved identically — "[::]" just says what actually happens.
+    # (This applies to wildcards only; a literal like "127.0.0.1" binds v4 only.)
     host = "[::]";
     # 8091, not beszel's default 8090: scanservjs already holds 8090 on this
     # host (see scanner.nix). Don't "fix" this back to 8090.
