@@ -4,14 +4,17 @@
   # PocketBase database that holds every agent's metric history.
   #
   # Agents connect *outbound* over WebSocket (see modules/nixos/beszel-agent.nix),
-  # so the hub has to be reachable from the other hosts — 127.0.0.1 won't do.
-  # 0.0.0.0 is safe here: tailscale0 is a trusted interface on every host, so
-  # tailnet peers reach it that way. The LAN firewall opens 8091 to exactly one
-  # host below (potato-bunny) as a single documented exception; every other LAN
-  # address still sees nothing.
+  # so the hub has to be reachable from the other hosts — ::1 won't do.
+  # A wildcard bind is safe here: tailscale0 is a trusted interface on every
+  # host, so tailnet peers reach it that way. The LAN firewall opens 8091 to
+  # exactly one host below (potato-bunny) as a single documented exception;
+  # every other LAN address still sees nothing.
   services.beszel.hub = {
     enable = true;
-    host = "0.0.0.0";
+    # The listener is dual-stack regardless of what's written here — nixpkgs
+    # builds --http='${host}:${port}', and ss shows *:8091 on the IPv6 side
+    # with nothing on IPv4. "[::]" just says what actually happens.
+    host = "[::]";
     # 8091, not beszel's default 8090: scanservjs already holds 8090 on this
     # host (see scanner.nix). Don't "fix" this back to 8090.
     #
@@ -23,11 +26,13 @@
     port = 8091;
   };
 
-  # https://beszel.<tailnet>.ts.net -> 127.0.0.1:8091. 127.0.0.1 rather than the
-  # "localhost" default: the hub's listener is IPv4-only, and localhost resolves
-  # to ::1 first, which it refuses (same trap as bazarr and sabnzbd).
+  # https://beszel.<tailnet>.ts.net -> [::1]:8091. The loopback literal rather
+  # than the "localhost" default, so this doesn't depend on resolver ordering.
+  # The brackets are required: tsnsrv's toURL interpolates `host` straight into
+  # a URL ("${protocol}://${host}:${port}") without adding them itself, so an
+  # unbracketed "::1" would render the invalid "http://::1:8091".
   services.tsnsrv.services.beszel.urlParts = {
-    host = "127.0.0.1";
+    host = "[::1]";
     port = config.services.beszel.hub.port;
   };
 
@@ -43,12 +48,15 @@
   # instead, which means opening 8091 — but only to that one host, so the rest of
   # the LAN still sees nothing. Every other agent keeps using the tailnet.
   #
-  # 192.168.1.194 is a router DHCP reservation for the NAS's MAC, not pinned
-  # anywhere in this repo (nutmeg's own LAN address is the same story — see
-  # hardware.nix). If either reservation moves, this rule silently starts
-  # admitting whoever inherits .194, and the NAS agent silently goes stale
-  # pointing at whoever inherits nutmeg's old address.
+  # 2600:2b00:9b16:6d01:9209:d0ff:fe15:4261 is the NAS's stable LAN IPv6
+  # (EUI-64, derived from its MAC — it doesn't move the way a DHCP lease
+  # could). It lives inside 2600:2b00:9b16:6d01::/64, which is delegated to
+  # this network by the ISP rather than pinned anywhere in this repo: if the
+  # ISP ever rotates that /64, this rule and the NAS's HUB_URL both break
+  # silently (the agent just retries forever), and the fallback is to revert
+  # both to the LAN IPv4 addresses (nutmeg's own LAN address has the same
+  # rotation risk — see hardware.nix).
   networking.firewall.extraInputRules = ''
-    ip saddr 192.168.1.194 tcp dport ${toString config.services.beszel.hub.port} accept
+    ip6 saddr 2600:2b00:9b16:6d01:9209:d0ff:fe15:4261 tcp dport ${toString config.services.beszel.hub.port} accept
   '';
 }
