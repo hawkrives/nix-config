@@ -14,6 +14,12 @@
     host = "0.0.0.0";
     # 8091, not beszel's default 8090: scanservjs already holds 8090 on this
     # host (see scanner.nix). Don't "fix" this back to 8090.
+    #
+    # Changing this port is not just a one-liner: HUB_URL in
+    # modules/nixos/beszel-agent.nix and the Synology compose file
+    # (docs/beszel-synology.md, and the live copy on the NAS) hardcode 8091
+    # too and would need updating in step, or the whole fleet silently stops
+    # reporting (agents just retry forever).
     port = 8091;
   };
 
@@ -36,6 +42,12 @@
   # has a tailnet address but no route to one. It talks to the hub over the LAN
   # instead, which means opening 8091 — but only to that one host, so the rest of
   # the LAN still sees nothing. Every other agent keeps using the tailnet.
+  #
+  # 192.168.1.194 is a router DHCP reservation for the NAS's MAC, not pinned
+  # anywhere in this repo (nutmeg's own LAN address is the same story — see
+  # hardware.nix). If either reservation moves, this rule silently starts
+  # admitting whoever inherits .194, and the NAS agent silently goes stale
+  # pointing at whoever inherits nutmeg's old address.
   networking.firewall.extraInputRules = ''
     ip saddr 192.168.1.194 tcp dport ${toString config.services.beszel.hub.port} accept
   '';

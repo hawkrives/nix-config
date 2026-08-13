@@ -78,7 +78,13 @@ in
       # Beszel monitoring hub (PocketBase). The metric history and the admin
       # account both live in data.db; the data dir also has an auxiliary.db,
       # but it only holds PocketBase's internal request log, so it's skipped.
-      # The rest of the data dir is regenerable, so only beszel_data is rsynced.
+      # The rest of /var/lib/beszel-hub outside beszel_data is regenerable, so
+      # only beszel_data is rsynced. That rsync also carries beszel_data's
+      # id_ed25519 — the hub's PRIVATE key — which is deliberate, not
+      # incidental cruft: a restored hub that generated a fresh keypair would
+      # break every agent's inline KEY (modules/nixos/beszel-agent.nix, and
+      # the Synology compose in docs/beszel-synology.md). A real restore
+      # needs both data.db and id_ed25519 back in place.
       beszel = {
         root = "/var/lib/beszel-hub";
         sqlite = [ "beszel_data/data.db" ];

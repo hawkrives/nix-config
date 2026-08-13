@@ -32,6 +32,11 @@ The rest of the LAN still cannot reach the hub. If DSM's Tailscale is ever moved
 to tun mode, this agent can switch to the tailnet address and that firewall rule
 can be deleted.
 
+Both `192.168.1.228` and `192.168.1.194` depend on router DHCP reservations
+that aren't recorded anywhere in this repo. If either one moves, this agent
+silently goes stale and/or the firewall rule silently starts admitting
+whoever inherits the old address.
+
 An IP rather than a hostname, either way: DSM containers cannot reliably resolve
 `.local` names — the same wall the Home Assistant container hit.
 
@@ -102,6 +107,24 @@ sudo /usr/local/bin/docker build -t beszel-agent-smart:local .
 
 Rebuild that to pick up a newer agent — `docker compose pull` will not do it.
 
+`image/Dockerfile` itself lives only on `/volume1`, not in git — this file is
+the record of that setup, so it's reproduced here verbatim in case `/volume1`
+is ever lost:
+
+```dockerfile
+# The upstream henrygd/beszel-agent image is distroless: it contains /agent and
+# essentially nothing else — no shell, no libc, no smartctl. SMART monitoring
+# needs a smartctl binary, and DSM's own (/usr/bin/smartctl, 6.5) cannot be
+# bind-mounted in because the image has no dynamic linker to run it.
+#
+# So: alpine + a current smartmontools + the upstream agent binary copied in.
+# Rebuild this after pulling a newer agent (see docs/beszel-synology.md).
+FROM alpine:3
+RUN apk add --no-cache smartmontools
+COPY --from=henrygd/beszel-agent:latest /agent /agent
+ENTRYPOINT ["/agent"]
+```
+
 **An explicit device list.** DSM's own smartctl is 6.5, whose `--scan` globs
 `/dev/discs/disc*`, a devfs path that has not existed in years; and DSM names
 disks `/dev/sataN`, not `/dev/sdX`, so even smartctl 7.5's scan finds nothing.
@@ -130,7 +153,7 @@ change here, expect up to an hour before the hub reflects it, or set
 cd /volume1/docker/beszel-agent
 sudo /usr/local/bin/docker compose up -d       # start / apply changes
 sudo /usr/local/bin/docker compose pull        # upgrade (but see "Per-drive SMART" — the
-                                              # local image needs a rebuild instead)
+                                               # local image needs a rebuild instead)
 sudo /usr/local/bin/docker logs beszel-agent   # registration + connection errors
 ```
 
@@ -142,4 +165,7 @@ a symlink that Container Manager's start script creates — it only exists while
 the package is running.
 
 Unlike the NixOS agents, this one does **not** upgrade with the fleet — it has to
-be pulled by hand.
+be pulled by hand. The NixOS agents move to whatever agent version ships with
+nixpkgs, but this image bakes in whatever `henrygd/beszel-agent:latest` was at
+build time, so after a fleet-wide beszel upgrade, check this agent's reported
+version in the hub UI against the others and rebuild it if it has drifted.
