@@ -74,6 +74,16 @@ in
         # real runtime state. Whole dir minus the stale lock.
         excludes = [ "*.lock" ];
       };
+
+      # Beszel monitoring hub (PocketBase). The metric history and the admin
+      # account both live in data.db; the data dir also has an auxiliary.db,
+      # but it only holds PocketBase's internal request log, so it's skipped.
+      # The rest of the data dir is regenerable, so only beszel_data is rsynced.
+      beszel = {
+        root = "/var/lib/beszel-hub";
+        sqlite = [ "beszel_data/data.db" ];
+        path = "beszel_data";
+      };
     };
   };
 }
