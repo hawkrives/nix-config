@@ -69,6 +69,19 @@ services:
       EXCLUDE_SMART: /dev/nvme0n1
 ```
 
+`BESZEL_TOKEN` comes from `/volume1/docker/beszel-agent/.env`, which holds the
+hub's **universal** registration token (Hub UI → Settings → Tokens). That token is
+shared with every NixOS agent, where it lives in `secrets/beszel-token.age`. It is
+deliberately not written down here.
+
+Bind mounts must live under `/volume1`; DSM's Docker rejects paths outside it.
+
+Container Manager (the DSM package that owns `dockerd`) was turned off when this
+agent was set up; it was started with `synopkg start ContainerManager`, which
+also marks it to auto-start on boot. If `docker ps` ever comes back empty after
+a NAS reboot, check `synopkg status ContainerManager` before suspecting the
+agent itself.
+
 ## Per-drive SMART
 
 Out of the box this agent reported only the mdraid arrays (`md0`–`md6`), because
@@ -110,19 +123,6 @@ drop the `EXCLUDE_SMART` line.
 SMART is polled on `SMART_INTERVAL`, which defaults to **1h** — so after any
 change here, expect up to an hour before the hub reflects it, or set
 `SMART_INTERVAL: 1m` temporarily while testing.
-
-`BESZEL_TOKEN` comes from `/volume1/docker/beszel-agent/.env`, which holds the
-hub's **universal** registration token (Hub UI → Settings → Tokens). That token is
-shared with every NixOS agent, where it lives in `secrets/beszel-token.age`. It is
-deliberately not written down here.
-
-Bind mounts must live under `/volume1`; DSM's Docker rejects paths outside it.
-
-Container Manager (the DSM package that owns `dockerd`) was turned off when this
-agent was set up; it was started with `synopkg start ContainerManager`, which
-also marks it to auto-start on boot. If `docker ps` ever comes back empty after
-a NAS reboot, check `synopkg status ContainerManager` before suspecting the
-agent itself.
 
 ## Operations
 
