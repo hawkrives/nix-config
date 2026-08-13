@@ -5,8 +5,10 @@
   #
   # Agents connect *outbound* over WebSocket (see modules/nixos/beszel-agent.nix),
   # so the hub has to be reachable from the other hosts — 127.0.0.1 won't do.
-  # 0.0.0.0 is safe here: the LAN firewall never opens 8091, and tailscale0 is a
-  # trusted interface on every host, so in practice only tailnet peers reach it.
+  # 0.0.0.0 is safe here: tailscale0 is a trusted interface on every host, so
+  # tailnet peers reach it that way. The LAN firewall opens 8091 to exactly one
+  # host below (potato-bunny) as a single documented exception; every other LAN
+  # address still sees nothing.
   services.beszel.hub = {
     enable = true;
     host = "0.0.0.0";
@@ -28,4 +30,13 @@
   # NoNewPrivileges + PrivateDevices — worth it on real hardware, pointless on
   # the tuckles/pantry VMs.
   services.beszel.agent.smartmon.enable = true;
+
+  # potato-bunny (the Synology) can't reach the hub over the tailnet: DSM's
+  # Tailscale package runs tailscaled unprivileged with no tun device, so the NAS
+  # has a tailnet address but no route to one. It talks to the hub over the LAN
+  # instead, which means opening 8091 — but only to that one host, so the rest of
+  # the LAN still sees nothing. Every other agent keeps using the tailnet.
+  networking.firewall.extraInputRules = ''
+    ip saddr 192.168.1.194 tcp dport ${toString config.services.beszel.hub.port} accept
+  '';
 }

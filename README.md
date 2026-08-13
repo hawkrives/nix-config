@@ -44,3 +44,5 @@ consuming a secret on a host, env-file vs bare conventions).
 - [`docs/home-assistant.md`](docs/home-assistant.md) — Home Assistant on nutmeg: **drive it
   through its API (with the `hass-token` secret), not by hand-editing `.storage`**, plus
   container/systemd and networking gotchas.
+- [`docs/beszel-synology.md`](docs/beszel-synology.md) — the beszel agent on potato-bunny:
+  hand-managed DSM container, why the hub address is an IP, and how to upgrade it.
