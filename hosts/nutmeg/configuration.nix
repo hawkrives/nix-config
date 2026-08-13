@@ -45,6 +45,7 @@
     ./slime-chat.nix
     ./tsnsrv.nix
     ./backups.nix
+    ./beszel.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
     inputs.tsnsrv.nixosModules.default
