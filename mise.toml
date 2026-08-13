@@ -23,8 +23,21 @@ run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
 [tasks."nutmeg"]
 run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
 
-[tasks."tuckles"]
-run = 'nh os switch .#tuckles --target-host "haru@$MISE_TASK_NAME.local" -e passwordless --ask'
+# Remote deploys come in :ask and :yes variants rather than one task that always
+# passes --ask. --ask needs a real TTY: non-interactively it either fails with
+# "The input device is not a TTY" or, if something fakes a TTY, wedges silently —
+# a deploy that reports nothing and activates nothing, which is easy to misread as
+# success. Splitting them means the automatable path has no prompt to work around,
+# and reviewing the diff before activating is a deliberate choice.
 
-[tasks."pantry"]
-run = 'nh os switch .#pantry --target-host nix@pantry.local -e passwordless --ask'
+[tasks."tuckles:ask"]
+run = 'nh os switch .#tuckles --target-host haru@tuckles.local --hostname tuckles -e passwordless --ask'
+
+[tasks."tuckles:yes"]
+run = 'nh os switch .#tuckles --target-host haru@tuckles.local --hostname tuckles -e passwordless'
+
+[tasks."pantry:ask"]
+run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e passwordless --ask'
+
+[tasks."pantry:yes"]
+run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e passwordless'
