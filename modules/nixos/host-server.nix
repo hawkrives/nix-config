@@ -5,6 +5,7 @@
 }: {
   imports = [
     flake.nixosModules.audit-shared
+    flake.nixosModules.beszel-agent
     flake.nixosModules.documentation
     flake.nixosModules.mdns
   ];

@@ -89,4 +89,14 @@ in
   # Plex API token for channel-archive's post-download restructure step
   # (nutmeg).
   "plex-token.age".publicKeys = users ++ [ nutmeg ];
+
+  # Beszel universal registration token (env-file: TOKEN=…). Every agent uses
+  # the same token to self-register with the hub on nutmeg, so every host that
+  # runs an agent is a recipient.
+  "beszel-token.age".publicKeys = users ++ [
+    nutmeg
+    tuckles
+    pantry
+    bigpond
+  ];
 }
