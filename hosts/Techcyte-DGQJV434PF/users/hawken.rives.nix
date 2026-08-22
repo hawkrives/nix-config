@@ -23,6 +23,7 @@
     ++ # language servers for zed
     [
       pkgs.bash-language-server
+      pkgs.codespelunker
       pkgs.docker-compose-language-service
       pkgs.dockerfile-language-server
       pkgs.nil
