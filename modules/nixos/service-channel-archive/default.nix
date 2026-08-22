@@ -123,6 +123,14 @@ let
           "--output" "${ch.destination}/%(title)s [%(id)s].%(ext)s"
           "--no-overwrites"
           "--continue"
+          # Stop at the first error instead of limping through the rest of
+          # the playlist (see the fifo-vs-plain-pipe comment in `script`
+          # below) — channel listings are newest-first, so if that first
+          # error is a genuine bot-block, this caps the run to one item
+          # instead of hundreds. The flip side (a permanently-broken newest
+          # video wedging the channel forever) is what alertUser's
+          # notification exists to catch.
+          "--abort-on-error"
         ]
         ++ formatArgs
         ++ metaArgs
@@ -177,7 +185,8 @@ let
         # — instead of the dest is what lets a brand-new channel work with zero
         # manual NAS-side dir creation. Quoted as one token in case a bucket path
         # ever contains a space; systemd unquotes it back to the single path.
-        ReadWritePaths = [ ''"${builtins.dirOf ch.destination}"'' ];
+        ReadWritePaths = [ ''"${builtins.dirOf ch.destination}"'' ]
+          ++ lib.optionals (cfg.alertUser != null) [ "/var/mail" "/var/lib/channel-archive-alerts" ];
         # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
         # DynamicUser state dir, else the read-only HOME emits cache warnings.
         StateDirectory = "channel-archive-${name}";
@@ -188,10 +197,36 @@ let
         set -uo pipefail
         rc=0
         out="$(mktemp)"
+        # --abort-on-error (see ytdlpArgs) already stops the whole run at the
+        # first error, so there's no more "grind through hundreds of items"
+        # case to cut off early — a plain pipe + post-hoc grep is enough now.
         yt-dlp ${ytdlpArgs} 2>&1 | tee "$out" || rc=$?
         if grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
           echo "channel-archive: >>> BLOCKED/RATE-LIMITED by YouTube (429/403/bot-check) <<<" >&2
           rc=75
+        fi
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
+          ${lib.optionalString (cfg.alertUser != null) ''
+            # Something other than the known bot-check/rate-limit case killed
+            # this run (crash, bad args, an extractor error yt-dlp didn't skip
+            # past) — flag it instead of silently retrying-and-failing on every
+            # future timer run. Local mbox mail + a note in the fish greeting
+            # for now; swap in a real notification channel (Telegram, etc.)
+            # later.
+            {
+              echo "From channel-archive@${config.networking.hostName}  $(date)"
+              echo "Date: $(date -R)"
+              echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
+              echo "To: ${cfg.alertUser}@${config.networking.hostName}"
+              echo "Subject: channel-archive: ${name} failed (exit $rc)"
+              echo
+              echo "${name} exited $rc — not the known 429/403/bot-check case."
+              echo "Last output:"
+              tail -n 15 "$out"
+              echo
+            } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
+            echo "$(date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
+          ''}
         fi
         rm -f "$out"
         ${lib.optionalString ch.writeNfo ''
@@ -290,16 +325,49 @@ in
       default = null;
       description = "Path to a file holding the Plex token (e.g. an age secret). Loaded into the unit via LoadCredential.";
     };
+    alertUser = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Local user to notify when a channel run fails for a reason other than
+        the known 429/403/bot-check case (that one is expected to self-resolve
+        on the channel's next timer run and isn't alerted on). Delivers a
+        local mbox message to /var/mail/<alertUser> and appends a one-line
+        note to /var/lib/channel-archive-alerts/notices, which fish prints on
+        the next interactive login. null disables notifications.
+      '';
+    };
   };
 
-  config = lib.mkIf cfg.enable {
-    # Only enabled channels render units; declared-but-disabled ones are inert.
-    systemd.services = lib.mapAttrs'
-      (name: ch: lib.nameValuePair (serviceName name) (mkService name ch))
-      (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      # Only enabled channels render units; declared-but-disabled ones are inert.
+      systemd.services = lib.mapAttrs'
+        (name: ch: lib.nameValuePair (serviceName name) (mkService name ch))
+        (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
 
-    systemd.timers = lib.mapAttrs'
-      (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch))
-      (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
-  };
+      systemd.timers = lib.mapAttrs'
+        (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch))
+        (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
+    }
+    (lib.mkIf (cfg.alertUser != null) {
+      # /var/mail 1777 like /tmp: any DynamicUser service may need to touch
+      # it. The mailbox file itself is pre-created 0660 alertUser:users so
+      # appends work via the `users` supplementary group the archive services
+      # already have — same group-write trick archive.txt uses.
+      systemd.tmpfiles.rules = [
+        "d /var/mail 1777 root root - -"
+        "f /var/mail/${cfg.alertUser} 0660 ${cfg.alertUser} users - -"
+        "d /var/lib/channel-archive-alerts 2775 ${cfg.alertUser} users - -"
+        "f /var/lib/channel-archive-alerts/notices 0664 ${cfg.alertUser} users - -"
+      ];
+      programs.fish.interactiveShellInit = ''
+        if test -s /var/lib/channel-archive-alerts/notices
+          echo "⚠ channel-archive alerts (unread):"
+          cat /var/lib/channel-archive-alerts/notices
+          echo "(clear with: rm /var/lib/channel-archive-alerts/notices)"
+        end
+      '';
+    })
+  ]);
 }

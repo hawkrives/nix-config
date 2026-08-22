@@ -2,23 +2,29 @@
 # /mnt/channels (streams/music/gaming/videos/learning/settei/... — for Plex
 # library scanning). Per-channel `enable` defaults false (module-wide); active
 # channels set enable=true. Staged backlog lives in channel-archive-backlog.nix.
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   age.secrets.plex-token.file = ../../secrets/plex-token.age;
+
+  # Reads the local mbox mail channelArchive.alertUser delivers to
+  # /var/mail/natsume on non-403/429 failures — no MTA involved, just a
+  # reader for the mbox file the service appends to directly.
+  environment.systemPackages = [ pkgs.mailutils ];
 
   services.channelArchive = {
     enable = true;
     plexUrl = "http://localhost:32400";
     plexSection = "37";
     plexTokenFile = config.age.secrets.plex-token.path;
-    channels.arusan0117 = {
+    alertUser = "natsume";
+    channels."arusan0117" = {
       enable = true;
       includeLive = true;
       url = "https://www.twitch.tv/arusan0117/videos?filter=archives&sort=time";
       destination = "/mnt/channels/videos/arusan0117";
       restructure = true;
     };
-    channels.ditherdown = {
+    channels."ditherdown" = {
       enable = true;
       includeLive = true;
       url = "https://www.twitch.tv/ditherdown/videos?filter=archives&sort=time";

@@ -1,86 +1,76 @@
-# Staged (disabled) YouTube channel backlog — channels with >=20 videos, now
-# organized into their content buckets under /mnt/channels. All enable=false:
-# declared for tracking; activate a channel by flipping enable=true (its dir +
-# enriched sidecars + seeded archive.txt already exist from the reorg, so no
-# migration needed). Slugs from the channel name (UC-id fallback for non-ASCII);
-# friendly bucketed path in destination. "needs cookies" = heavy channels that
-# trip YouTube's bot-check on backfill until cookie auth is added. The 6 active
-# channels + 2 recovered-dead channels are excluded (see channel-archive.nix /
-# static dirs). ~51 one-video "saved" channels and the empty Nippon Journal are
-# omitted.
 { ... }:
 {
   services.channelArchive = {
-    channels."okaringames" = {  # 1419 vids — needs cookies (heavy backfill)
+    channels."okarin-games" = {  # 1419 vids — needs cookies (heavy backfill)
       enable = false;
       url = "https://www.youtube.com/channel/UC4NplzfMrGpD8UYBqRpQ4oA/videos";
-      destination = "/mnt/channels/splatoon/おかりん - OkarinGames";
+      destination = "/mnt/channels/videos/おかりん - OkarinGames";
       rateLimit = true;
     };
-    channels."uc1n5554otle3evhll_rh1kg" = {  # 1128 vids — needs cookies (heavy backfill)
+    channels."yanmo-splat-ch" = {  # 1128 vids — needs cookies (heavy backfill)
       enable = false;
       url = "https://www.youtube.com/channel/UC1n5554otlE3evhll_RH1Kg/videos";
-      destination = "/mnt/channels/splatoon/やんもスプラch";
+      destination = "/mnt/channels/videos/やんもスプラch";
       rateLimit = true;
     };
     channels."kenshiro-salmonrun" = {  # 355 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCq8lZDyLorG0qRR4XUMYD1A/videos";
-      destination = "/mnt/channels/splatoon/Kenshiro SalmonRun けんしろ";
+      destination = "/mnt/channels/videos/Kenshiro SalmonRun けんしろ";
       rateLimit = true;
     };
-    channels."masahiro-sakurai-on-creating-games" = {  # 275 vids
+    channels."on-creating-games" = {  # 275 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCv1DvRY5PyHHt3KN9ghunuw/videos";
-      destination = "/mnt/channels/learning/Masahiro Sakurai on Creating Games";
+      destination = "/mnt/channels/videos/Masahiro Sakurai on Creating Games";
       rateLimit = true;
     };
     channels."smallant" = {  # 255 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC0VVYtw21rg2cokUystu2Dw/videos";
-      destination = "/mnt/channels/gaming/SmallAnt";
+      destination = "/mnt/channels/videos/SmallAnt";
       rateLimit = true;
     };
     channels."shu3" = {  # 230 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCO-n0T-9rJ4f6smFPK3vFiQ/videos";
-      destination = "/mnt/channels/gaming/shu3";
+      destination = "/mnt/channels/videos/shu3";
       rateLimit = true;
     };
     channels."walter-no" = {  # 230 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCbOPMX9iWXlulmbNXrz6oLw/videos";
-      destination = "/mnt/channels/streams/WaLter .NO";
+      destination = "/mnt/channels/videos/WaLter .NO";
       rateLimit = true;
     };
     channels."peco" = {  # 227 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCiHRLXRO262KdNSW_GcJVog/videos";
-      destination = "/mnt/channels/gaming/Peco";
+      destination = "/mnt/channels/videos/Peco";
       rateLimit = true;
     };
     channels."ryukahr" = {  # 221 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCNUzWfHUP_iXZ1GMHz8gBgw/videos";
-      destination = "/mnt/channels/mario/ryukahr";
+      destination = "/mnt/channels/videos/ryukahr";
       rateLimit = true;
     };
     channels."wadelyjp" = {  # 195 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC-W9VjjLHfdTF3Nlvoy6G0Q/videos";
-      destination = "/mnt/channels/historical/wadelyjp";
+      destination = "/mnt/channels/videos/wadelyjp";
       rateLimit = true;
     };
     channels."the-noble-demon" = {  # 178 vids
-      enable = false;
+      enable = true;
       url = "https://www.youtube.com/channel/UC90yjMp6aeAOy1BdWQR6Szw/videos";
       destination = "/mnt/channels/music/The Noble Demon";
       rateLimit = true;
     };
     channels."videogamedunkey" = {  # 157 vids
-      enable = false;
+      enable = true;
       url = "https://www.youtube.com/channel/UCsvn_Po0SmunchJYOWpOxMg/videos";
-      destination = "/mnt/channels/dunkey/videogamedunkey";
+      destination = "/mnt/channels/videos/videogamedunkey";
       rateLimit = true;
     };
     channels."ph1lza" = {  # 156 vids
@@ -89,16 +79,16 @@
       destination = "/mnt/channels/maybe-delete/Ph1LzA";
       rateLimit = true;
     };
-    channels."cx-20th" = {  # 144 vids
+    channels."game-center-cx-20th" = {  # 144 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCFBkdFQ3iYvh882EjPnreYw/videos";
-      destination = "/mnt/channels/gaming/【公式】ゲームセンターCX 20th チャンネル";
+      destination = "/mnt/channels/videos/【公式】ゲームセンターCX 20th チャンネル";
       rateLimit = true;
     };
-    channels."uc8md6zy3hpn5rhwkhm5qhqg" = {  # 142 vids
+    channels."darkness-yamamoto" = {  # 142 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC8Md6Zy3HPN5rHWKhm5qhqg/videos";
-      destination = "/mnt/channels/gaming/ダークネス山本";
+      destination = "/mnt/channels/videos/ダークネス山本";
       rateLimit = true;
     };
     channels."alice-games-music" = {  # 123 vids
@@ -107,16 +97,16 @@
       destination = "/mnt/channels/music/ALICE GAMES - MUSIC";
       rateLimit = true;
     };
-    channels."ucekndg3tneoqlwsirzyezog" = {  # 100 vids
+    channels."darkness-yamamoto-2" = {  # 100 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCeKnDG3tNeOqlwsiRZyEZog/videos";
-      destination = "/mnt/channels/gaming/ダークネス山本2";
+      destination = "/mnt/channels/videos/ダークネス山本2";
       rateLimit = true;
     };
     channels."dunk-tank" = {  # 96 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCGiJeCKTVKIxtaYZOidh19g/videos";
-      destination = "/mnt/channels/streams/Dunk Tank";
+      destination = "/mnt/channels/videos/Dunk Tank";
       rateLimit = true;
     };
     channels."splashx" = {  # 57 vids
@@ -128,7 +118,7 @@
     channels."summoning-salt" = {  # 51 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCtUbO6rBht0daVIOGML3c8w/videos";
-      destination = "/mnt/channels/gaming/Summoning Salt";
+      destination = "/mnt/channels/videos/Summoning Salt";
       rateLimit = true;
     };
     channels."f4mi" = {  # 50 vids
@@ -140,13 +130,13 @@
     channels."kukun-kun" = {  # 50 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCuXH9J-zamUAOJPYc_nAQrA/videos";
-      destination = "/mnt/channels/historical/kukun kun";
+      destination = "/mnt/channels/videos/kukun kun";
       rateLimit = true;
     };
-    channels."uc1nvmnnbzy0hfhxaedtcd0w" = {  # 34 vids
+    channels."yamatake" = {  # 34 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC1nvMNnbZY0hfHXAEdTCD0w/videos";
-      destination = "/mnt/channels/splatoon/やまたけ「";
+      destination = "/mnt/channels/videos/やまたけ「";
       rateLimit = true;
     };
     channels."vivivgm" = {  # 2564 vids — needs cookies (heavy backfill)
@@ -335,25 +325,25 @@
       destination = "/mnt/channels/music/DylTheis Productions";
       rateLimit = true;
     };
-    channels."sixteeninmono" = {  # 54 vids
+    channels."sixteen-in-mono" = {  # 54 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCb1gWOLQPCgUl_WY-zSvL7A/videos";
       destination = "/mnt/channels/music/SixteenInMono";
       rateLimit = true;
     };
-    channels."the-second-narrator-music" = {  # 53 vids
+    channels."the-second-narrator" = {  # 53 vids
       enable = false;
       url = "https://www.youtube.com/channel/UChcmd07Qpsl9AG58GeLnldQ/videos";
       destination = "/mnt/channels/music/The Second Narrator Music";
       rateLimit = true;
     };
-    channels."happydragonite" = {  # 50 vids
+    channels."happy-dragonite" = {  # 50 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCT2BUnGjc2C_ZTUVzCEUHyA/videos";
       destination = "/mnt/channels/music/HappyDragonite";
       rateLimit = true;
     };
-    channels."vanilluxepavilion" = {  # 50 vids
+    channels."vanilluxe-pavilion" = {  # 50 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCW3UeF_dWeNxbfMScx-v37g/videos";
       destination = "/mnt/channels/music/VanilluxePavilion";
@@ -383,7 +373,7 @@
       destination = "/mnt/channels/videos/Amaury Guichon";
       rateLimit = true;
     };
-    channels."the-namuzu" = {  # 145 vids
+    channels."namuzu" = {  # 145 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCKgoRPEs0r01H3d7bwd19gg/videos";
       destination = "/mnt/channels/music/The NAMUZU";
@@ -392,16 +382,16 @@
     channels."simone-giertz" = {  # 126 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC3KEoMzNz8eYnwBC34RaKCQ/videos";
-      destination = "/mnt/channels/learning/Simone Giertz";
+      destination = "/mnt/channels/videos/Simone Giertz";
       rateLimit = true;
     };
     channels."asianometry" = {  # 114 vids
       enable = false;
       url = "https://www.youtube.com/channel/UC1LpsuAUaKoMzzJSEt5WImw/videos";
-      destination = "/mnt/channels/learning/Asianometry";
+      destination = "/mnt/channels/videos/Asianometry";
       rateLimit = true;
     };
-    channels."it-s-time-to-travel" = {  # 101 vids
+    channels."its-time-to-travel" = {  # 101 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCQDKpfTS6haXS6BAHebR8Hw/videos";
       destination = "/mnt/channels/videos/It's Time to Travel🇯🇵 - 旅する時間";
@@ -422,25 +412,25 @@
     channels."technology-connections" = {  # 72 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCy0tKL1T7wFoYcxCe0xjN6Q/videos";
-      destination = "/mnt/channels/learning/Technology Connections";
+      destination = "/mnt/channels/videos/Technology Connections";
       rateLimit = true;
     };
-    channels."cathode-ray-dude-crd" = {  # 70 vids
+    channels."cathode-ray-dude" = {  # 70 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCXnNibvR_YIdyPs8PZIBoEw/videos";
-      destination = "/mnt/channels/learning/Cathode Ray Dude - CRD";
+      destination = "/mnt/channels/videos/Cathode Ray Dude - CRD";
       rateLimit = true;
     };
     channels."leahbee" = {  # 59 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCq7D2jqBfjse5M18CaLlTjA/videos";
-      destination = "/mnt/channels/dunkey/Leahbee";
+      destination = "/mnt/channels/videos/Leahbee";
       rateLimit = true;
     };
     channels."tom-scott" = {  # 50 vids
       enable = false;
       url = "https://www.youtube.com/channel/UCBa659QWEk1AI4Tg--mrJ2A/videos";
-      destination = "/mnt/channels/learning/Tom Scott";
+      destination = "/mnt/channels/videos/Tom Scott";
       rateLimit = true;
     };
     channels."harrypottercentral" = {  # 34 vids
@@ -450,15 +440,15 @@
       rateLimit = true;
     };
     channels."timelab-pro" = {  # 30 vids
-      enable = false;
+      enable = true;
       url = "https://www.youtube.com/channel/UC6zl_U-HEajk9JSHkuTlaZQ/videos";
       destination = "/mnt/channels/videos/Timelab Pro";
       rateLimit = true;
     };
     channels."villainous" = {  # 22 vids
-      enable = false;
+      enable = true;
       url = "https://www.youtube.com/channel/UCmJHqZAxWDtCzAI26wvUw_Q/videos";
-      destination = "/mnt/channels/videos/VILLAINOUS";
+      destination = "/mnt/channels/music/VILLAINOUS";
       rateLimit = true;
     };
   };
