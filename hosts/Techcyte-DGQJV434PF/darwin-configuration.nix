@@ -38,6 +38,10 @@
     config = {
       virtualisation = {
         vz.nestedVirtualization = true;
+        darwin-builder = {
+          diskSize = 40 * 1024;
+          memorySize = 11 * 1024;
+        };
         cores = 6;
       };
     };
