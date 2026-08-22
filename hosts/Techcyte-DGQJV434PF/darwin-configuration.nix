@@ -26,16 +26,22 @@
   nix.settings.netrc-file = "/Users/hawken.rives/.netrc"; # string, not path, to avoid copying into the nix store
   nix.settings.extra-sandbox-paths = ["/Users/hawken.rives/.netrc"];
 
-  # https://nixcademy.com/posts/macos-linux-builder/
-  # but then... https://github.com/cpick/nix-rosetta-builder
-  # nix.linux-builder = {
-  #   enable = false;
-  # };
-  # nix-rosetta-builder = {
-  #   onDemand = true;
-  #   onDemandLingerMinutes = 10;
-  #   diskSize = "60GiB";
-  # };
+  nix.linux-builder = {
+    enable = true;
+
+    package = pkgs.darwin.linux-builder-vz;
+    systems = [ "aarch64-linux" "x86_64-linux" ];
+
+    # Performance/tuning settings
+    ephemeral = true;
+    maxJobs = 4;
+    config = {
+      virtualisation = {
+        vz.nestedVirtualization = true;
+        cores = 6;
+      };
+    };
+  };
 
   # something went wrong during setup and this is 350 instead of 30000
   ids.gids.nixbld = 350;
