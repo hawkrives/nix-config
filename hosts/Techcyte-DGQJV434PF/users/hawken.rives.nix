@@ -27,6 +27,7 @@
       pkgs.dockerfile-language-server
       pkgs.nil
       pkgs.nixd
+      pkgs.pi-coding-agent
       pkgs.ruff
       pkgs.sql-formatter
       pkgs.taplo # for toml
