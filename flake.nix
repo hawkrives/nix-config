@@ -45,6 +45,10 @@
     ragenix = {
       url = "github:yaxitech/ragenix";
       inputs.nixpkgs.follows = "nixpkgs";
+      # ragenix pins rust-overlay to Oct 2025, which breaks eval against
+      # current nixpkgs (stdenv.isLinux/.isDarwin removal). Track a fresh
+      # rust-overlay ourselves until upstream ragenix catches up.
+      inputs.rust-overlay.url = "github:oxalica/rust-overlay";
     };
 
     disko = {
