@@ -24,6 +24,27 @@
       destination = "/mnt/channels/videos/arusan0117";
       restructure = true;
     };
+    channels."kuma_ne_ne" = {
+      enable = true;
+      includeLive = true;
+      url = "https://www.twitch.tv/kuma_ne_ne/videos?filter=archives&sort=time";
+      destination = "/mnt/channels/videos/kuma_ne_ne";
+      restructure = true;
+    };
+    channels."kume_ne_ne_yt" = {
+      enable = true;
+      includeLive = true;
+      url = "https://youtube.com/@kuma.ne-ne";
+      destination = "/mnt/channels/videos/kuma_ne_ne";
+      restructure = true;
+    };
+    channels."midnightsumo" = {
+      enable = true;
+      includeLive = true;
+      url = "https://www.twitch.tv/MidnightSumo/videos?sort=time";
+      destination = "/mnt/channels/videos/midnightsumo";
+      restructure = true;
+    };
     channels."ditherdown" = {
       enable = true;
       includeLive = true;
