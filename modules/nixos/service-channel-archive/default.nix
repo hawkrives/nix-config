@@ -123,6 +123,8 @@ let
           "--output" "${ch.destination}/%(title)s [%(id)s].%(ext)s"
           "--no-overwrites"
           "--continue"
+          # fetch live streams from the beginning
+          "--live-from-start"
           # Stop at the first error instead of limping through the rest of
           # the playlist (see the fifo-vs-plain-pipe comment in `script`
           # below) — channel listings are newest-first, so if that first
