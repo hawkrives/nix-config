@@ -10,9 +10,16 @@ let
   # YAML), but with an API-key placeholder so the real key stays out of the
   # world-readable Nix store. A root ExecStartPre patches the key in at runtime.
   yamlFormat = pkgs.formats.yaml { };
+  # removeAttrs "global" mirrors upstream: slskd renamed its `global` config
+  # section to `transfers`, and the module keeps a mkRenamedOptionModule alias
+  # for it. That alias is a *declared* option, so it shows up in cfg.settings
+  # even though nothing defines it — walking it here would both trace
+  # "Obsolete option `global' is used" on every eval and emit a duplicate
+  # `global:` block into the generated yaml. Dropping it is lazy, so the alias
+  # is never forced.
   cleanSettings = lib.filterAttrsRecursive (
     _: v: (builtins.tryEval v).success && v != null
-  ) cfg.settings;
+  ) (lib.removeAttrs cfg.settings [ "global" ]);
   configTemplate = yamlFormat.generate "slskd-template.yml" cleanSettings;
 in
 {
