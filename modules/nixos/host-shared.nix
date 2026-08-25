@@ -23,18 +23,18 @@
     # enableDefaultPackages = true;
   };
 
-  # you can check if host is darwin by using pkgs.stdenv.isDarwin
+  # you can check if host is darwin by using pkgs.stdenv.hostPlatform.isDarwin
   environment.systemPackages =
     [
       pkgs.btop
       pkgs.rage
       perSystem.ragenix.default
     ]
-    ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
+    ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # TODO: only install this on the NAS
       pkgs.ghostty.terminfo
     ])
-    ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
+    ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
       # install here because we use programs.nh.enable on linux
       pkgs.nh
     ]);
@@ -47,6 +47,15 @@
   # set the default system nixpkgs (used by `nix shell nixpkgs#cowsay`, etc.) to
   # the one specified in the flake inputs
   nix.registry.nixpkgs.flake = inputs.nixpkgs;
+
+  # this fleet is flake-only and root is subscribed to no channels, so the
+  # default NIX_PATH entry for /nix/var/nix/profiles/per-user/root/channels
+  # points at a directory that never gets created — every `nix` invocation then
+  # warns about the dangling search path entry. Turning channels off drops that
+  # entry (NIX_PATH becomes just "nixpkgs=flake:nixpkgs", pinned above by
+  # nixpkgs.flake.setNixPath) at the cost of removing the `nix-channel` command,
+  # which nothing here uses.
+  nix.channel.enable = false;
 
   # some basic nix settings
   nix.settings = {

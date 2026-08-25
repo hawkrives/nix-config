@@ -21,31 +21,33 @@
     # not exist. This file is NOT managed by nix, so it stays freely editable.
     includes = ["config.local"];
 
-    matchBlocks = {
+    # Attribute names become `Host <name>` blocks; keys are upstream
+    # ssh_config(5) directive names.
+    settings = {
       potato-bunny = {
-        hostname = "192.168.1.194";
-        user = "hawken";
+        HostName = "192.168.1.194";
+        User = "hawken";
       };
 
       # Home lab hosts (mDNS .local names, resolvable on the LAN).
       nutmeg = {
-        hostname = "nutmeg.local";
-        user = "natsume";
+        HostName = "nutmeg.local";
+        User = "natsume";
       };
       tuckles = {
-        hostname = "tuckles.local";
-        user = "haru";
+        HostName = "tuckles.local";
+        User = "haru";
       };
       pantry = {
-        hostname = "pantry.local";
-        user = "nix";
+        HostName = "pantry.local";
+        User = "nix";
       };
 
       # bigpond (T2 MacBook remote builder). Fill in its LAN IP or Tailscale
       # address once it's reachable; bigpond.local wasn't advertising mDNS.
       bigpond = {
-        # hostname = "bigpond.local";
-        user = "pinklady";
+        # HostName = "bigpond.local";
+        User = "pinklady";
       };
     };
   };

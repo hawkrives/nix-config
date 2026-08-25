@@ -84,7 +84,7 @@
   # box this busy means something is genuinely wrong, and a false-positive
   # reboot of a healthy server would be worse than the thing we're fixing.
   # Even so: 2 minutes of downtime instead of 3.5 hours.
-  systemd.watchdog.runtimeTime = "120s";
+  systemd.settings.Manager.RuntimeWatchdogSec = "120s";
 
   # [disk health] The root SSD (Samsung 860 EVO 250GB) is a prime suspect for a
   # machine that dies without being able to log why — if the SATA link or the

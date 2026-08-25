@@ -140,7 +140,7 @@
   };
 
   # enable font lookup thing on Linux
-  fonts.fontconfig.enable = pkgs.stdenv.isLinux;
+  fonts.fontconfig.enable = pkgs.stdenv.hostPlatform.isLinux;
 
   # disable home-manager man pages?
   manual.manpages.enable = false;
@@ -150,7 +150,7 @@
   programs.nix-index.enable = true;
 
   # only available on linux, disabled on macos
-  services.ssh-agent.enable = pkgs.stdenv.isLinux;
+  services.ssh-agent.enable = pkgs.stdenv.hostPlatform.isLinux;
 
   home.sessionVariables = {
     # Indicate if a nix develop shell is activated (based on IN_NIX_SHELL).
@@ -328,12 +328,12 @@
   # you can also look at the current user's config (`config`) or the system
   # config (`osConfig`), but note that osConfig is null if the homeManager
   # config is evaluated separately as in `nh home switch .#`.
-  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.isDarwin) [ ])
-  ++ (pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.cocoapods ])
-  ++ (pkgs.lib.optionals (pkgs.stdenv.isLinux) [ ]);
+  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.hostPlatform.isDarwin) [ ])
+  ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [ pkgs.cocoapods ])
+  ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isLinux) [ ]);
 
   targets =
-    if pkgs.stdenv.isDarwin then
+    if pkgs.stdenv.hostPlatform.isDarwin then
       {
         darwin.defaults = {
           "com.apple.dock".autohide = true;

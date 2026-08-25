@@ -39,7 +39,7 @@
       pkgs.vtsls
       pkgs.yaml-language-server
     ]
-    ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
+    ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.systemd-lsp
     ]);
 

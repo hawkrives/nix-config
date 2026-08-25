@@ -20,7 +20,7 @@
         ruff
         taplo # for toml
       ]
-      ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
+      ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
         systemd-lsp
       ]);
 
