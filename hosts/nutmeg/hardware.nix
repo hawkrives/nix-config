@@ -19,6 +19,17 @@
       DHCP = "ipv4";
       IPv6AcceptRA = true;
     };
+    # Hold network-online.target until this link can reach the LAN over IPv4.
+    # The link meets the default state, "degraded", the moment it gains an
+    # IPv6 link-local address — seconds before the DHCPv4 lease arrives. That
+    # releases _netdev units early, and the NFS mounts they pull in fail with
+    # "Network is unreachable", because the NAS answers at an IPv4 address
+    # (see modules/nixos/synology-mounts.nix). tailscale0 is unmanaged, so
+    # wait-online watches this link alone.
+    linkConfig = {
+      RequiredForOnline = "routable";
+      RequiredFamilyForOnline = "ipv4";
+    };
     ipv6AcceptRAConfig.Token = "static:::228";
     # Pin the global ::228 statically so it survives gaps between the router's
     # RAs — the whole LAN is told to use this address for DNS (adguard), so it
