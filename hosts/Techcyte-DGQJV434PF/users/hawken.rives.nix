@@ -11,6 +11,7 @@
     flake.homeModules.ghostty-shared
     flake.homeModules.helix-shared
     flake.homeModules.sqlite-shared
+    flake.homeModules.ssh-shared
   ];
 
   home.packages =
