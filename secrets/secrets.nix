@@ -99,4 +99,20 @@ in
     pantry
     bigpond
   ];
+
+  # Binary-cache signing keys, one per host, named for networking.hostName so
+  # host-shared.nix can pick its own by interpolation. Each is readable only by
+  # the host it belongs to — a signing key is that host's identity to the rest
+  # of the fleet, and nothing is gained by sharing it sideways.
+  #
+  # Regenerate one with:
+  #   nix key generate-secret --key-name <host> > key
+  #   nix key convert-secret-to-public < key   # -> extra-trusted-public-keys
+  #   cd secrets && EDITOR='cp ../key' ragenix -e nix-signing-key-<host>.age
+  # Names are unique in nix's trusted-key map, so re-keying a host revokes
+  # everything it signed before rather than adding to it.
+  "nix-signing-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+  "nix-signing-key-tuckles.age".publicKeys = users ++ [ tuckles ];
+  "nix-signing-key-pantry.age".publicKeys = users ++ [ pantry ];
+  "nix-signing-key-Techcyte-DGQJV434PF.age".publicKeys = users ++ [ techcyte ];
 }

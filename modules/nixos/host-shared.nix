@@ -72,14 +72,27 @@
   # which nothing here uses.
   nix.channel.enable = false;
 
+  # This host's binary-cache signing key. It used to be hand-generated into
+  # /etc/nix/private-key, which made it the one piece of fleet identity that
+  # wasn't declarative — so when pantry was reinstalled the key vanished, and
+  # since nix opens secret-key-files at the end of every build, *every* build on
+  # pantry then died with "opening file '/etc/nix/private-key': No such file or
+  # directory". Keeping it in ragenix means it survives a reinstall and the
+  # public half stays stable, so extra-trusted-public-keys below stays correct.
+  #
+  # One file per host, named for networking.hostName; a host without one fails
+  # at eval rather than at the end of its first build.
+  age.secrets.nix-signing-key.file = ../../secrets/nix-signing-key-${config.networking.hostName}.age;
+
   # some basic nix settings
   nix.settings = {
     # enable flakes and the nice cli
     experimental-features = ["nix-command" "flakes"];
-    # todo put the issue link here
-    # nix key generate-secret --key-name (hostname) | sudo tee /etc/nix/private-key
-    # cat /etc/nix/private-key | nix key convert-secret-to-public
-    secret-key-files = "/etc/nix/private-key";
+    # Regenerate with:
+    #   nix key generate-secret --key-name (hostname) > key
+    #   nix key convert-secret-to-public < key   # -> extra-trusted-public-keys
+    # then re-encrypt it: see secrets/secrets.nix.
+    secret-key-files = config.age.secrets.nix-signing-key.path;
     # TODO I used to have this - needed?
     # allowed-users = ["root" "natsume"];
 
@@ -101,17 +114,26 @@
       ++ lib.optionals (config.networking.hostName != "pantry") [
         "ssh-ng://nixremote@100.120.197.118?ssh-key=/etc/ssh/ssh_host_ed25519_key&base64-ssh-public-host-key=c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUJpVVEwUGxtMmNlb25WRVJBUDBtNU5vRUgzOUozakNzdXhRZ094VzFLNjc="
       ];
+    # Nix keeps these as a name -> key map, so a name appears at most once:
+    # re-keying a host replaces trust for everything it signed before, it does
+    # not add to it. (The old "cache:..." entry here was pantry's key from
+    # before its reinstall; the private half is gone, so nothing could ever
+    # produce a matching signature again. Dropped.)
     extra-trusted-public-keys =
       [
-        "cache:fWnI+McRUwqFqvEzDFkCOU256xHHztm+SR1l2UWGZzU="
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ]
-      # plus my hosts
+      # plus my hosts. nutmeg and tuckles carry their original keys, adopted
+      # into ragenix as-is so nothing they have already pushed goes stale.
+      # pantry is new (it never had one). Techcyte's is a fresh key, replacing
+      # 2Xo6QORWHHSNQHveplJ1Fq1Ji8GXwtm7FsD4l/tM/0I= — only ever used on
+      # aarch64-darwin paths, which no other host here can consume anyway.
       ++ [
         "nutmeg:6F0E+NkIvpTI0d4QSvrDb3+LYhrQwXkYjqgI9etpuEw="
+        "pantry:eH1y5GJInQcb8pW/gXQq5GiMiszHIjhqpeMgktIDOQA="
         "potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts="
-        "Techcyte-DGQJV434PF:2Xo6QORWHHSNQHveplJ1Fq1Ji8GXwtm7FsD4l/tM/0I="
+        "Techcyte-DGQJV434PF:FDqhahy007nFE2T8Cj5sBu7uacsP5N9V9dbuERDeeSc="
         "tuckles:QXDvYTGgHgAIo/EzWTn/UcTuKZEP1MqsQsX9/3apQsc="
       ];
   };
