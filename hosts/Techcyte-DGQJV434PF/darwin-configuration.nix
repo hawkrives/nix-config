@@ -8,7 +8,15 @@
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
     inputs.self.nixosModules.cache-push
-    inputs.self.nixosModules.pantry-builder
+    # Deliberately NOT pantry-builder. This host has its own linux-builder VM
+    # (below), and with both registered Lix sent nearly everything to pantry:
+    # when two builders are idle it breaks the tie on speedFactor alone, and
+    # pantry declares 2 against the nix-darwin default of 1. Even with that
+    # corrected an idle pantry would still win whenever the local VM had a job
+    # running (load/speedFactor, and 0 beats every positive value), so the only
+    # way to actually keep builds on the M-series is to not offer the
+    # alternative. Building x86_64-linux locally under Rosetta beats shipping it
+    # to a 4-core V1500B over the tailnet.
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 

@@ -4,7 +4,13 @@
 # authenticates as the trusted `nixremote` user on pantry, and pantry's host key
 # is pinned inline so no known_hosts management is needed. Cross-platform (only
 # sets nix.buildMachines / nix.distributedBuilds), so it works on darwin too.
-# Imported by the Mac (techcyte), which has no local Linux builder.
+#
+# Currently imported by nothing. The Mac used to import it, but it has its own
+# linux-builder VM now and registering both just meant pantry won the tie (see
+# the note in hosts/Techcyte-DGQJV434PF/darwin-configuration.nix). Kept for any
+# host that wants an x86_64-linux builder and has no local one; if you do import
+# it alongside another builder, mind that speedFactor = 2 below outranks the
+# nix-darwin/NixOS default of 1.
 { ... }:
 let
   # pantry over the tailnet — same stable IP used by the cache config (nutmeg runs
