@@ -29,26 +29,27 @@ let
     };
   synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
-  hama = builtins.path {
+  # NB: `name` goes to fetchFromGitHub directly rather than wrapping the fetch
+  # in `builtins.path` (as the nixpkgs plex example does) -- builtins.path has
+  # to realise its argument, which makes evaluating this host an IFD that only
+  # succeeds on a machine that already has the fetched output. Same store path
+  # either way.
+  hama = pkgs.fetchFromGitHub {
     name = "Hama.bundle";
-    path = pkgs.fetchFromGitHub {
-      # https://github.com/ZeroQI/Hama.bundle
-      owner = "ZeroQI";
-      repo = "Hama.bundle";
-      rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
-      sha256 = "PgZAqK3Ooz8JgMqCW7hZOBzuaVjCywA6ytx33J/WqC4=";
-    };
+    # https://github.com/ZeroQI/Hama.bundle
+    owner = "ZeroQI";
+    repo = "Hama.bundle";
+    rev = "adee212b7b419790f89ed127e59e13a8e1ff63f5";
+    sha256 = "PgZAqK3Ooz8JgMqCW7hZOBzuaVjCywA6ytx33J/WqC4=";
   };
 
-  youtubeAgent = builtins.path {
+  youtubeAgent = pkgs.fetchFromGitHub {
     name = "YouTube-Agent.bundle";
-    path = pkgs.fetchFromGitHub {
-      # https://github.com/ZeroQI/YouTube-Agent.bundle
-      owner = "ZeroQI";
-      repo = "YouTube-Agent.bundle";
-      rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
-      sha256 = "W1lY9uDqxkkKmxBDewQc/BOsZSK2CbKHRBTzTscR68Y=";
-    };
+    # https://github.com/ZeroQI/YouTube-Agent.bundle
+    owner = "ZeroQI";
+    repo = "YouTube-Agent.bundle";
+    rev = "e63f7a81b3493cf522a3d58276bc2ed117ed206c";
+    sha256 = "W1lY9uDqxkkKmxBDewQc/BOsZSK2CbKHRBTzTscR68Y=";
   };
 
   absoluteSeriesScanner = pkgs.fetchFromGitHub {
