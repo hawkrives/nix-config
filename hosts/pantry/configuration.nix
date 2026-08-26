@@ -20,6 +20,11 @@
   networking.hostName = hostName;
   networking.useNetworkd = true;
 
+  # Opt out of host-shared's 4g eval heap: this box has 3.9GB of RAM total, so
+  # reserving that much would leave the collector no headroom to fall back on.
+  # It's a build target anyway -- builders don't evaluate, so it gains nothing.
+  environment.variables.GC_INITIAL_HEAP_SIZE = null;
+
   # UEFI boot via systemd-boot. If VMM doesn't persist EFI NVRAM boot entries
   # across reboots, set canTouchEfiVariables = false and re-run the install.
   boot.loader.systemd-boot.enable = true;

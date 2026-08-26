@@ -39,6 +39,21 @@
       pkgs.nh
     ]);
 
+  # Nix's evaluator is single-threaded and, on a host config this size, spends a
+  # good slice of its run collecting against a ~1.6GB working set. Handing Boehm
+  # a big heap up front skips most of the early collections. Measured on nutmeg
+  # over four paired full evals of its own toplevel: mean eval CPU 41.9s -> 36.2s
+  # (-14%). 6g measured no better and 2g measured worse, so 4g is the knee. This
+  # is address space, faulted in lazily, so small evals don't really pay 4GB.
+  #
+  # This is the biggest lever available in-config; the eval itself is ~95% of the
+  # wall time of an `nh os switch` that has to re-evaluate at all. (It only has
+  # to when something changed: Lix caches per flake source fingerprint, so an
+  # unchanged tree short-circuits to ~2s, and any edit invalidates the lot.)
+  #
+  # mkDefault so memory-tight hosts can opt out -- see pantry.
+  environment.variables.GC_INITIAL_HEAP_SIZE = lib.mkDefault "4g";
+
   nix.package = pkgs.lixPackageSets.latest.lix;
 
   # TODO: document
