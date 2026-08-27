@@ -168,6 +168,13 @@ let
             # video wedging the channel forever) is what alertUser's
             # notification exists to catch.
             "--abort-on-error"
+            # yt-dlp spawns ffmpeg/ffprobe itself for merging and thumbnail
+            # conversion, resolving them off PATH -- substitution in `script`
+            # cannot reach that. Pin the location so the ffmpeg doing the
+            # muxing is the one this module depends on, not whatever PATH
+            # happens to surface first.
+            "--ffmpeg-location"
+            "${pkgs.ffmpeg}/bin"
           ]
           ++ formatArgs
           ++ metaArgs
@@ -237,8 +244,10 @@ let
         pkgs.gnugrep
       ]
       ++ lib.optionals ch.restructure [
+        # channel-artwork.py shells out to bare `magick` via bash -c, so this
+        # must stay on PATH. dejavu_fonts does NOT belong here -- it ships no
+        # binaries; the font reaches the script via CAW_FONT below.
         pkgs.imagemagick
-        pkgs.dejavu_fonts
       ];
       serviceConfig = {
         Type = "oneshot";
@@ -277,12 +286,12 @@ let
       script = ''
         set -uo pipefail
         rc=0
-        out="$(mktemp)"
+        out="$(${pkgs.coreutils}/bin/mktemp)"
         # --abort-on-error (see ytdlpArgs) already stops the whole run at the
         # first error, so there's no more "grind through hundreds of items"
         # case to cut off early — a plain pipe + post-hoc grep is enough now.
-        yt-dlp ${ytdlpArgs} 2>&1 | tee "$out" || rc=$?
-        if grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
+        ${pkgs.yt-dlp}/bin/yt-dlp ${ytdlpArgs} 2>&1 | ${pkgs.coreutils}/bin/tee "$out" || rc=$?
+        if ${pkgs.gnugrep}/bin/grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
           echo "channel-archive: >>> BLOCKED/RATE-LIMITED by YouTube (429/403/bot-check) <<<" >&2
           rc=75
         fi
@@ -295,26 +304,26 @@ let
             # for now; swap in a real notification channel (Telegram, etc.)
             # later.
             {
-              echo "From channel-archive@${config.networking.hostName}  $(date)"
-              echo "Date: $(date -R)"
+              echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
+              echo "Date: $(${pkgs.coreutils}/bin/date -R)"
               echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
               echo "To: ${cfg.alertUser}@${config.networking.hostName}"
               echo "Subject: channel-archive: ${name} failed (exit $rc)"
               echo
               echo "${name} exited $rc — not the known 429/403/bot-check case."
               echo "Last output:"
-              tail -n 15 "$out"
+              ${pkgs.coreutils}/bin/tail -n 15 "$out"
               echo
             } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
-            echo "$(date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
+            echo "$(${pkgs.coreutils}/bin/date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
           ''}
         fi
-        rm -f "$out"
+        ${pkgs.coreutils}/bin/rm -f "$out"
         ${lib.optionalString ch.writeNfo ''
-          python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
+          ${pkgs.python3}/bin/python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
         ''}
         ${lib.optionalString ch.restructure ''
-          python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
+          ${pkgs.python3}/bin/python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
             ${
               lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
             } \
@@ -324,7 +333,7 @@ let
             } \
             || true
           CAW_FONT=${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans-Bold.ttf \
-          python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
+          ${pkgs.python3}/bin/python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
             ${
               lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
             } \
