@@ -185,11 +185,33 @@ let
       # (SupplementaryGroups=users) — so mkdir/`-w` match what yt-dlp will see.
       # setgid on the parent propagates group `users` to the new dir.
       preStart = pkgs.writeShellScript "channel-archive-${name}-pre" ''
-        mkdir -p ${lib.escapeShellArg ch.destination} 2>/dev/null || true
+        ${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg ch.destination} 2>/dev/null || true
         if [ ! -d ${lib.escapeShellArg ch.destination} ] || [ ! -w ${lib.escapeShellArg ch.destination} ]; then
           echo "channel-archive: destination ${ch.destination} missing or not writable — ensure its parent bucket exists on the NAS and is group-writable to 'users'" >&2
           exit 1
         fi
+
+        # Discard download fragments left behind by an EARLIER run. yt-dlp's
+        # --continue will happily resume a .part from days ago, but YouTube's
+        # media URLs and encodes do not stay byte-compatible that long. On
+        # 2026-08-26 videogamedunkey resumed a 13-day-old AV1 .part, produced a
+        # byte-complete but corrupt .f399.mp4, and ffmpeg died muxing it with
+        # "Postprocessing: Conversion failed!". --abort-on-error then killed the
+        # run -- and since the corrupt fragment persisted, every later run hit
+        # the same wall, so one bad file wedged ~999 videos behind it. The 94
+        # sibling .part files in that folder were all queued to do the same.
+        #
+        # Only fragments older than the window below are removed. mtime advances
+        # while a download is in flight, so an actively-written fragment is
+        # never eligible; the window only has to exceed how long a *sibling*
+        # unit sharing this destination might stall on one file (VODs + clips
+        # deliberately share a folder). Observed runs top out around 25min.
+        # -print so the journal records what was swept rather than doing it
+        # silently.
+        ${pkgs.findutils}/bin/find ${lib.escapeShellArg ch.destination} -maxdepth 1 -regextype posix-extended \
+          \( -name '*.part' -o -name '*.ytdl' -o -name '*.temp.*' \
+             -o -regex '.*\.f[0-9]+(-[0-9]+)?\.(mp4|webm|m4a|mkv|opus|mp3)' \) \
+          -mmin +360 -print -delete 2>/dev/null || true
       '';
     in
     {
