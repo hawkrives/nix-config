@@ -107,6 +107,27 @@ let
           defaultText = lib.literalExpression "config.services.channelArchive.rateLimit";
           description = "Inject polite YouTube pacing flags (--sleep-requests + --min/max-sleep-interval) to reduce rate-limit/bot-block risk.";
         };
+        incremental = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Pass --break-on-existing: stop as soon as a video already in
+            archive.txt is encountered.
+
+            Only correct once a channel is fully caught up. Channel listings
+            are newest-first, so on a caught-up channel the newest item is
+            already archived and the run stops after ~one page instead of
+            walking the whole listing -- which for a 1000-video channel is
+            ~33 paginated requests every run, each paced by --sleep-requests.
+
+            During a BACKFILL it is actively harmful: if any already-archived
+            video sits above a missing one, the run stops there and the gap is
+            never filled. videogamedunkey is the worked example -- items 1 and
+            2 were archived while item 3 was not, so this would have archived
+            nothing at all. Leave false until `channel-archive-status` shows
+            the channel finishing its listing with nothing left.
+          '';
+        };
       };
     }
   );
@@ -131,6 +152,9 @@ let
         "-f"
         ch.format
       ];
+      # see the `incremental` option: safe only on a caught-up channel
+      incrementalArgs = lib.optionals ch.incremental [ "--break-on-existing" ];
+
       rateLimitArgs = lib.optionals ch.rateLimit [
         "--sleep-requests"
         "1.5"
@@ -168,6 +192,16 @@ let
             # video wedging the channel forever) is what alertUser's
             # notification exists to catch.
             "--abort-on-error"
+            # Default is --no-lazy-playlist: yt-dlp parses the ENTIRE playlist
+            # before downloading anything, so a 1000-video channel costs ~33
+            # paginated requests up front on every run. Lazy processing also
+            # makes --max-downloads actually bound discovery -- without it the
+            # cap only stops downloads, after the full walk has already
+            # happened. Disables n_entries/--playlist-random/--playlist-reverse,
+            # none of which this module uses.
+            "--lazy-playlist"
+            "--max-downloads"
+            (toString cfg.maxDownloads)
             # yt-dlp spawns ffmpeg/ffprobe itself for merging and thumbnail
             # conversion, resolving them off PATH -- substitution in `script`
             # cannot reach that. Pin the location so the ffmpeg doing the
@@ -179,6 +213,7 @@ let
           ++ formatArgs
           ++ metaArgs
           ++ rateLimitArgs
+          ++ incrementalArgs
           ++ liveFilterArgs
           ++ ch.extraArgs
           ++ [ ch.url ]
@@ -223,6 +258,15 @@ let
     in
     {
       description = "Archive channel ${name} with yt-dlp";
+      # A config change must never interrupt or restart an in-flight archive run:
+      # switch-to-configuration queues a job against the unit and then WAITS for
+      # the running one, so a long backfill blocks the whole deploy. These units
+      # embed store paths (yt-dlp/ffmpeg/python), so any nixpkgs bump changes
+      # every one of them -- it is not just edits to this module that block. The
+      # next timer fire picks up the new definition; --download-archive makes a
+      # run resumable regardless. Same opt-out as sshd@ in host-server.nix.
+      restartIfChanged = false;
+      stopIfChanged = false;
       # Soft Wants/After on the mount unit (NOT RequiresMountsFor) — a run can
       # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
       # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
@@ -291,6 +335,20 @@ let
         # first error, so there's no more "grind through hundreds of items"
         # case to cut off early — a plain pipe + post-hoc grep is enough now.
         ${pkgs.yt-dlp}/bin/yt-dlp ${ytdlpArgs} 2>&1 | ${pkgs.coreutils}/bin/tee "$out" || rc=$?
+        # yt-dlp returns 101 for any DownloadCancelled -- both MaxDownloadsReached
+        # (--max-downloads) and ExistingVideoReached (--break-on-existing) subclass
+        # it. Those are deliberate early stops at a video boundary, not failures.
+        # Without this the alert path below would mail a failure and write a
+        # notices line on every single capped run.
+        if [ "$rc" -eq 101 ]; then
+          if ${pkgs.gnugrep}/bin/grep -q 'Maximum number of downloads reached' "$out"; then
+            echo "channel-archive: hit the --max-downloads cap; more remain for the next run"
+          else
+            echo "channel-archive: stopped at the first already-archived video (--break-on-existing)"
+          fi
+          rc=0
+        fi
+
         if ${pkgs.gnugrep}/bin/grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
           echo "channel-archive: >>> BLOCKED/RATE-LIMITED by YouTube (429/403/bot-check) <<<" >&2
           rc=75
@@ -403,6 +461,19 @@ in
       ];
       description = "Default extra yt-dlp arguments.";
     };
+    maxDownloads = lib.mkOption {
+      type = lib.types.ints.unsigned;
+      default = 20;
+      description = ''
+        Cap on new videos per run (yt-dlp --max-downloads). Keeps a large
+        backlog from turning into one multi-hour run: a channel with hundreds
+        of missing videos catches up over several days instead. That also
+        bounds how long a run holds the NFS mount and how long it is exposed
+        to YouTube's bot-check. yt-dlp stops at a video boundary, so unlike a
+        timeout this never leaves a partial download behind.
+      '';
+    };
+
     rateLimit = lib.mkOption {
       type = lib.types.bool;
       default = false;
