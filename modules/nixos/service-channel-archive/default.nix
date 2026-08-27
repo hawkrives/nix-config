@@ -22,6 +22,21 @@ let
   restructureScript = ./restructure.py;
   channelArtworkScript = ./channel-artwork.py;
 
+  # `channel-archive-status`: read-only report over the archivers. Reads systemd
+  # state, the journal, archive.txt and the destination dirs -- no network calls,
+  # deliberately (see the docstring), so running it can never be what trips the
+  # YouTube bot-check the units already have to handle.
+  statusScript = pkgs.writeShellApplication {
+    name = "channel-archive-status";
+    runtimeInputs = [
+      pkgs.python3
+      pkgs.systemd
+    ];
+    text = ''
+      exec python3 ${./status.py} "$@"
+    '';
+  };
+
   channelModule = lib.types.submodule (
     { name, ... }: {
       options = {
@@ -407,6 +422,8 @@ in
         systemd.timers = lib.mapAttrs' (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch)) (
           lib.filterAttrs (_: ch: ch.enable) cfg.channels
         );
+
+        environment.systemPackages = [ statusScript ];
       }
       (lib.mkIf (cfg.alertUser != null) {
         # /var/mail 1777 like /tmp: any DynamicUser service may need to touch
