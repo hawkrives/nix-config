@@ -87,7 +87,7 @@ def unit_facts(name):
     svc = f"{UNIT_PREFIX}{name}.service"
     execstart = show(svc, ["ExecStart"]).get("ExecStart", "")
     m = re.search(r"path=(\S+?)[ ;]", execstart)
-    dest, url = None, None
+    dest, url, incremental = None, None, False
     if m:
         try:
             with open(m.group(1)) as fh:
@@ -99,9 +99,15 @@ def unit_facts(name):
             u = RE_URL.search(body)
             if u:
                 url = u.group(1)
+            # the wrapper also mentions --break-on-existing in a comment and an
+            # echo, so only the actual yt-dlp command line is evidence
+            for ln in body.splitlines():
+                if "bin/yt-dlp" in ln and "--download-archive" in ln:
+                    incremental = "--break-on-existing" in ln
+                    break
         except OSError:
             pass
-    return dest, url
+    return dest, url, incremental
 
 
 def last_run(name, start, end):
@@ -271,7 +277,7 @@ def main():
         start = epoch(s.get("ExecMainStartTimestamp"))
         exit_ts = epoch(s.get("ExecMainExitTimestamp"))
         nxt = epoch(t.get("NextElapseUSecRealtime"))
-        dest, url = unit_facts(name)
+        dest, url, incremental = unit_facts(name)
         run = last_run(name, start, exit_ts)
 
         # Several channels deliberately share one destination (VODs + clips use
@@ -316,6 +322,7 @@ def main():
             "total": "^shared" if shared else (str(total) if total is not None else "?"),
             "size": "^shared" if shared else (human(disk["size"]) if disk else "?"),
             "vids": "" if shared else (str(disk["count"]) if disk else "?"),
+            "inc": "yes" if incremental else "no", "inc_bool": incremental,
             "next": until(nxt, now), "start": start,
             "kinds": kinds, "url": url, "dest": dest, "run": run,
             "fails": note.get(name, []),
@@ -329,7 +336,8 @@ def main():
     cols = [("channel", "name", "<"), ("last check", "last", ">"), ("took", "took", ">"),
             ("status", "status", "<"), ("new", "new", ">"), ("had", "had", ">"),
             ("left", "left", ">"), ("archived", "total", ">"), ("videos", "vids", ">"),
-            ("size", "size", ">"), ("next", "next", ">")]
+            ("size", "size", ">"),
+            ("inc", "inc", ">"), ("next", "next", ">")]
     w = {k: max(len(h), max((len(str(r[k])) for r in rows), default=0)) for h, k, _ in cols}
     print("  ".join(f"{h:{a}{w[k]}}" for h, k, a in cols))
     print("  ".join("-" * w[k] for _h, k, _a in cols))
@@ -342,6 +350,18 @@ def main():
                     if sum(1 for r in rows if r["dest"] == d) > 1]
     if shared_dests:
         print(f"^shared = destination counted once; {len(shared_dests)} folder(s) serve multiple channels.")
+
+    ready = [
+        r for r in rows
+        if not r["inc_bool"] and r["status"] == "ok" and r["run"]["finished"]
+    ]
+    if ready:
+        print()
+        print("ready for incremental (finished the whole listing; still re-walking it every run):")
+        for r in ready:
+            print(f'  {r["name"]}')
+            print(f'      services.channelArchive.channels."{r["name"]}".incremental = true;')
+
 
     if attention:
         print()
