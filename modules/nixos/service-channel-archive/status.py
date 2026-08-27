@@ -115,6 +115,8 @@ def last_run(name, start, end):
         "blocked": False,
         "errors": [],
         "have_log": False,
+        # why the run stopped early, if it did (see the wrapper: yt-dlp exit 101)
+        "early": None,
     }
     if not start:
         return r
@@ -144,6 +146,10 @@ def last_run(name, start, end):
             r["finished"] = True
         if BLOCKED in line:
             r["blocked"] = True
+        if "stopped at the first already-archived video" in line:
+            r["early"] = "caught-up"
+        if "hit the --max-downloads cap" in line:
+            r["early"] = "capped"
         m = RE_ERROR.match(line)
         if m:
             r["errors"].append(m.group(1)[:120])
@@ -284,7 +290,16 @@ def main():
         elif run["blocked"] or code == "75":
             status = "RATE-LIMITED"
         elif s.get("Result") == "success" and code == "0":
-            status = "ok" if run["finished"] or not run["have_log"] else "ok*"
+            # An incremental channel stopping at the first archived video, or a
+            # run hitting the --max-downloads cap, is the HEALTHY case -- both
+            # exit 101 which the wrapper maps to 0. Report them as such rather
+            # than as the "finished early, why?" ok* below.
+            if run["early"] == "caught-up":
+                status = "up-to-date"
+            elif run["early"] == "capped":
+                status = "capped"
+            else:
+                status = "ok" if run["finished"] or not run["have_log"] else "ok*"
         else:
             status = f"FAILED({code})"
 
@@ -306,7 +321,7 @@ def main():
             "fails": note.get(name, []),
         })
 
-        if status != "ok":
+        if status not in ("ok", "up-to-date", "capped"):
             attention.append((name, status, run))
 
     rows.sort(key=lambda r: (r["start"] or 0))
