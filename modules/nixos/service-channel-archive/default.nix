@@ -166,9 +166,16 @@ let
       # Skip live/premiere content: currently-live streams, scheduled premieres,
       # and past-live VODs (was_live/post_live). Shorts need no filter — the
       # channel URLs target the `/videos` tab, which never lists Shorts.
+      # The `?` on each operator matters: without it a MISSING live_status makes
+      # the comparison fail, so the filter rejects the item. Twitch clips report
+      # live_status=NA, so the un-suffixed form rejected every clip that was not
+      # already archived -- ditherdown-clips looked healthy for months ("finished,
+      # 0 new") while being structurally unable to fetch anything. Verified: the
+      # old filter passes 0 of 3 clips, this passes 3 of 3, and it still rejects a
+      # genuine was_live VOD, which is the whole point of the filter.
       liveFilterArgs = lib.optionals (!ch.includeLive) [
         "--match-filter"
-        "live_status != is_live & live_status != is_upcoming & live_status != was_live & live_status != post_live"
+        "live_status !=? is_live & live_status !=? is_upcoming & live_status !=? was_live & live_status !=? post_live"
       ];
       credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null) [
         "plex-token:${cfg.plexTokenFile}"
