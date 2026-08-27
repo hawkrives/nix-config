@@ -8,7 +8,13 @@
 # the service itself write into the group-writable dest dir and append
 # archive.txt. Optionally writes .info.json/thumbnail metadata and generates
 # Kodi/Jellyfin .nfo files.
-{ lib, config, pkgs, utils, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  utils,
+  ...
+}:
 let
   cfg = config.services.channelArchive;
 
@@ -16,81 +22,84 @@ let
   restructureScript = ./restructure.py;
   channelArtworkScript = ./channel-artwork.py;
 
-  channelModule = lib.types.submodule ({ name, ... }: {
-    options = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Whether to render this channel's service + timer. Default false, so a
-          channel can be declared (staged) in config without archiving until
-          flipped to true — useful for tracking a backlog of channels to enable
-          in batches.
-        '';
+  channelModule = lib.types.submodule (
+    { name, ... }: {
+      options = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Whether to render this channel's service + timer. Default false, so a
+            channel can be declared (staged) in config without archiving until
+            flipped to true — useful for tracking a backlog of channels to enable
+            in batches.
+          '';
+        };
+        url = lib.mkOption {
+          type = lib.types.str;
+          description = "Channel or playlist URL passed to yt-dlp.";
+        };
+        destination = lib.mkOption {
+          type = lib.types.str;
+          default = "${cfg.baseDir}/${name}";
+          defaultText = lib.literalMD "`\${baseDir}/<name>`";
+          description = "Directory downloads and archive.txt live in.";
+        };
+        schedule = lib.mkOption {
+          type = lib.types.str;
+          default = cfg.schedule;
+          defaultText = lib.literalExpression "config.services.channelArchive.schedule";
+          description = "systemd OnCalendar for this channel.";
+        };
+        format = lib.mkOption {
+          type = lib.types.str;
+          default = cfg.format;
+          defaultText = lib.literalExpression "config.services.channelArchive.format";
+          description = "yt-dlp -f selector ('' = yt-dlp default).";
+        };
+        writeMetadata = lib.mkOption {
+          type = lib.types.bool;
+          default = cfg.writeMetadata;
+          defaultText = lib.literalExpression "config.services.channelArchive.writeMetadata";
+          description = "Write .info.json + thumbnail + embedded metadata.";
+        };
+        writeNfo = lib.mkOption {
+          type = lib.types.bool;
+          default = cfg.writeNfo;
+          defaultText = lib.literalExpression "config.services.channelArchive.writeNfo";
+          description = "Generate Kodi/Jellyfin .nfo from .info.json.";
+        };
+        includeLive = lib.mkOption {
+          type = lib.types.bool;
+          default = cfg.includeLive;
+          defaultText = lib.literalExpression "config.services.channelArchive.includeLive";
+          description = "Download livestreams or not";
+        };
+        restructure = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "After download, reshape new files into the Plex date-based TV layout (Season/SxxExx) and finalize them in Plex. Opt-in; leave off for music/artist channels.";
+        };
+        extraArgs = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = cfg.extraArgs;
+          defaultText = lib.literalExpression "config.services.channelArchive.extraArgs";
+          description = "Extra yt-dlp arguments for this channel.";
+        };
+        rateLimit = lib.mkOption {
+          type = lib.types.bool;
+          default = cfg.rateLimit;
+          defaultText = lib.literalExpression "config.services.channelArchive.rateLimit";
+          description = "Inject polite YouTube pacing flags (--sleep-requests + --min/max-sleep-interval) to reduce rate-limit/bot-block risk.";
+        };
       };
-      url = lib.mkOption {
-        type = lib.types.str;
-        description = "Channel or playlist URL passed to yt-dlp.";
-      };
-      destination = lib.mkOption {
-        type = lib.types.str;
-        default = "${cfg.baseDir}/${name}";
-        defaultText = lib.literalMD "`\${baseDir}/<name>`";
-        description = "Directory downloads and archive.txt live in.";
-      };
-      schedule = lib.mkOption {
-        type = lib.types.str;
-        default = cfg.schedule;
-        defaultText = lib.literalExpression "config.services.channelArchive.schedule";
-        description = "systemd OnCalendar for this channel.";
-      };
-      format = lib.mkOption {
-        type = lib.types.str;
-        default = cfg.format;
-        defaultText = lib.literalExpression "config.services.channelArchive.format";
-        description = "yt-dlp -f selector ('' = yt-dlp default).";
-      };
-      writeMetadata = lib.mkOption {
-        type = lib.types.bool;
-        default = cfg.writeMetadata;
-        defaultText = lib.literalExpression "config.services.channelArchive.writeMetadata";
-        description = "Write .info.json + thumbnail + embedded metadata.";
-      };
-      writeNfo = lib.mkOption {
-        type = lib.types.bool;
-        default = cfg.writeNfo;
-        defaultText = lib.literalExpression "config.services.channelArchive.writeNfo";
-        description = "Generate Kodi/Jellyfin .nfo from .info.json.";
-      };
-      includeLive = lib.mkOption {
-        type = lib.types.bool;
-        default = cfg.includeLive;
-        defaultText = lib.literalExpression "config.services.channelArchive.includeLive";
-        description = "Download livestreams or not";
-      };
-      restructure = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "After download, reshape new files into the Plex date-based TV layout (Season/SxxExx) and finalize them in Plex. Opt-in; leave off for music/artist channels.";
-      };
-      extraArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = cfg.extraArgs;
-        defaultText = lib.literalExpression "config.services.channelArchive.extraArgs";
-        description = "Extra yt-dlp arguments for this channel.";
-      };
-      rateLimit = lib.mkOption {
-        type = lib.types.bool;
-        default = cfg.rateLimit;
-        defaultText = lib.literalExpression "config.services.channelArchive.rateLimit";
-        description = "Inject polite YouTube pacing flags (--sleep-requests + --min/max-sleep-interval) to reduce rate-limit/bot-block risk.";
-      };
-    };
-  });
+    }
+  );
 
   serviceName = name: "channel-archive-${name}";
 
-  mkService = name: ch:
+  mkService =
+    name: ch:
     let
       metaArgs = lib.optionals ch.writeMetadata [
         "--write-info-json"
@@ -99,14 +108,21 @@ let
         # junk .nfo for the playlist itself. Suppress the playlist metafiles.
         "--no-write-playlist-metafiles"
         "--write-thumbnail"
-        "--convert-thumbnails" "jpg"
+        "--convert-thumbnails"
+        "jpg"
         "--embed-metadata"
       ];
-      formatArgs = lib.optionals (ch.format != "") [ "-f" ch.format ];
+      formatArgs = lib.optionals (ch.format != "") [
+        "-f"
+        ch.format
+      ];
       rateLimitArgs = lib.optionals ch.rateLimit [
-        "--sleep-requests" "1.5"
-        "--min-sleep-interval" "5"
-        "--max-sleep-interval" "30"
+        "--sleep-requests"
+        "1.5"
+        "--min-sleep-interval"
+        "5"
+        "--max-sleep-interval"
+        "30"
       ];
       # Skip live/premiere content: currently-live streams, scheduled premieres,
       # and past-live VODs (was_live/post_live). Shorts need no filter — the
@@ -115,32 +131,37 @@ let
         "--match-filter"
         "live_status != is_live & live_status != is_upcoming & live_status != was_live & live_status != post_live"
       ];
-      credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null)
-        [ "plex-token:${cfg.plexTokenFile}" ];
-      ytdlpArgs = lib.concatStringsSep " " (map lib.escapeShellArg (
-        [
-          "--download-archive" "${ch.destination}/archive.txt"
-          "--output" "${ch.destination}/%(title)s [%(id)s].%(ext)s"
-          "--no-overwrites"
-          "--continue"
-          # fetch live streams from the beginning
-          "--live-from-start"
-          # Stop at the first error instead of limping through the rest of
-          # the playlist (see the fifo-vs-plain-pipe comment in `script`
-          # below) — channel listings are newest-first, so if that first
-          # error is a genuine bot-block, this caps the run to one item
-          # instead of hundreds. The flip side (a permanently-broken newest
-          # video wedging the channel forever) is what alertUser's
-          # notification exists to catch.
-          "--abort-on-error"
-        ]
-        ++ formatArgs
-        ++ metaArgs
-        ++ rateLimitArgs
-        ++ liveFilterArgs
-        ++ ch.extraArgs
-        ++ [ ch.url ]
-      ));
+      credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null) [
+        "plex-token:${cfg.plexTokenFile}"
+      ];
+      ytdlpArgs = lib.concatStringsSep " " (
+        map lib.escapeShellArg (
+          [
+            "--download-archive"
+            "${ch.destination}/archive.txt"
+            "--output"
+            "${ch.destination}/%(title)s [%(id)s].%(ext)s"
+            "--no-overwrites"
+            "--continue"
+            # fetch live streams from the beginning
+            "--live-from-start"
+            # Stop at the first error instead of limping through the rest of
+            # the playlist (see the fifo-vs-plain-pipe comment in `script`
+            # below) — channel listings are newest-first, so if that first
+            # error is a genuine bot-block, this caps the run to one item
+            # instead of hundreds. The flip side (a permanently-broken newest
+            # video wedging the channel forever) is what alertUser's
+            # notification exists to catch.
+            "--abort-on-error"
+          ]
+          ++ formatArgs
+          ++ metaArgs
+          ++ rateLimitArgs
+          ++ liveFilterArgs
+          ++ ch.extraArgs
+          ++ [ ch.url ]
+        )
+      );
       # /mnt/channels is an all_squash NFS export: every write (even root's) maps
       # to the anon uid 1024:users. The parent bucket dir is group-writable to
       # `users` and ReadWritePaths grants the sandbox that parent, so the service
@@ -155,17 +176,33 @@ let
           exit 1
         fi
       '';
-    in {
+    in
+    {
       description = "Archive channel ${name} with yt-dlp";
       # Soft Wants/After on the mount unit (NOT RequiresMountsFor) — a run can
       # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
       # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
       # doesn't propagate the stop; the automount transparently re-mounts on
       # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
-      after = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
-      wants = [ "network-online.target" "${utils.escapeSystemdPath cfg.baseDir}.mount" ];
-      path = [ pkgs.yt-dlp pkgs.ffmpeg pkgs.python3 pkgs.coreutils pkgs.gnugrep ]
-        ++ lib.optionals ch.restructure [ pkgs.imagemagick pkgs.dejavu_fonts ];
+      after = [
+        "network-online.target"
+        "${utils.escapeSystemdPath cfg.baseDir}.mount"
+      ];
+      wants = [
+        "network-online.target"
+        "${utils.escapeSystemdPath cfg.baseDir}.mount"
+      ];
+      path = [
+        pkgs.yt-dlp
+        pkgs.ffmpeg
+        pkgs.python3
+        pkgs.coreutils
+        pkgs.gnugrep
+      ]
+      ++ lib.optionals ch.restructure [
+        pkgs.imagemagick
+        pkgs.dejavu_fonts
+      ];
       serviceConfig = {
         Type = "oneshot";
         DynamicUser = true;
@@ -187,8 +224,13 @@ let
         # — instead of the dest is what lets a brand-new channel work with zero
         # manual NAS-side dir creation. Quoted as one token in case a bucket path
         # ever contains a space; systemd unquotes it back to the single path.
-        ReadWritePaths = [ ''"${builtins.dirOf ch.destination}"'' ]
-          ++ lib.optionals (cfg.alertUser != null) [ "/var/mail" "/var/lib/channel-archive-alerts" ];
+        ReadWritePaths = [
+          ''"${builtins.dirOf ch.destination}"''
+        ]
+        ++ lib.optionals (cfg.alertUser != null) [
+          "/var/mail"
+          "/var/lib/channel-archive-alerts"
+        ];
         # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
         # DynamicUser state dir, else the read-only HOME emits cache warnings.
         StateDirectory = "channel-archive-${name}";
@@ -236,15 +278,23 @@ let
         ''}
         ${lib.optionalString ch.restructure ''
           python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
-            ${lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"} \
+            ${
+              lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
+            } \
             --url ${lib.escapeShellArg cfg.plexUrl} \
-            ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
+            ${
+              lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
+            } \
             || true
           CAW_FONT=${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans-Bold.ttf \
           python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
-            ${lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"} \
+            ${
+              lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
+            } \
             --url ${lib.escapeShellArg cfg.plexUrl} \
-            ${lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''} \
+            ${
+              lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
+            } \
             || true
         ''}
         exit "$rc"
@@ -299,7 +349,12 @@ in
     };
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "--concurrent-fragments" "4" "--retries" "10" ];
+      default = [
+        "--concurrent-fragments"
+        "4"
+        "--retries"
+        "10"
+      ];
       description = "Default extra yt-dlp arguments.";
     };
     rateLimit = lib.mkOption {
@@ -341,35 +396,37 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      # Only enabled channels render units; declared-but-disabled ones are inert.
-      systemd.services = lib.mapAttrs'
-        (name: ch: lib.nameValuePair (serviceName name) (mkService name ch))
-        (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        # Only enabled channels render units; declared-but-disabled ones are inert.
+        systemd.services = lib.mapAttrs' (
+          name: ch: lib.nameValuePair (serviceName name) (mkService name ch)
+        ) (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
 
-      systemd.timers = lib.mapAttrs'
-        (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch))
-        (lib.filterAttrs (_: ch: ch.enable) cfg.channels);
-    }
-    (lib.mkIf (cfg.alertUser != null) {
-      # /var/mail 1777 like /tmp: any DynamicUser service may need to touch
-      # it. The mailbox file itself is pre-created 0660 alertUser:users so
-      # appends work via the `users` supplementary group the archive services
-      # already have — same group-write trick archive.txt uses.
-      systemd.tmpfiles.rules = [
-        "d /var/mail 1777 root root - -"
-        "f /var/mail/${cfg.alertUser} 0660 ${cfg.alertUser} users - -"
-        "d /var/lib/channel-archive-alerts 2775 ${cfg.alertUser} users - -"
-        "f /var/lib/channel-archive-alerts/notices 0664 ${cfg.alertUser} users - -"
-      ];
-      programs.fish.interactiveShellInit = ''
-        if test -s /var/lib/channel-archive-alerts/notices
-          echo "⚠ channel-archive alerts (unread):"
-          cat /var/lib/channel-archive-alerts/notices
-          echo "(clear with: rm /var/lib/channel-archive-alerts/notices)"
-        end
-      '';
-    })
-  ]);
+        systemd.timers = lib.mapAttrs' (name: ch: lib.nameValuePair (serviceName name) (mkTimer name ch)) (
+          lib.filterAttrs (_: ch: ch.enable) cfg.channels
+        );
+      }
+      (lib.mkIf (cfg.alertUser != null) {
+        # /var/mail 1777 like /tmp: any DynamicUser service may need to touch
+        # it. The mailbox file itself is pre-created 0660 alertUser:users so
+        # appends work via the `users` supplementary group the archive services
+        # already have — same group-write trick archive.txt uses.
+        systemd.tmpfiles.rules = [
+          "d /var/mail 1777 root root - -"
+          "f /var/mail/${cfg.alertUser} 0660 ${cfg.alertUser} users - -"
+          "d /var/lib/channel-archive-alerts 2775 ${cfg.alertUser} users - -"
+          "f /var/lib/channel-archive-alerts/notices 0664 ${cfg.alertUser} users - -"
+        ];
+        programs.fish.interactiveShellInit = ''
+          if test -s /var/lib/channel-archive-alerts/notices
+            echo "⚠ channel-archive alerts (unread):"
+            cat /var/lib/channel-archive-alerts/notices
+            echo "(clear with: rm /var/lib/channel-archive-alerts/notices)"
+          end
+        '';
+      })
+    ]
+  );
 }
