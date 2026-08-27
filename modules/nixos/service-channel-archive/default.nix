@@ -383,6 +383,36 @@ let
             echo "$(${pkgs.coreutils}/bin/date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
           ''}
         fi
+        ${lib.optionalString (cfg.alertUser != null && !ch.incremental) ''
+          # Nag while a caught-up channel is still paying for a full listing walk.
+          # Finishing the playlist on a clean exit IS caught up: every item in the
+          # listing is archived by definition. The other outcomes exclude
+          # themselves -- a --max-downloads cap exits 101, a bot-block becomes 75,
+          # and --abort-on-error makes any real error non-zero.
+          #
+          # Deliberately repeats on EVERY run rather than stamping once: the point
+          # is to keep nagging until incremental is flipped, at which point this
+          # block stops being emitted for the channel at all.
+          if [ "$rc" -eq 0 ] && ${pkgs.gnugrep}/bin/grep -q 'Finished downloading playlist' "$out"; then
+            listing="$(${pkgs.gnugrep}/bin/grep -oE 'Downloading item [0-9]+ of [0-9]+' "$out" \
+              | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+$' | ${pkgs.coreutils}/bin/tail -n 1)"
+            {
+              echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
+              echo "Date: $(${pkgs.coreutils}/bin/date -R)"
+              echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
+              echo "To: ${cfg.alertUser}@${config.networking.hostName}"
+              echo "Subject: channel-archive: ${name} is caught up -- set incremental = true"
+              echo
+              echo "${name} finished its whole listing''${listing:+ ($listing items)} with nothing left."
+              echo "incremental is still false, so every run re-walks the entire listing."
+              echo
+              echo '  services.channelArchive.channels."${name}".incremental = true;'
+              echo
+            } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
+            echo "$(${pkgs.coreutils}/bin/date -R): ${name} is caught up''${listing:+ ($listing items)} — set incremental = true" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
+          fi
+        ''}
+
         ${pkgs.coreutils}/bin/rm -f "$out"
         ${lib.optionalString ch.writeNfo ''
           ${pkgs.python3}/bin/python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
