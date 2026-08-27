@@ -5,6 +5,7 @@
       # 1419 vids — needs cookies (heavy backfill)
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC4NplzfMrGpD8UYBqRpQ4oA/videos";
       destination = "/mnt/channels/videos/おかりん - OkarinGames";
       rateLimit = true;
@@ -13,6 +14,7 @@
       # 1128 vids — needs cookies (heavy backfill)
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC1n5554otlE3evhll_RH1Kg/videos";
       destination = "/mnt/channels/videos/やんもスプラch";
       rateLimit = true;
@@ -21,6 +23,7 @@
       # 355 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCq8lZDyLorG0qRR4XUMYD1A/videos";
       destination = "/mnt/channels/videos/Kenshiro SalmonRun けんしろ";
       rateLimit = true;
@@ -29,6 +32,7 @@
       # 275 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCv1DvRY5PyHHt3KN9ghunuw/videos";
       destination = "/mnt/channels/videos/Masahiro Sakurai on Creating Games";
       rateLimit = true;
@@ -37,6 +41,7 @@
       # 255 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC0VVYtw21rg2cokUystu2Dw/videos";
       destination = "/mnt/channels/videos/SmallAnt";
       rateLimit = true;
@@ -45,6 +50,7 @@
       # 230 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCO-n0T-9rJ4f6smFPK3vFiQ/videos";
       destination = "/mnt/channels/videos/shu3";
       rateLimit = true;
@@ -53,6 +59,7 @@
       # 230 vids
       enable = true;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCbOPMX9iWXlulmbNXrz6oLw/videos";
       destination = "/mnt/channels/videos/WaLter .NO";
       rateLimit = true;
@@ -61,6 +68,7 @@
       # 227 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCiHRLXRO262KdNSW_GcJVog/videos";
       destination = "/mnt/channels/videos/Peco";
       rateLimit = true;
@@ -69,6 +77,7 @@
       # 221 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCNUzWfHUP_iXZ1GMHz8gBgw/videos";
       destination = "/mnt/channels/videos/ryukahr";
       rateLimit = true;
@@ -77,6 +86,7 @@
       # 195 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC-W9VjjLHfdTF3Nlvoy6G0Q/videos";
       destination = "/mnt/channels/videos/wadelyjp";
       rateLimit = true;
@@ -85,6 +95,7 @@
       # 178 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC90yjMp6aeAOy1BdWQR6Szw/videos";
       destination = "/mnt/channels/music/The Noble Demon";
       rateLimit = true;
@@ -93,6 +104,7 @@
       # 157 vids
       enable = true;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCsvn_Po0SmunchJYOWpOxMg/videos";
       destination = "/mnt/channels/videos/videogamedunkey";
       rateLimit = true;
@@ -101,6 +113,7 @@
       # 156 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCvsdQrg8SkOvS2WiVXA5S4A/videos";
       destination = "/mnt/channels/maybe-delete/Ph1LzA";
       rateLimit = true;
@@ -109,6 +122,7 @@
       # 144 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCFBkdFQ3iYvh882EjPnreYw/videos";
       destination = "/mnt/channels/videos/【公式】ゲームセンターCX 20th チャンネル";
       rateLimit = true;
@@ -117,6 +131,7 @@
       # 142 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC8Md6Zy3HPN5rHWKhm5qhqg/videos";
       destination = "/mnt/channels/videos/ダークネス山本";
       rateLimit = true;
@@ -125,6 +140,7 @@
       # 123 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCi4ryIObWKmmlDK1dhaGJ1A/videos";
       destination = "/mnt/channels/music/ALICE GAMES - MUSIC";
       rateLimit = true;
@@ -133,6 +149,7 @@
       # 100 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCeKnDG3tNeOqlwsiRZyEZog/videos";
       destination = "/mnt/channels/videos/ダークネス山本2";
       rateLimit = true;
@@ -141,6 +158,7 @@
       # 96 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCGiJeCKTVKIxtaYZOidh19g/videos";
       destination = "/mnt/channels/videos/Dunk Tank";
       rateLimit = true;
@@ -149,6 +167,7 @@
       # 57 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCOoNm5b1iDljFmYW-MYmeRA/videos";
       destination = "/mnt/channels/music/SplashX";
       rateLimit = true;
@@ -157,6 +176,7 @@
       # 51 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCtUbO6rBht0daVIOGML3c8w/videos";
       destination = "/mnt/channels/videos/Summoning Salt";
       rateLimit = true;
@@ -165,6 +185,7 @@
       # 50 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCSWMraguMlNanVQgseTTr_Q/videos";
       destination = "/mnt/channels/music/f4mi";
       rateLimit = true;
@@ -173,6 +194,7 @@
       # 50 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCuXH9J-zamUAOJPYc_nAQrA/videos";
       destination = "/mnt/channels/videos/kukun kun";
       rateLimit = true;
@@ -181,6 +203,7 @@
       # 34 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC1nvMNnbZY0hfHXAEdTCD0w/videos";
       destination = "/mnt/channels/videos/やまたけ「";
       rateLimit = true;
@@ -189,6 +212,7 @@
       # 2564 vids — needs cookies (heavy backfill)
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCyMXuuk-eHgkLuaa6L95iMg/videos";
       destination = "/mnt/channels/music/ViviVGM";
       rateLimit = true;
@@ -197,6 +221,7 @@
       # 1001 vids — needs cookies (heavy backfill)
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UChAHYPBvyaQIpjyTSdQhOMQ/videos";
       destination = "/mnt/channels/music/FalKKonE";
       rateLimit = true;
@@ -205,6 +230,7 @@
       # 487 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCcvLSRIWJIAGFDyWtzkbiHA/videos";
       destination = "/mnt/channels/music/marasy8";
       rateLimit = true;
@@ -213,6 +239,7 @@
       # 453 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC40gs0opj389ohjLnJIAJzA/videos";
       destination = "/mnt/channels/music/Jonathan Young";
       rateLimit = true;
@@ -221,6 +248,7 @@
       # 376 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC-lmdv0OTb4uQQSzwbzhLsg/videos";
       destination = "/mnt/channels/music/GlitchxCity";
       rateLimit = true;
@@ -229,6 +257,7 @@
       # 363 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC8THb_fnOptyVgpi3xuCd-A/videos";
       destination = "/mnt/channels/music/LeeandLie (AmaLee)";
       rateLimit = true;
@@ -237,6 +266,7 @@
       # 336 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCmuobr4DmrmLI1BaGZD3p5w/videos";
       destination = "/mnt/channels/music/annapantsu";
       rateLimit = true;
@@ -245,6 +275,7 @@
       # 317 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCKaTWjXt6tJ9S6K0YFJVEfQ/videos";
       destination = "/mnt/channels/music/Jammin' Sam Miller";
       rateLimit = true;
@@ -253,6 +284,7 @@
       # 292 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCMsNS10PzxzEayT7UHS4p6g/videos";
       destination = "/mnt/channels/music/JubyPhonic";
       rateLimit = true;
@@ -261,6 +293,7 @@
       # 286 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCg4w2hQ-Bqn9Z4VhqrV8X9Q/videos";
       destination = "/mnt/channels/music/Loeder";
       rateLimit = true;
@@ -269,6 +302,7 @@
       # 272 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCjfK3raSgrUD0Llq-j25YLg/videos";
       destination = "/mnt/channels/music/Mewmore";
       rateLimit = true;
@@ -277,6 +311,7 @@
       # 247 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCaYNVIORCDQ30YKHlCbFkCQ/videos";
       destination = "/mnt/channels/music/supershigi";
       rateLimit = true;
@@ -285,6 +320,7 @@
       # 241 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCIMdJx2EBZKydtSajPZwjVg/videos";
       destination = "/mnt/channels/music/kokoko6891";
       rateLimit = true;
@@ -293,6 +329,7 @@
       # 240 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCq36dja_0U4SgB3wYVtr_Zw/videos";
       destination = "/mnt/channels/music/Lizz Robinett";
       rateLimit = true;
@@ -301,6 +338,7 @@
       # 232 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCJvBEEqTaLaKclbCPgIjBSQ/videos";
       destination = "/mnt/channels/music/Smooth McGroove";
       rateLimit = true;
@@ -309,6 +347,7 @@
       # 226 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCYWJTcV_8ceDND5q4AJHiVQ/videos";
       destination = "/mnt/channels/music/Active NEETs";
       rateLimit = true;
@@ -317,6 +356,7 @@
       # 225 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCWSC_-y9QsDmACXRY3rvtsQ/videos";
       destination = "/mnt/channels/music/Astrophysics";
       rateLimit = true;
@@ -325,6 +365,7 @@
       # 205 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCmkTBtGbf0gSPnHN_slNrOQ/videos";
       destination = "/mnt/channels/music/Caleb Hyles";
       rateLimit = true;
@@ -333,6 +374,7 @@
       # 194 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCm2GrZjyqP5pF-wTa95r_AA/videos";
       destination = "/mnt/channels/music/Rush Garcia";
       rateLimit = true;
@@ -341,6 +383,7 @@
       # 185 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC05GmFj6cGE9mJoTl0dMdBg/videos";
       destination = "/mnt/channels/music/Alice Peralta";
       rateLimit = true;
@@ -349,6 +392,7 @@
       # 136 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC8Zo5A8qICfNAzVGDY_VT7w/videos";
       destination = "/mnt/channels/music/MALINDA";
       rateLimit = true;
@@ -357,6 +401,7 @@
       # 128 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCa9_8C9ebEphjva-P7OV7bA/videos";
       destination = "/mnt/channels/music/Lollia";
       rateLimit = true;
@@ -365,6 +410,7 @@
       # 117 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC1pfwysp1EC5P4qE-Eo97HA/videos";
       destination = "/mnt/channels/music/Warner Classics";
       rateLimit = true;
@@ -373,6 +419,7 @@
       # 116 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC_OtnV-9QZmBj6oWBelMoZw/videos";
       destination = "/mnt/channels/music/insaneintherainmusic";
       rateLimit = true;
@@ -381,6 +428,7 @@
       # 107 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCafxR2HWJRmMfSdyZXvZMTw/videos";
       destination = "/mnt/channels/music/LOOK MUM NO COMPUTER";
       rateLimit = true;
@@ -389,6 +437,7 @@
       # 102 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCmoIM2c1E_5dI7-ZDnFXJkQ/videos";
       destination = "/mnt/channels/music/Sully Orchestration";
       rateLimit = true;
@@ -397,6 +446,7 @@
       # 99 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCc8Z-QX87IY--16O9unVXpQ/videos";
       destination = "/mnt/channels/music/Vetrom";
       rateLimit = true;
@@ -405,6 +455,7 @@
       # 83 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCUDPidlY7U0ULkZUTnJcTGQ/videos";
       destination = "/mnt/channels/music/Mama Symphonia";
       rateLimit = true;
@@ -413,6 +464,7 @@
       # 75 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCPM1bCbT-dVAHAEIpUUpVLQ/videos";
       destination = "/mnt/channels/music/RichaadEB";
       rateLimit = true;
@@ -421,6 +473,7 @@
       # 68 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCAKdbp1bKIdjqjRLIKvXCRA/videos";
       destination = "/mnt/channels/music/Give Heart Records";
       rateLimit = true;
@@ -429,6 +482,7 @@
       # 58 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCF3n4iozc9ixXkfQ714vNEA/videos";
       destination = "/mnt/channels/music/DylTheis Productions";
       rateLimit = true;
@@ -437,6 +491,7 @@
       # 54 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCb1gWOLQPCgUl_WY-zSvL7A/videos";
       destination = "/mnt/channels/music/SixteenInMono";
       rateLimit = true;
@@ -445,6 +500,7 @@
       # 53 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UChcmd07Qpsl9AG58GeLnldQ/videos";
       destination = "/mnt/channels/music/The Second Narrator Music";
       rateLimit = true;
@@ -453,6 +509,7 @@
       # 50 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCT2BUnGjc2C_ZTUVzCEUHyA/videos";
       destination = "/mnt/channels/music/HappyDragonite";
       rateLimit = true;
@@ -461,6 +518,7 @@
       # 50 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCW3UeF_dWeNxbfMScx-v37g/videos";
       destination = "/mnt/channels/music/VanilluxePavilion";
       rateLimit = true;
@@ -469,6 +527,7 @@
       # 30 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCi3-9JwIykiwis4rrBKrDwg/videos";
       destination = "/mnt/channels/music/TheophanyRemix";
       rateLimit = true;
@@ -477,6 +536,7 @@
       # 21 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCAMuDTJHAv0mrIty1lcxkmA/videos";
       destination = "/mnt/channels/music/mammaTune";
       rateLimit = true;
@@ -485,6 +545,7 @@
       # 362 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCdkkQvJoB0kGgYHCYwSkdww/videos";
       destination = "/mnt/channels/music/Louie Zong";
       rateLimit = true;
@@ -493,6 +554,7 @@
       # 158 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC0fvGpDXi7sV2hbgD-O47yw/videos";
       destination = "/mnt/channels/videos/Amaury Guichon";
       rateLimit = true;
@@ -501,6 +563,7 @@
       # 145 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCKgoRPEs0r01H3d7bwd19gg/videos";
       destination = "/mnt/channels/music/The NAMUZU";
       rateLimit = true;
@@ -509,6 +572,7 @@
       # 126 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC3KEoMzNz8eYnwBC34RaKCQ/videos";
       destination = "/mnt/channels/videos/Simone Giertz";
       rateLimit = true;
@@ -517,6 +581,7 @@
       # 114 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC1LpsuAUaKoMzzJSEt5WImw/videos";
       destination = "/mnt/channels/videos/Asianometry";
       rateLimit = true;
@@ -525,6 +590,7 @@
       # 101 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCQDKpfTS6haXS6BAHebR8Hw/videos";
       destination = "/mnt/channels/videos/It's Time to Travel🇯🇵 - 旅する時間";
       rateLimit = true;
@@ -533,6 +599,7 @@
       # 78 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC9aYv-TebxoXw8Isi3MEGdg/videos";
       destination = "/mnt/channels/videos/John Sandwich";
       rateLimit = true;
@@ -541,6 +608,7 @@
       # 78 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCUaXf7gH3Q8y8tFEJGwTMJQ/videos";
       destination = "/mnt/channels/maybe-delete/Project MSTie";
       rateLimit = true;
@@ -549,6 +617,7 @@
       # 72 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCy0tKL1T7wFoYcxCe0xjN6Q/videos";
       destination = "/mnt/channels/videos/Technology Connections";
       rateLimit = true;
@@ -557,6 +626,7 @@
       # 70 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCXnNibvR_YIdyPs8PZIBoEw/videos";
       destination = "/mnt/channels/videos/Cathode Ray Dude - CRD";
       rateLimit = true;
@@ -565,6 +635,7 @@
       # 59 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCq7D2jqBfjse5M18CaLlTjA/videos";
       destination = "/mnt/channels/videos/Leahbee";
       rateLimit = true;
@@ -573,6 +644,7 @@
       # 50 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCBa659QWEk1AI4Tg--mrJ2A/videos";
       destination = "/mnt/channels/videos/Tom Scott";
       rateLimit = true;
@@ -581,6 +653,7 @@
       # 34 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC6BFuqF6-l_Y2aDZmyuzqXA/videos";
       destination = "/mnt/channels/videos/HarryPotterCentral";
       rateLimit = true;
@@ -589,6 +662,7 @@
       # 30 vids
       enable = true;
       incremental = true;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC6zl_U-HEajk9JSHkuTlaZQ/videos";
       destination = "/mnt/channels/videos/Timelab Pro";
       rateLimit = true;
@@ -597,6 +671,7 @@
       # 22 vids
       enable = false;
       incremental = false;
+      ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCmJHqZAxWDtCzAI26wvUw_Q/videos";
       destination = "/mnt/channels/music/VILLAINOUS";
       rateLimit = true;
