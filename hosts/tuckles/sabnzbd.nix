@@ -60,6 +60,31 @@
       # strips the setgid bit, which is why group ownership can't be left to
       # setgid inheritance and is pinned via the primary group instead.)
       permissions = "0770";
+
+      # Drop jobs that carry Windows executables. As each RAR volume is
+      # assembled mid-download, SAB reads that RAR's file list (namelist, no
+      # extraction) and matches every entry against this blacklist, so a hit
+      # aborts the job early rather than after the full grab completes.
+      #
+      # Action 2 = abort, not 1 = pause, deliberately: a paused job sits in the
+      # queue forever and the *arr wait on it. Aborting makes them see a failed
+      # download, blacklist the release and grab an alternative on their own.
+      #
+      # Scope is narrower than the name suggests, so don't read this as "no
+      # executable ever reaches disk":
+      #   - RAR ONLY. has_unwanted_extension() has exactly one enforcement call
+      #     site (assembler.check_encrypted_and_unwanted_files), and that runs
+      #     only when rarfile.is_rarfile() is true. A .exe inside the .tar
+      #     releases this host now unpacks, or inside .zip/.7z, is NOT seen.
+      #   - Loose files listed directly in the NZB are not checked either.
+      #   - No effect whatsoever on qBittorrent, which is where the one .exe
+      #     actually on disk came from (RARBG_DO_NOT_MIRROR.exe).
+      #   - misc-global, so it cannot be scoped per category. If the vestigial
+      #     "software" category is ever used for real software, it will abort.
+      # `js` is deliberately absent: most false-positive-prone of the set.
+      unwanted_extensions = "exe,com,scr,pif,bat,cmd,msi,lnk,vbs,ps1";
+      unwanted_extensions_mode = 0; # 0 = blacklist (1 would mean allow-only)
+      action_on_unwanted_extensions = 2; # 0 = off, 1 = pause job, 2 = abort job
     };
   };
 
