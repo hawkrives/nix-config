@@ -38,7 +38,7 @@
       rateLimit = true;
     };
     channels."walter-no" = {  # 230 vids
-      enable = false;
+      enable = true;
       url = "https://www.youtube.com/channel/UCbOPMX9iWXlulmbNXrz6oLw/videos";
       destination = "/mnt/channels/videos/WaLter .NO";
       rateLimit = true;

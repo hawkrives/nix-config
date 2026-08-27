@@ -17,6 +17,7 @@
     plexSection = "37";
     plexTokenFile = config.age.secrets.plex-token.path;
     alertUser = "natsume";
+
     channels."arusan0117" = {
       enable = true;
       includeLive = true;
@@ -69,19 +70,19 @@
       restructure = true;
     };
     channels."axell-the-swampert" = {
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCzd7kTq1TCKOA6kPWaW2Z8Q/videos";
       destination = "/mnt/channels/music/Axell The Swampert";
       rateLimit = true;
     };
     channels."jen" = {
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCjQSQVa1-OgDmp4ypfdRbWQ/videos";
       destination = "/mnt/channels/music/jen";
       rateLimit = true;
     };
     channels."adrisaurus" = {
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCAHPCNxU4A-TUV-lnu7u4tA/videos";
       destination = "/mnt/channels/music/adrisaurus";
       rateLimit = true;
@@ -94,13 +95,13 @@
       restructure = true;
     };
     channels."caitlin-myers" = {
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCDzdRLILLWlHxXnj3HhXW0A/videos";
       destination = "/mnt/channels/music/Caitlin Myers";
       rateLimit = true;
     };
     channels."mia-asano" = {
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCn6Uk8gAGP4duP9HFCenj5g/videos";
       destination = "/mnt/channels/music/Mia Asano";
       rateLimit = true;
