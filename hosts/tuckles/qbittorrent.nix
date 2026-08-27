@@ -1,8 +1,15 @@
 { config, ... }:
+let
+  # vpn-confinement derives both the namespace unit and its interface names from
+  # this string: the bridge is <ns>-br and its host-side port veth-<ns>-br. The
+  # avahi denyInterfaces below depends on that, so keep them deriving from one
+  # source rather than three literals that can drift apart.
+  ns = "mullvad";
+in
 {
   # VPN namespace bound to the Mullvad WireGuard config; kill-switch is implicit
   # (only the wg interface has egress). WebUI is forwarded out to the LAN.
-  vpnNamespaces.mullvad = {
+  vpnNamespaces.${ns} = {
     enable = true;
     wireguardConfigFile = config.age.secrets.wg-mullvad-tuckles.path;
     accessibleFrom = [
@@ -23,6 +30,19 @@
     ];
   };
 
+  # Keep avahi off the VPN bridge. Two reasons: publishing this host's LAN
+  # <hostname>.local on a Mullvad bridge is wrong on its face, and avahi binding
+  # BOTH a bridge and its own member port is a known self-conflict shape --
+  # suspected contributor to the 2026-08-26 rename that left tuckles publishing
+  # tuckles-3.local and broke every .local deploy. Nothing inside the netns uses
+  # mDNS (qBittorrent/slskd are reached by IP at 192.168.15.1), so this is free.
+  # NOTE: this is a blocklist -- a future netns or podman bridge would need
+  # adding here too. slskd.nix also names this namespace literally.
+  services.avahi.denyInterfaces = [
+    "${ns}-br"
+    "veth-${ns}-br"
+  ];
+
   services.qbittorrent = {
     enable = true;
     webuiPort = 6001;
@@ -37,14 +57,14 @@
 
   systemd.services.qbittorrent.vpnConfinement = {
     enable = true;
-    vpnNamespace = "mullvad";
+    vpnNamespace = ns;
   };
 
   # The wg config secret's content can change (e.g. swapping Mullvad city)
   # without the unit definition changing, so systemd wouldn't restart the
   # namespace on its own. Restart it when the secret changes so the new config
   # actually loads.
-  systemd.services.mullvad.restartTriggers = [ config.age.secrets.wg-mullvad-tuckles.file ];
+  systemd.services.${ns}.restartTriggers = [ config.age.secrets.wg-mullvad-tuckles.file ];
 
   # qBittorrent downloads to a local TempPath (Session\TempPath in its seeded
   # config) before moving completed files to the per-category NFS save path. But
