@@ -107,6 +107,28 @@ let
           defaultText = lib.literalExpression "config.services.channelArchive.rateLimit";
           description = "Inject polite YouTube pacing flags (--sleep-requests + --min/max-sleep-interval) to reduce rate-limit/bot-block risk.";
         };
+        ignoreErrors = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Pass --ignore-errors so a permanently-undownloadable item is skipped
+            instead of ending the run.
+
+            Default false on purpose: on a YouTube channel this reinstates
+            exactly the "grind through hundreds of items" behaviour that
+            --abort-on-error exists to stop, because a bot-block fails every
+            item in turn.
+
+            Turn it on where individual items can be legitimately dead. Twitch
+            expires the media behind old clips while keeping their metadata, so
+            ditherdown-clips had two clips (2018 and 2022) returning HTTP 403 on
+            the media URL; with --abort-on-error the run died on the first of
+            them at item 165 and never reached a perfectly good 2026 clip at
+            item 229. When this is set, a non-zero exit that is not a detected
+            block is reported as "N item(s) failed and were skipped" and treated
+            as success, since that outcome is expected rather than exceptional.
+          '';
+        };
         incremental = lib.mkOption {
           type = lib.types.bool;
           default = false;
@@ -152,6 +174,30 @@ let
         "-f"
         ch.format
       ];
+      # see the `ignoreErrors` option: --abort-on-error is the default and stays
+      # unless a channel explicitly opts out
+      # Only YouTube answers a bot-block with a bare 403; Twitch returns 403 for
+      # the expired media behind an old clip, which is an ordinary dead item, not
+      # a block. Counting it as one made ditherdown-clips report RATE-LIMITED for
+      # a problem that had nothing to do with rate limits.
+      isYouTube = lib.hasInfix "youtube.com" ch.url || lib.hasInfix "youtu.be" ch.url;
+      blockPattern = lib.concatStringsSep "|" (
+        [
+          "HTTP Error 429"
+          "Sign in to confirm"
+          "not a bot"
+        ]
+        ++ lib.optional isYouTube "HTTP Error 403"
+      );
+      blockSource = if isYouTube then "YouTube" else "the source";
+
+      # --abort-on-error stops at the first error instead of limping through the
+      # rest of the playlist: channel listings are newest-first, so if that first
+      # error is a genuine bot-block this caps the run to one item instead of
+      # hundreds. The flip side -- a permanently-broken item wedging the channel
+      # forever -- is what alertUser and the `ignoreErrors` escape hatch exist for.
+      errorArgs = if ch.ignoreErrors then [ "--ignore-errors" ] else [ "--abort-on-error" ];
+
       # see the `incremental` option: safe only on a caught-up channel
       incrementalArgs = lib.optionals ch.incremental [ "--break-on-existing" ];
 
@@ -191,14 +237,6 @@ let
             "--continue"
             # fetch live streams from the beginning
             "--live-from-start"
-            # Stop at the first error instead of limping through the rest of
-            # the playlist (see the fifo-vs-plain-pipe comment in `script`
-            # below) — channel listings are newest-first, so if that first
-            # error is a genuine bot-block, this caps the run to one item
-            # instead of hundreds. The flip side (a permanently-broken newest
-            # video wedging the channel forever) is what alertUser's
-            # notification exists to catch.
-            "--abort-on-error"
             # Default is --no-lazy-playlist: yt-dlp parses the ENTIRE playlist
             # before downloading anything, so a 1000-video channel costs ~33
             # paginated requests up front on every run. Lazy processing also
@@ -217,6 +255,7 @@ let
             "--ffmpeg-location"
             "${pkgs.ffmpeg}/bin"
           ]
+          ++ errorArgs
           ++ formatArgs
           ++ metaArgs
           ++ rateLimitArgs
@@ -356,10 +395,23 @@ let
           rc=0
         fi
 
-        if ${pkgs.gnugrep}/bin/grep -qiE 'HTTP Error 429|Sign in to confirm|not a bot|HTTP Error 403' "$out"; then
-          echo "channel-archive: >>> BLOCKED/RATE-LIMITED by YouTube (429/403/bot-check) <<<" >&2
+        if ${pkgs.gnugrep}/bin/grep -qiE '${blockPattern}' "$out"; then
+          echo "channel-archive: >>> BLOCKED/RATE-LIMITED by ${blockSource} (rate-limit/bot-check) <<<" >&2
           rc=75
         fi
+        ${lib.optionalString ch.ignoreErrors ''
+          # With --ignore-errors a non-zero exit just means "some items failed and
+          # were skipped", which for this channel is the expected steady state --
+          # Twitch keeps the metadata for old clips whose media it has expired. Left
+          # as a failure it would mail an alert on every single run forever. A real
+          # block still lands as rc=75 above and is untouched here.
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
+            failed="$(${pkgs.gnugrep}/bin/grep -ace '^ERROR' "$out" || true)"
+            echo "channel-archive: $failed item(s) failed and were skipped (--ignore-errors)"
+            rc=0
+          fi
+        ''}
+
         if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
           ${lib.optionalString (cfg.alertUser != null) ''
             # Something other than the known bot-check/rate-limit case killed
@@ -394,8 +446,12 @@ let
           # is to keep nagging until incremental is flipped, at which point this
           # block stops being emitted for the channel at all.
           if [ "$rc" -eq 0 ] && ${pkgs.gnugrep}/bin/grep -q 'Finished downloading playlist' "$out"; then
+            # NixOS's `script` wrapper prepends `set -e`, so a pipeline that just
+            # finds nothing would kill the run right here. --lazy-playlist reports
+            # "item N of N/A", so the total is usually absent and this grep usually
+            # fails: it must never be load-bearing. The count is decorative.
             listing="$(${pkgs.gnugrep}/bin/grep -oE 'Downloading item [0-9]+ of [0-9]+' "$out" \
-              | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+$' | ${pkgs.coreutils}/bin/tail -n 1)"
+              | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+$' | ${pkgs.coreutils}/bin/tail -n 1 || true)"
             {
               echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
               echo "Date: $(${pkgs.coreutils}/bin/date -R)"
@@ -565,12 +621,19 @@ in
         environment.systemPackages = [ statusScript ];
       }
       (lib.mkIf (cfg.alertUser != null) {
-        # /var/mail 1777 like /tmp: any DynamicUser service may need to touch
-        # it. The mailbox file itself is pre-created 0660 alertUser:users so
-        # appends work via the `users` supplementary group the archive services
-        # already have — same group-write trick archive.txt uses.
+        # /var/mail is 0775 root:users, NOT 1777. The obvious "1777 like /tmp so
+        # any DynamicUser service can touch it" is exactly what broke this:
+        # fs.protected_regular=1 (the NixOS default) forbids opening a file you
+        # do not own for writing when it sits in a world-writable STICKY dir.
+        # These services run as dynamic uids and the mbox is owned by alertUser,
+        # so every append was denied with EACCES and /var/mail/natsume sat at 0
+        # bytes -- silently, because the append is `|| true`. Confusingly
+        # `test -w` calls the file writable: access(2) does not model
+        # protected_regular. Dropping world-write and the sticky bit takes it
+        # out of scope for that protection, and the `users` supplementary group
+        # these services already carry then satisfies the 0660 group-write.
         systemd.tmpfiles.rules = [
-          "d /var/mail 1777 root root - -"
+          "d /var/mail 0775 root users - -"
           "f /var/mail/${cfg.alertUser} 0660 ${cfg.alertUser} users - -"
           "d /var/lib/channel-archive-alerts 2775 ${cfg.alertUser} users - -"
           "f /var/lib/channel-archive-alerts/notices 0664 ${cfg.alertUser} users - -"
