@@ -65,7 +65,7 @@
     };
     channels."ditherdown-clips" = {
       enable = true;
-      incremental = false;
+      incremental = true;
       ignoreErrors = true;
       url = "https://www.twitch.tv/ditherdown/clips?filter=clips&range=all";
       # Clips land in the SAME folder as the VODs (shared archive.txt dedups by
