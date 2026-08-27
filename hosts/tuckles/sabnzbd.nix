@@ -1,6 +1,31 @@
-{ ... }:
+{ pkgs, ... }:
 {
   services.sabnzbd = {
+    # SABnzbd gates archive extraction on a hardcoded regex in filesystem.py:
+    #
+    #   SEVENZIP_RE = re.compile(r"\.(zip|7z)$", re.I)
+    #
+    # Only files matching it are handed to 7z, so a job whose payload is a plain
+    # `.tar` is never even offered to the unpacker — SAB moves the tar to the
+    # completed dir as-is and Lidarr parks the item on "Found archive file, might
+    # need to be extracted". Several usenet music groups (ENRiCH, ENViED, SDR,
+    # C4, QUAVER, MyMom, ...) now post exactly that, so the *arr queues fill with
+    # stuck imports. There is no setting for this; `enable_7zip` is already on
+    # and the bundled p7zip extracts these tars fine with the very flags SAB
+    # passes (`7z x -y -aou -ssc -p -o<dest>`) — the regex is the only blocker.
+    #
+    # So teach the regex about `.tar`. 7z handles a tar in a single pass, and
+    # everything downstream (deleting the original, unpack_info, retries, the
+    # recursive unpack_magic re-scan) is the same code path zip/7z already take.
+    # --replace-fail means a nixpkgs bump that reworks this line fails the build
+    # loudly instead of silently dropping the fix.
+    package = pkgs.sabnzbd.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace sabnzbd/filesystem.py \
+          --replace-fail 'r"\.(zip|7z)$"' 'r"\.(zip|7z|tar)$"'
+      '';
+    });
+
     enable = true;
     # The settings-based interface is the default at this host's stateVersion
     # (>= 26.05), so configFile already defaults to null (no deprecation warning).
