@@ -41,3 +41,15 @@ run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e
 
 [tasks."pantry:yes"]
 run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e passwordless'
+
+# channel-archive-status ships with the channelArchive module, which only nutmeg
+# enables, so run it directly there and over ssh from anywhere else. The `nutmeg`
+# ssh alias is mDNS .local, so this works on the LAN; off-LAN use `nutmeg-ts`.
+[tasks."channels"]
+description = "Report on the yt-dlp channel archivers (last check, new/left, size)"
+run = '''
+if [ "$(hostname)" = nutmeg ]; then
+  exec channel-archive-status "$@"
+fi
+exec ssh nutmeg channel-archive-status "$@"
+'''
