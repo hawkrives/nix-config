@@ -123,6 +123,9 @@ def last_run(name, start, end):
         "have_log": False,
         # why the run stopped early, if it did (see the wrapper: yt-dlp exit 101)
         "early": None,
+        # items --ignore-errors skipped; a low-grade problem that must stay
+        # visible, since the wrapper deliberately stops mailing about it
+        "skipped": 0,
     }
     if not start:
         return r
@@ -156,6 +159,9 @@ def last_run(name, start, end):
             r["early"] = "caught-up"
         if "hit the --max-downloads cap" in line:
             r["early"] = "capped"
+        m = re.search(r"channel-archive: (\d+) item\(s\) failed and were skipped", line)
+        if m:
+            r["skipped"] = int(m.group(1))
         m = RE_ERROR.match(line)
         if m:
             r["errors"].append(m.group(1)[:120])
@@ -309,6 +315,12 @@ def main():
         else:
             status = f"FAILED({code})"
 
+        # skip count is display-only: the attention check below still keys off the
+        # base status, so ok* stays flagged rather than being masked by a suffix
+        base_status = status
+        if run["skipped"]:
+            status = f"{status} ({run['skipped']} skipped)"
+
         left = ""
         if run["offered"] is not None:
             rem = run["offered"] - run["had"] - run["fetched"]
@@ -328,7 +340,7 @@ def main():
             "fails": note.get(name, []),
         })
 
-        if status not in ("ok", "up-to-date", "capped"):
+        if base_status not in ("ok", "up-to-date", "capped"):
             attention.append((name, status, run))
 
     rows.sort(key=lambda r: (r["start"] or 0))
