@@ -62,7 +62,7 @@
       rateLimit = true;
     };
     channels."the-noble-demon" = {  # 178 vids
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UC90yjMp6aeAOy1BdWQR6Szw/videos";
       destination = "/mnt/channels/music/The Noble Demon";
       rateLimit = true;
@@ -446,7 +446,7 @@
       rateLimit = true;
     };
     channels."villainous" = {  # 22 vids
-      enable = true;
+      enable = false;
       url = "https://www.youtube.com/channel/UCmJHqZAxWDtCzAI26wvUw_Q/videos";
       destination = "/mnt/channels/music/VILLAINOUS";
       rateLimit = true;
