@@ -28,7 +28,6 @@
     ./home-assistant.nix
     ./home-assistant-matter.nix
     ./plex.nix
-    ./jellyfin.nix
     ./servarr.nix
     ./beets.nix
     ./channel-archive.nix

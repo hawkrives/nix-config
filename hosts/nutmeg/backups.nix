@@ -42,16 +42,6 @@ in
         sqlite = [ "tautulli.db" ];
         path = "config.ini";
       };
-      jellyfin = {
-        root = config.services.jellyfin.dataDir; # /var/lib/jellyfin
-        # One database, not two: Jellyfin 10.11 consolidated library.db into
-        # jellyfin.db. Listing the old name cost nothing but a WARN on every run
-        # ("db not found: .../data/library.db"), which is worse than it sounds —
-        # a warning that always fires is a warning nobody reads.
-        sqlite = [ "data/jellyfin.db" ];
-        path = "config"; # system.xml, network.xml, encoding.xml
-        excludes = [ "metadata" "transcodes" "data/subtitles" ]; # regenerable
-      };
       plex = {
         root = "${config.services.plex.dataDir}/Plex Media Server";
         sqlite = [
