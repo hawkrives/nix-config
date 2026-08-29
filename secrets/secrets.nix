@@ -107,6 +107,15 @@ in
     bigpond
   ];
 
+  # Telegram bot credentials for systemd failure notifications (env file with
+  # TELEGRAM_BOT_TOKEN= and TELEGRAM_CHAT_ID=). Every host that runs the
+  # notify-failure module needs it.
+  "telegram-notify.age".publicKeys = users ++ [
+    nutmeg
+    tuckles
+    pantry
+  ];
+
   # Binary-cache signing keys, one per host, named for networking.hostName so
   # host-shared.nix can pick its own by interpolation. Each is readable only by
   # the host it belongs to — a signing key is that host's identity to the rest

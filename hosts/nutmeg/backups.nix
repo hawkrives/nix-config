@@ -1,8 +1,32 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   arrExcludes = [ "MediaCover" "Backups" "logs" ];
 in
 {
+  # Telegram push for anything here that fails. The service-backup jobs are the
+  # motivating case: they run at 00:00-01:00, nobody watches the journal, and a
+  # backup that quietly stopped working is only discovered when it's needed.
+  age.secrets.telegram-notify.file = ../../secrets/telegram-notify.age;
+  services.notifyFailure = {
+    enable = true;
+    tokenFile = config.age.secrets.telegram-notify.path;
+    units = [
+      # Everything timer-driven and unattended on this host.
+      "arr-backup-pin.service"
+      "beets-sync.service"
+      "soularr.service"
+      "lidarr-beets-pin.service"
+      "recyclarr.service"
+      "adf-autoscan.service"
+      "avahi-name-check.service"
+    ]
+    # …plus one per service-backup job, derived from the jobs themselves so a
+    # new job can't be added without also being watched.
+    ++ map (n: "service-backup-${n}.service") (
+      lib.attrNames config.services.serviceBackup.jobs
+    );
+  };
+
   services.serviceBackup = {
     enable = true;
     # dest defaults to /mnt/servarr/backups/nutmeg

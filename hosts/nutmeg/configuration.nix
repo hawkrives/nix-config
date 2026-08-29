@@ -14,6 +14,7 @@
     flake.nixosModules.service-backup
     flake.nixosModules.service-channel-archive
     flake.nixosModules.cache-push
+    flake.nixosModules.notify-failure
 
     # configuration
     ./hardware.nix
