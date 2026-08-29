@@ -41,6 +41,7 @@
     ./slime-chat.nix
     ./tsnsrv.nix
     ./backups.nix
+    ./restic.nix
     ./beszel.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers

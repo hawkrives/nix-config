@@ -21,11 +21,10 @@
     # TODO: set mediaDir to NAS folder?
     # mediaDir
 
-    exporter = {
-      # TODO: enable once we have the backup share set up
-      enable = false;
-      # directory = "/mnt/backup/paperless";
-    };
+    # NB: services.paperless.exporter is configured in ./restic.nix, not here.
+    # It's enabled *for* restic — the metadata lives in postgres, so the export
+    # is the only self-contained thing worth backing up — and the two need to
+    # stay scheduled in step, so they're kept together.
 
     settings = {
       PAPERLESS_CONSUMER_IGNORE_PATTERN = [

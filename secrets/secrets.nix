@@ -107,6 +107,20 @@ in
     bigpond
   ];
 
+  # restic repository password (nutmeg). ONE password for both the NAS and the
+  # rsync.net repo: the two hold identical data and the same host writes both,
+  # so splitting them buys nothing. Losing this file means the backups are
+  # unrecoverable — it belongs in a password manager as well as here. Read it
+  # back with: cd secrets && EDITOR=cat ragenix -e restic-password-nutmeg.age
+  "restic-password-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+
+  # SSH private key restic uses to reach both SFTP destinations (the Synology
+  # and rsync.net). Deliberately NOT reusing /etc/ssh/ssh_host_ed25519_key the
+  # way cache-push does: that key is nutmeg's identity to the rest of the
+  # fleet, and handing a copy of its authority to a third-party provider's
+  # authorized_keys is a wider blast radius than a purpose-made key.
+  "restic-ssh-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+
   # Telegram bot credentials for systemd failure notifications (env file with
   # TELEGRAM_BOT_TOKEN= and TELEGRAM_CHAT_ID=). Every host that runs the
   # notify-failure module needs it.
