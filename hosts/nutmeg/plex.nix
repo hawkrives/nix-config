@@ -1,34 +1,10 @@
 {
-  lib,
   pkgs,
   config,
+  synologyMount,
   ...
 }:
 let
-  synology = "192.168.1.194";
-  nfsMount =
-    sharePath:
-    {
-      readOnly ? false,
-    }:
-    {
-      fsType = "nfs";
-      device = sharePath;
-      options = [
-        "nfsvers=4.1"
-        "noatime" # we do not care about tracking the access time
-        "_netdev" # ensure it's treated as a network fs, rather than local
-        "x-systemd.automount" # enable mounting on first access
-        "x-systemd.idle-timeout=5m" # unmount after this long
-        "x-systemd.device-timeout=15s" # wait for a device to show up before giving up
-        "x-systemd.mount-timeout=15s" # grace period for the actual mount call
-      ]
-      ++ lib.lists.optionals readOnly [
-        "ro"
-      ];
-    };
-  synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
-
   # NB: `name` goes to fetchFromGitHub directly rather than wrapping the fetch
   # in `builtins.path` (as the nixpkgs plex example does) -- builtins.path has
   # to realise its argument, which makes evaluating this host an IFD that only
@@ -75,6 +51,13 @@ in
     ];
   };
 
+  # Plex needs longer than the systemd default to shut down: at 90s it was
+  # hitting `final-sigterm timed out` and being SIGKILLed on every deploy
+  # (2026-08-25, 2026-08-29). Hard-killing it mid-write is precisely how the
+  # library/blobs SQLite DBs that backups.nix snapshots get corrupted, so give
+  # it room to flush instead.
+  systemd.services.plex.serviceConfig.TimeoutStopSec = "5min";
+
   services.tautulli = {
     enable = true;
     openFirewall = true;
@@ -84,7 +67,7 @@ in
 
   # Tautulli binds IPv4-only (0.0.0.0:8181), so point tsnsrv at 127.0.0.1
   # explicitly — the default "localhost" resolves to ::1 first and the proxy
-  # gets connection refused (same workaround as jellyfin/aurral).
+  # gets connection refused (same workaround as aurral).
   services.tsnsrv.services.tautulli.urlParts = {
     host = "127.0.0.1";
     port = config.services.tautulli.port;
