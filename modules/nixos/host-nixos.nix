@@ -48,6 +48,11 @@
     enableUserSlices = true;
   };
 
+  # [disk] Wipe /tmp at boot. Nothing here treats /tmp as durable, but without
+  # this it is never reaped: nutmeg had 1.2G sitting in it, with files older
+  # than two weeks, on a root filesystem at 89%.
+  boot.tmp.cleanOnBoot = true;
+
   # [disk] cap the journal. journald's default ceiling is 10% of the filesystem,
   # which on nutmeg's 187G root meant ~18G of headroom and a journal that had
   # grown to 4G unnoticed. These hosts are not log-archival machines — anything
