@@ -102,6 +102,23 @@ let
     passwordFile = password;
     initialize = true;
   };
+
+  # Repos that get a weekly integrity check. `wrapper` is the binary the restic
+  # module generates per backup (createWrapper defaults true), pre-loaded with
+  # that repo's RESTIC_REPOSITORY and RESTIC_PASSWORD_FILE. Staggered onto
+  # different days so two --read-data runs never overlap.
+  checkedRepos = {
+    nas = {
+      wrapper = "/run/current-system/sw/bin/restic-nas";
+      schedule = "Mon *-*-* 05:00:00";
+    };
+  }
+  // lib.optionalAttrs enableOffsite {
+    offsite = {
+      wrapper = "/run/current-system/sw/bin/restic-offsite";
+      schedule = "Wed *-*-* 05:00:00";
+    };
+  };
 in
 {
   age.secrets.restic-ssh-key-nutmeg.file = ../../secrets/restic-ssh-key-nutmeg.age;
@@ -186,15 +203,90 @@ in
         Persistent = true;
         RandomizedDelaySec = "1h";
       };
-      # NOT enabled here: `restic check` over SFTP to a remote provider is
-      # latency-bound on a great many small round trips and would run for
-      # hours. rsync.net ships restic server-side, so the cheap way to verify
-      # this repo is to run it *there* over ssh:
-      #   ssh restic-offsite restic -r restic/nutmeg check --read-data-subset=5%
-      # Worth doing periodically by hand until that is scripted.
+      # Verification is a separate weekly unit (restic-check-offsite below),
+      # not runCheck, so that "the backup broke" and "the repo is corrupt"
+      # cannot be confused for one another in the alert.
       runCheck = false;
     });
   };
+
+  # ── Integrity checks ──────────────────────────────────────────────────
+  #
+  # A backup that runs nightly and is quietly corrupt is worse than no backup,
+  # because you believe in it. `restic check --read-data` re-downloads every
+  # pack and verifies its hashes, which is the only check that would catch
+  # bit-rot or a provider silently mangling a blob; plain `check` verifies
+  # structure only and would happily pass over rotten data.
+  #
+  # This is a SEPARATE unit rather than the backups' own `runCheck` so the two
+  # failure modes stay distinguishable: runCheck failing marks the *backup*
+  # unit failed, which would have you looking at the wrong thing.
+  #
+  # Sizing, measured rather than guessed. I had assumed --read-data over SFTP
+  # to a remote provider would be prohibitively latency-bound and had planned to
+  # run it server-side instead. Both halves of that were wrong:
+  #
+  #   * rsync.net does NOT provide restic on this account. `restic`, `restic
+  #     version` and `borg` all exit 1 with no output through its restricted
+  #     shell; only rclone and basic file commands are available. Do not plan
+  #     around server-side restic here.
+  #   * It does not need to be server-side anyway. Measured 2026-08-29 against
+  #     the live repos: structural check 37s, full --read-data 38s. The cost is
+  #     almost entirely connection and index overhead, not data transfer,
+  #     because the payload is ~98 MiB of largely static config.
+  #
+  # So: full --read-data, weekly, both repos. If a repo ever grows enough for
+  # this to bite, the escalation is --read-data-subset=25% rather than dropping
+  # back to structural-only --- a quarter of the data verified every week still
+  # finds rot, where structure-only never will.
+  # Paperless's exporter stops the paperless services while it runs, and the
+  # restic jobs must not start until the export they read has finished.
+  # Merged into one `systemd.services` definition rather than several, since a
+  # bare attribute path cannot be assigned twice in the same attrset.
+  systemd.services = {
+    restic-backups-nas.after = [ "paperless-exporter.service" ];
+  }
+  // lib.optionalAttrs enableOffsite {
+    restic-backups-offsite = {
+      after = [ "paperless-exporter.service" ];
+      # Pushes over the WAN; keep it from starving interactive use.
+      serviceConfig = {
+        IOSchedulingClass = "idle";
+        Nice = 10;
+      };
+    };
+  }
+  // lib.mapAttrs' (
+    name: repo:
+    lib.nameValuePair "restic-check-${name}" {
+      description = "Verify the integrity of the ${name} restic repository";
+      # Ordered after the backup so a check never contends with it for the
+      # repository lock; the timers are also hours apart.
+      after = [ "restic-backups-${name}.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        # The generated wrapper already carries RESTIC_REPOSITORY and
+        # RESTIC_PASSWORD_FILE, so there is no credential handling here.
+        ExecStart = "${repo.wrapper} check --read-data";
+        # Verification is never urgent enough to slow down the box.
+        Nice = 15;
+        IOSchedulingClass = "idle";
+      };
+    }
+  ) checkedRepos;
+
+  systemd.timers = lib.mapAttrs' (
+    name: repo:
+    lib.nameValuePair "restic-check-${name}" {
+      description = "Weekly integrity check of the ${name} restic repository";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = repo.schedule;
+        Persistent = true;
+        RandomizedDelaySec = "1h";
+      };
+    }
+  ) checkedRepos;
 
   # Both restic jobs and the exporter they depend on. A silent backup failure is
   # the worst kind, since you find out when you need the backup.
@@ -204,26 +296,24 @@ in
   ]
   # Only watch the offsite unit when it actually exists; naming a non-existent
   # unit here would quietly define an empty stub (see notify-failure.nix).
-  ++ lib.optional enableOffsite "restic-backups-offsite.service";
+  ++ lib.optional enableOffsite "restic-backups-offsite.service"
+  # A check that fails is the single most important alert here: it means the
+  # backups you have been trusting are not restorable.
+  ++ map (n: "restic-check-${n}.service") (lib.attrNames checkedRepos);
+
+  # …and a heartbeat, because a check unit that silently stops being scheduled
+  # looks exactly like one that keeps passing. Weekly cadence + 1h jitter, so
+  # 8 days is the tightest interval that cannot false-alarm.
+  services.unitHeartbeat.units = map (n: {
+    unit = "restic-check-${n}.service";
+    interval = 691200; # 8 days
+  }) (lib.attrNames checkedRepos);
 
   # `restic-nas` / `restic-offsite` wrappers land in PATH (createWrapper
   # defaults true), pre-set with the repo and password, for restores:
   #   restic-nas snapshots
   #   restic-nas restore latest --target /tmp/restore
   environment.systemPackages = [ pkgs.restic ];
-
-  # Paperless's exporter stops the paperless services while it runs, and the
-  # restic jobs must not start until the export they read has finished.
-  systemd.services.restic-backups-nas.after = [ "paperless-exporter.service" ];
-
-  systemd.services.restic-backups-offsite = lib.mkIf enableOffsite {
-    after = [ "paperless-exporter.service" ];
-    # Pushes over the WAN; keep it from starving interactive use.
-    serviceConfig = {
-      IOSchedulingClass = "idle";
-      Nice = 10;
-    };
-  };
 
   # Assert the exporter directory is actually inside what we back up, so a
   # future change to either can't silently decouple them.
