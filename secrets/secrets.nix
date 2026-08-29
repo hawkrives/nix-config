@@ -78,6 +78,13 @@ in
   # key minting on tuckles. Same OAuth client as tailscale-authkey-tuckles.
   "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
 
+  # Same, for nutmeg. This used to be a hand-placed /etc/tsnsrv/authkey — the
+  # last imperative secret on the fleet, and it sat at 0644, world-readable, so
+  # every local user (including `techcyte`, who has ssh access) could read a
+  # Tailscale OAuth client secret. Now it decrypts to /run/agenix at 0400 like
+  # everything else.
+  "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
   # injected via environmentFile (nutmeg).
   "slime-chat-env.age".publicKeys = users ++ [ nutmeg ];
