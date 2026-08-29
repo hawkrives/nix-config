@@ -12,6 +12,8 @@
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
     inputs.disko.nixosModules.default
+    flake.nixosModules.notify-failure
+    flake.nixosModules.host-watch
     ./disk.nix
     ./networking.nix
   ];
@@ -95,6 +97,40 @@
   security.sudo.wheelNeedsPassword = false;
 
   age.secrets.tailscale-authkey-pantry.file = ../../secrets/tailscale-authkey-pantry.age;
+
+  # ── Watch nutmeg from outside nutmeg ──────────────────────────────────
+  #
+  # Everything that monitors this fleet — the Beszel hub, Uptime Kuma, the
+  # heartbeat receiver — runs ON nutmeg, so none of it can report nutmeg being
+  # down. That is not hypothetical: nutmeg has silently hard-stopped three times
+  # (hosts/nutmeg/crash-diagnostics.nix), once staying dead for 3.5 hours before
+  # anyone walked over and pressed the power button.
+  #
+  # pantry is the natural place for the outside view: it is idle, it is not the
+  # thing being watched, and it already reaches nutmeg over the tailnet. It does
+  # NOT cover losing power to the whole house — both boxes are on the same feed,
+  # and that needs an off-site check instead.
+  age.secrets.telegram-notify.file = ../../secrets/telegram-notify.age;
+  services.notifyFailure = {
+    enable = true;
+    tokenFile = config.age.secrets.telegram-notify.path;
+  };
+
+  services.hostWatch = {
+    enable = true;
+    targets.nutmeg = {
+      # The tailnet IP, not nutmeg.local: mDNS resolution failing would make
+      # this alert about the wrong thing, and nutmeg runs --accept-dns=false so
+      # MagicDNS names do not resolve consistently across this fleet anyway.
+      host = "100.70.139.99";
+      port = 22; # sshd is socket-activated but the socket is up whenever the host is
+      # 5 attempts × 60s = 5 minutes of silence before alerting. Long enough to
+      # sit through a reboot or an `nh os switch` on nutmeg without paging.
+      attempts = 5;
+      gapSeconds = 60;
+      onCalendar = "*:0/5";
+    };
+  };
 
   system.stateVersion = "26.11";
 }
