@@ -83,6 +83,20 @@ in
         path = "backups";
       };
 
+      # slime-chat's SQLite holds the minted Twitch OAuth tokens, so it is
+      # real state rather than a cache. Handled here rather than as a direct
+      # restic path so it gets a proper `sqlite3 .backup` snapshot — the
+      # database is live and being written, and copying a hot SQLite file can
+      # capture a torn page. restic picks the result up from this tree.
+      #
+      # playlists/ is 773MB of downloaded audio and is excluded; the database
+      # is 64KB.
+      slime-chat = {
+        root = "/var/lib/slime-chat";
+        sqlite = [ "villager-chat.db" ];
+        excludes = [ "playlists" ];
+      };
+
       soularr = {
         root = "/var/lib/soularr";
         # config.ini is rendered from nix; the failed-import denylist is the only

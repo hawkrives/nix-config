@@ -13,9 +13,15 @@
   config,
   pkgs,
   lib,
+  utils,
   ...
 }:
 let
+  # The NAS share the service-backup mirror lives on, as a systemd unit name.
+  # Derived rather than hand-spelled "mnt-servarr.mount", so it stays correct
+  # if the mountpoint ever moves.
+  servarrMount = "${utils.escapeSystemdPath "/mnt/servarr"}.mount";
+
   # Live since 2026-08-29: this host's key is in the rsync.net account's
   # authorized_keys and key-only auth is verified.
   #
@@ -59,6 +65,29 @@ let
 
     # Home Assistant, minus the two things that dominate its size (see excludes).
     config.users.users.homeassistant.home
+
+    # Matter fabric credentials. 2.4MB of json/ini, and the single worst
+    # size-to-pain ratio on this host: losing it means re-pairing every Matter
+    # device by hand. No SQLite here, so a plain file copy is safe.
+    "/var/lib/home-assistant-matter"
+
+    # AdGuard's hand-tuned config. `data/` is excluded wholesale below — it is
+    # ~930MB of query log plus 60MB of filter lists that re-download
+    # themselves, and none of it is configuration.
+    "/var/lib/private/AdGuardHome"
+
+    # The service-backup output for the whole fleet. This is the cheap way to
+    # get every *arr, Plex, Tautulli, beszel, soularr and the tuckles download
+    # clients off site: service-backup has already done the hard part, taking
+    # transactionally-consistent `sqlite3 .backup` snapshots of live databases,
+    # so restic only has to copy the results. Backing up the LIVE dirs instead
+    # would mean hot-copying SQLite files that are being written, which is not
+    # a backup.
+    #
+    # Safe from recursion: this is /volume1/app-servarr, while the NAS restic
+    # repo lives on /volume1/app-backup — a different share.
+    "/mnt/servarr/backups/nutmeg"
+    "/mnt/servarr/backups/tuckles"
   ];
 
   excludes = [
@@ -84,6 +113,47 @@ let
     "${config.users.users.homeassistant.home}/.cache"
     "${config.users.users.homeassistant.home}/*.log"
     "${config.users.users.homeassistant.home}/*.log.*"
+
+    # AdGuard: keep AdGuardHome.yaml, drop everything under data/ — 928MB of
+    # query log (which also churns completely every day, so it would dedup
+    # terribly) and 60MB of filter lists that re-download on demand.
+    "/var/lib/private/AdGuardHome/data"
+
+    # ── Exclusions from the service-backup mirror ─────────────────────
+    #
+    # Without these, mirroring the fleet's backup tree would add ~7.5GB of
+    # material that is either regenerable or deliberately excluded elsewhere.
+    #
+    # The HA tarballs, 2.9GB. Re-including them here would silently undo the
+    # decision made above to keep them out: they are gzipped internally, so
+    # each night's ~210MB tarball dedups against its predecessor almost not at
+    # all. The NAS copy remains their home.
+    "/mnt/servarr/backups/nutmeg/home-assistant"
+
+    # Plex's blobs.db, 1.1GB of cached artwork and media metadata that Plex
+    # regenerates. library.db — the watch history, ratings and collections,
+    # i.e. the part that actually hurts to lose — is 1.1GB and IS kept.
+    "/mnt/servarr/backups/nutmeg/plex/com.plexapp.plugins.library.blobs.db"
+
+    # Stale: Jellyfin was retired on 2026-08-29 and its service-backup job
+    # removed, so this 221MB is a tombstone. Excluded rather than backed up;
+    # it wants deleting from the NAS.
+    "/mnt/servarr/backups/nutmeg/jellyfin"
+
+    # slskd's search cache, 3.1GB of transient Soulseek search results — 96%
+    # of that job's footprint and none of its value. transfers.db, events.db
+    # and messaging.db are the real state and are kept.
+    "/mnt/servarr/backups/tuckles/slskd/search.db"
+
+    # SAB's queued .nzb files: transient by definition, and 155MB of the
+    # sabnzbd job's 162MB. history1.db and admin/ are what matter.
+    "/mnt/servarr/backups/tuckles/sabnzbd/nzbs"
+
+    # Synology's per-directory thumbnail/index metadata, and service-backup's
+    # own zero-byte marker dirs.
+    "@eaDir"
+    "_selftest_required"
+    "_selftest_optional"
   ];
 
   # Keep a long tail cheaply — restic dedups, so old snapshots of a mostly
@@ -240,15 +310,27 @@ in
   # back to structural-only --- a quarter of the data verified every week still
   # finds rot, where structure-only never will.
   # Paperless's exporter stops the paperless services while it runs, and the
-  # restic jobs must not start until the export they read has finished.
+  # restic jobs must not start until the export they read has finished. They
+  # also now read the service-backup mirror on the NAS, so they need that
+  # automount up.
+  #
+  # Wants/After on the mount, NOT RequiresMountsFor: the share idle-unmounts
+  # after 5m and a hard requirement would have systemd stop a long-running
+  # backup the moment that fired. Same lesson as soularr and channel-archive.
+  # In practice restic reads the tree continuously, so it keeps the mount busy.
+  #
   # Merged into one `systemd.services` definition rather than several, since a
   # bare attribute path cannot be assigned twice in the same attrset.
   systemd.services = {
-    restic-backups-nas.after = [ "paperless-exporter.service" ];
+    restic-backups-nas = {
+      after = [ "paperless-exporter.service" servarrMount ];
+      wants = [ servarrMount ];
+    };
   }
   // lib.optionalAttrs enableOffsite {
     restic-backups-offsite = {
-      after = [ "paperless-exporter.service" ];
+      after = [ "paperless-exporter.service" servarrMount ];
+      wants = [ servarrMount ];
       # Pushes over the WAN; keep it from starving interactive use.
       serviceConfig = {
         IOSchedulingClass = "idle";
