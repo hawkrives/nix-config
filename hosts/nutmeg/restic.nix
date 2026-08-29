@@ -16,29 +16,27 @@
   ...
 }:
 let
-  # FLIP THIS TO true ONCE THE PUBLIC KEY IS INSTALLED ON rsync.net.
+  # Live since 2026-08-29: this host's key is in the rsync.net account's
+  # authorized_keys and key-only auth is verified.
   #
-  # Everything about the offsite job is configured and correct, but the account
-  # has not yet been told to trust this host's key, so the job cannot succeed:
-  #   de3044@de3044.rsync.net: Permission denied (publickey,password,…)
-  # Leaving the timer live in that state would mean a failed unit and a Telegram
-  # alert every single night, which is how you teach yourself to ignore alerts.
-  # So it stays declaratively off, and the fact that it's off is visible in git
-  # rather than hidden in a broken timer.
+  # Kept as a flag rather than deleted because the offsite job depends on state
+  # that lives outside this repo — a key in someone else's authorized_keys. If
+  # that ever goes away, the honest move is to set this false in a commit rather
+  # than leave a timer failing into Telegram every night at 04:00, which is how
+  # you teach yourself to ignore alerts.
   #
-  # To enable — needs the rsync.net account password once:
-  #   ssh de3044@de3044.rsync.net 'mkdir -p .ssh restic/nutmeg && cat >> .ssh/authorized_keys' \
-  #     <<< 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAe3hWozQOUE7TrNLUAyG8YwcSAjEfUm5id069iC5YMR restic@nutmeg'
-  # then set this true, redeploy, and check with:
-  #   sudo systemctl start restic-backups-offsite.service
+  # Two things worth knowing about this endpoint:
   #
-  # The endpoint here (de3044@de3044.rsync.net) supersedes the 57198@usw-s007
-  # account that the Synology's Hyper Backup still targets — rsync.net appears
-  # to have moved the account. Both resolve and accept connections; only this
-  # one is current. Verified 2026-08-29 that this host's key is not yet in its
-  # authorized_keys ("Permission denied (publickey,…)"), which is the only
-  # thing standing between here and a working offsite backup.
-  enableOffsite = false;
+  #   * de3044@de3044.rsync.net supersedes the 57198@usw-s007 account. The
+  #     Synology's synovfs config still carries stale 57198 entries; its Hyper
+  #     Backup task is correctly on de3044 and healthy, so those are cruft.
+  #   * rsync.net gives you a RESTRICTED shell. It has no output redirection, so
+  #     the usual `cat >> .ssh/authorized_keys` idiom fails with "Error parsing
+  #     command: Output redirection not supported" — which looks like an auth
+  #     problem and is not. Manage that file by scp'ing it down, editing it
+  #     locally and scp'ing it back; note it already held an unrelated key, so
+  #     overwriting rather than appending would have locked something else out.
+  enableOffsite = true;
 
   sshKey = config.age.secrets.restic-ssh-key-nutmeg.path;
   password = config.age.secrets.restic-password-nutmeg.path;
