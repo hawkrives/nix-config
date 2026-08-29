@@ -36,7 +36,7 @@
       destination = "/mnt/channels/videos/kuma_ne_ne";
       restructure = true;
     };
-    channels."kume_ne_ne_yt" = {
+    channels."kuma_ne_ne_yt" = {
       enable = true;
       incremental = true;
       ignoreErrors = false;
