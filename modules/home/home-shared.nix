@@ -25,10 +25,14 @@
     ];
 
     shellInit = ''
+      # NB: no `mise activate fish` for the interactive case here — programs.mise
+      # (enableFishIntegration, on by default) already emits exactly that into
+      # interactiveShellInit, and having both meant every interactive shell
+      # activated mise twice. What home-manager does NOT emit is the shims path
+      # for NON-interactive shells, which is what `ssh nutmeg <cmd>` and any fish
+      # script get, and mise really does manage tools here (node, go,
+      # cargo-binstall, cargo-zigbuild, usage). So this branch stays.
       if status is-interactive
-        # integrate mise shims with fish
-        mise activate fish | source
-
         # atuin - disabled as of 2026-06-07 because I can't get it to NOT bind up-arrow
         # atuin hex init fish | source
         # export ATUIN_NOBIND="true"
@@ -166,8 +170,11 @@
   };
 
   home.shellAliases = {
-    ls = "ls --color=auto";
-    ll = "ls -l";
+    # `--color=auto` is GNU-only; macOS ships BSD ls, which errors on it. eza is
+    # already installed everywhere by programs.eza (which supplies la/lla/lt),
+    # so use it for ls/ll too and get consistent behaviour on both platforms.
+    ls = "eza";
+    ll = "eza -l";
     vimdiff = "nvim -d";
   };
 
