@@ -53,5 +53,4 @@ in {
     group = cfg.group;
   };
 
-  networking.firewall.allowedTCPPorts = [23357];
 }

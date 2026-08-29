@@ -84,11 +84,9 @@
     ];
   };
 
-  # for slime
-  networking.firewall = {
-    allowedTCPPorts = [ 9100 ];
-    allowedUDPPorts = [ 9100 ];
-  };
+  # for slime. TCP only — slime-chat is an HTTP server, so the UDP half of this
+  # rule never matched anything.
+  networking.firewall.allowedTCPPorts = [ 9100 ];
 
   programs.nh = {
     flake = "/home/natsume/nix-config#${hostName}";

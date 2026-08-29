@@ -51,5 +51,4 @@
   services.tsnsrv.services.paperless.urlParts.port = config.services.paperless.port;
   services.tsnsrv.services.paperless.urlParts.host = config.services.paperless.address;
 
-  networking.firewall.allowedTCPPorts = [config.services.paperless.port];
 }
