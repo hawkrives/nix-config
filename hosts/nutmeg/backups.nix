@@ -83,6 +83,27 @@ in
         path = "backups";
       };
 
+      # beets' library.db. Worth more than its 173MB suggests: the first
+      # mbsync pass over the whole library runs at MusicBrainz's ~1 req/s rate
+      # limit and takes hours (see beets.nix), so rebuilding this from scratch
+      # is days, not minutes. Snapshotted rather than copied because beets
+      # writes it live.
+      #
+      # state.pickle is kept deliberately — it is what makes `incremental =
+      # true` skip already-imported directories. Dropped: the two
+      # library.db-before-*.bak migration leftovers from 2026-08-05 (298MB
+      # combined, superseded), import.log, and the config.yaml symlink, which
+      # points into the nix store and would restore as a dangling link.
+      beets = {
+        root = "/var/lib/beets";
+        sqlite = [ "library.db" ];
+        excludes = [
+          "*.bak"
+          "import.log"
+          "config.yaml"
+        ];
+      };
+
       # slime-chat's SQLite holds the minted Twitch OAuth tokens, so it is
       # real state rather than a cache. Handled here rather than as a direct
       # restic path so it gets a proper `sqlite3 .backup` snapshot — the
