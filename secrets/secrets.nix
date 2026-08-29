@@ -121,6 +121,12 @@ in
   # authorized_keys is a wider blast radius than a purpose-made key.
   "restic-ssh-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
 
+  # Uptime Kuma admin account (env file: UPTIME_KUMA_USER / _PASSWORD). Used to
+  # log into the web UI, and by packages/provision-uptime-kuma.nix to drive that
+  # UI with Playwright — Kuma has no declarative config, so its monitors are
+  # provisioned by automating the browser.
+  "uptime-kuma-admin.age".publicKeys = users ++ [ nutmeg ];
+
   # Telegram bot credentials for systemd failure notifications (env file with
   # TELEGRAM_BOT_TOKEN= and TELEGRAM_CHAT_ID=). Every host that runs the
   # notify-failure module needs it.

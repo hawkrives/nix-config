@@ -15,6 +15,7 @@
     flake.nixosModules.service-channel-archive
     flake.nixosModules.cache-push
     flake.nixosModules.notify-failure
+    flake.nixosModules.unit-heartbeat
 
     # configuration
     ./hardware.nix
@@ -42,6 +43,7 @@
     ./tsnsrv.nix
     ./backups.nix
     ./restic.nix
+    ./uptime-kuma.nix
     ./beszel.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
