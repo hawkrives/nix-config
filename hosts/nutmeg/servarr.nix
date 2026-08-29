@@ -128,23 +128,72 @@ in
   # create and prune the daily backups. Runs as root to read /run/agenix keys.
   systemd.services.arr-backup-pin = {
     description = "Re-assert daily backup interval (backupInterval=1) on each *arr";
-    after = [ "network.target" ];
-    serviceConfig.Type = "oneshot";
+    # Order after the apps themselves, not just the network. On 2026-08-29 the
+    # timer fired at 00:03:37 — in the middle of a deploy, with all four apps
+    # stopped since 00:02:07 and not back until 00:03:50 — so every pin failed.
+    # Wants (not Requires) because a down app should be reported, not silently
+    # skipped by systemd refusing to start this at all.
+    after = [
+      "network.target"
+      "radarr.service"
+      "sonarr.service"
+      "prowlarr.service"
+      "lidarr.service"
+    ];
+    wants = [
+      "radarr.service"
+      "sonarr.service"
+      "prowlarr.service"
+      "lidarr.service"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      # A deploy can hold the apps down for well over a minute; retry rather
+      # than skipping a day's pin. Combined with the non-zero exit below, a
+      # genuinely broken app surfaces as a failed unit instead of silence.
+      Restart = "on-failure";
+      RestartSec = "2min";
+    };
+    unitConfig = {
+      StartLimitIntervalSec = "30min";
+      StartLimitBurst = 6;
+    };
     script = ''
       set -u
+      fail=0
       pin() { # name port apiver keyfile
-        local name=$1 port=$2 ver=$3 key base cur body
+        local name=$1 port=$2 ver=$3 key base cur body i
         key=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' "$4")
         base="http://localhost:$port/api/$ver/config/host"
-        cur=$(${pkgs.curl}/bin/curl -fsSL -H "X-Api-Key: $key" "$base") || { echo "$name: GET failed"; return; }
+
+        # Wait for the app's API (up to ~60s). Same shape as the lidarr pin in
+        # beets.nix: these apps take a while to serve after systemd starts them.
+        cur=""
+        for i in $(${pkgs.coreutils}/bin/seq 60); do
+          cur=$(${pkgs.curl}/bin/curl -fsSL -H "X-Api-Key: $key" "$base" 2>/dev/null) && break
+          cur=""
+          ${pkgs.coreutils}/bin/sleep 1
+        done
+        # An unreachable app is a FAILURE, not a shrug. The old version returned
+        # here and let the unit exit 0, so the whole point of this unit — making
+        # a runtime setting that drifted impossible to silently lose — was itself
+        # silently lost for a day before anyone noticed.
+        [ -n "$cur" ] || { echo "$name: GET failed (not reachable on :$port)" >&2; fail=1; return; }
+
         body=$(${pkgs.jq}/bin/jq '.backupInterval = 1' <<<"$cur")
-        ${pkgs.curl}/bin/curl -fsSL -X PUT -H "X-Api-Key: $key" -H "Content-Type: application/json" \
-          -d "$body" "$base" >/dev/null && echo "$name: backupInterval pinned to 1" || echo "$name: PUT failed"
+        if ${pkgs.curl}/bin/curl -fsSL -X PUT -H "X-Api-Key: $key" -H "Content-Type: application/json" \
+             -d "$body" "$base" >/dev/null; then
+          echo "$name: backupInterval pinned to 1"
+        else
+          echo "$name: PUT failed" >&2
+          fail=1
+        fi
       }
       pin radarr   ${toString config.services.radarr.settings.server.port}   v3 ${config.age.secrets.radarr-api-key.path}
       pin sonarr   ${toString config.services.sonarr.settings.server.port}   v3 ${config.age.secrets.sonarr-api-key.path}
       pin prowlarr ${toString config.services.prowlarr.settings.server.port} v1 ${config.age.secrets.prowlarr-api-key.path}
       pin lidarr   ${toString config.services.lidarr.settings.server.port}   v1 ${config.age.secrets.lidarr-api-key.path}
+      exit "$fail"
     '';
   };
   systemd.timers.arr-backup-pin = {
