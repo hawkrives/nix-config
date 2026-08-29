@@ -14,9 +14,6 @@
     flake.nixosModules.service-backup
     flake.nixosModules.service-channel-archive
     flake.nixosModules.cache-push
-    # flake.nixosModules.veilid-shared
-    # flake.nixosModules.pocket-id
-    # flake.nixosModules.pomerium
 
     # configuration
     ./hardware.nix
@@ -38,7 +35,6 @@
     ./paperless.nix
     ./scanner.nix
     ./peertube.nix
-    ./discourse.nix
     ./micasa.nix
     ./minecraft.nix
     ./slime-chat.nix
