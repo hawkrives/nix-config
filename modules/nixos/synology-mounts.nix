@@ -24,10 +24,10 @@ let
         "x-systemd.idle-timeout=5m"
         # NB: no x-systemd.device-timeout. It only applies to device-backed
         # mounts, so on an NFS device string systemd's fstab generator ignores
-        # it and says so, once per mount per generator run — 391 lines of
+        # it and warns, once per mount per generator run — hundreds of lines of
         # "'192.168.1.194:/volume1/…' is not a device path, ignoring
-        # x-systemd.device-timeout=" in a single boot. mount-timeout is the one
-        # that actually bounds an attempt here.
+        # x-systemd.device-timeout=" per boot. mount-timeout is the one that
+        # actually bounds an attempt here.
         "x-systemd.mount-timeout=15s"
       ]
       ++ lib.lists.optionals readOnly [ "ro" ];

@@ -3,13 +3,9 @@
 #
 #   sudo nix run .#provision-uptime-kuma
 #
-# This is deliberately ALL this does. An earlier version also created the push
-# monitors through the same web UI; that job now belongs to
-# uptime-kuma-monitor-sync, which writes them into Kuma's SQLite DB directly
-# (see modules/nixos/unit-heartbeat.nix for the reasoning). Driving a Vue SPA
-# binds you to CSS selectors upstream changes without notice — `#monitor-type`
-# had already become `#type`, and the Push URL field turned out to be rendered
-# disabled, so the token could not be set from the UI at all.
+# This is deliberately ALL it does. The push monitors are written straight into
+# Kuma's SQLite DB by uptime-kuma-monitor-sync (see
+# modules/nixos/unit-heartbeat.nix for why the DB and not the web UI).
 #
 # The admin account is the one thing that genuinely cannot move to SQL: Kuma
 # stores a bcrypt hash, and writing a subtly wrong one locks you out of the UI

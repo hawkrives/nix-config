@@ -24,9 +24,8 @@
 
   # 8123 web UI; 21063/21064 HomeKit bridge; 5580 an integration's listener.
   #
-  # 5353 is UDP-only (mDNS), so it is listed under UDP alone — the TCP entry
-  # that used to be here could never have matched anything. It stays declared
-  # here even though services.avahi.openFirewall (modules/nixos/mdns.nix) opens
+  # 5353 is UDP-only (mDNS), so it is listed under UDP alone; a TCP entry for
+  # it could never match. It stays declared here even though services.avahi.openFirewall (modules/nixos/mdns.nix) opens
   # the same port: HA does its own mDNS discovery, and that shouldn't quietly
   # break the day avahi gets disabled on this host. Duplicate allowedUDPPorts
   # entries merge to one nftables rule, so the overlap costs nothing.

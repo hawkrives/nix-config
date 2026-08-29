@@ -4,10 +4,10 @@
   # its own node keys. tsnsrv reads it through systemd LoadCredential as root,
   # so the root-owned 0400 agenix default is all it needs.
   #
-  # This was a hand-placed /etc/tsnsrv/authkey until 2026-08-29 — the last
-  # imperative secret on this host, and it was mode 0644: an OAuth client secret
-  # readable by every local user, `techcyte` (who has ssh access here) included.
-  # tuckles already did this properly; nutmeg now matches. See secrets/secrets.nix.
+  # Keep it in ragenix rather than a file placed on the host: this grants the
+  # ability to mint tailnet nodes, and anything outside agenix ends up
+  # world-readable to every local user here, `techcyte` (who has ssh access)
+  # included. Same arrangement as tuckles. See secrets/secrets.nix.
   age.secrets.tsnsrv-authkey-nutmeg.file = ../../secrets/tsnsrv-authkey-nutmeg.age;
 
   services.tsnsrv = {

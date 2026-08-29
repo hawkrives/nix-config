@@ -22,17 +22,16 @@
 # Vue SPA whose only API is Socket.io. So this module writes the monitor rows
 # into that DB directly and restarts Kuma to pick them up.
 #
-# That is deliberate, and it replaced a working Playwright script that drove the
-# web UI. Automating the UI sounds like the "supported" path, but it binds you
-# to CSS selectors that upstream changes silently and without migration — during
-# development the monitor-type control went from `#monitor-type` to `#type`
-# between the docs and the shipped build, and the Push URL field turned out to
-# be rendered *disabled*, so the token could not be chosen at all. The schema,
-# by contrast, is versioned by knex migrations and fails loudly.
+# Driving the web UI instead sounds like the "supported" path and is not: it
+# binds you to CSS selectors upstream changes silently and without migration
+# (the monitor-type control is `#type`, not the documented `#monitor-type`),
+# and the Push URL field is rendered *disabled*, so the token cannot be chosen
+# from the UI at all. The schema is versioned by knex migrations and fails
+# loudly, which is the better thing to depend on.
 #
-# Writing the token instead of reading it back is the real prize: the token is
-# just the unit name, so the URL a unit pings is derivable from its own name.
-# No generated token map, no state file, nothing to keep in sync.
+# Choosing the token is the real prize: it is just the unit name, so the URL a
+# unit pings is derivable from its own name. No generated token map, no state
+# file, nothing to keep in sync.
 #
 # The sync runs with Kuma STOPPED. Kuma caches monitors in memory, so a write to
 # a live DB appears to succeed and then does nothing until the next restart.

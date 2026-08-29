@@ -78,11 +78,9 @@ in
   # key minting on tuckles. Same OAuth client as tailscale-authkey-tuckles.
   "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
 
-  # Same, for nutmeg. This used to be a hand-placed /etc/tsnsrv/authkey — the
-  # last imperative secret on the fleet, and it sat at 0644, world-readable, so
-  # every local user (including `techcyte`, who has ssh access) could read a
-  # Tailscale OAuth client secret. Now it decrypts to /run/agenix at 0400 like
-  # everything else.
+  # Same, for nutmeg. It grants the ability to mint tailnet nodes, so it lives
+  # here rather than as a file on the host, where it would be readable by every
+  # local user — `techcyte` has ssh access to nutmeg.
   "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [ nutmeg ];
 
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
@@ -121,10 +119,10 @@ in
   # authorized_keys is a wider blast radius than a purpose-made key.
   "restic-ssh-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
 
-  # Uptime Kuma admin account (env file: UPTIME_KUMA_USER / _PASSWORD). Used to
-  # log into the web UI, and by packages/provision-uptime-kuma.nix to drive that
-  # UI with Playwright — Kuma has no declarative config, so its monitors are
-  # provisioned by automating the browser.
+  # Uptime Kuma admin account (env file: UPTIME_KUMA_USER / _PASSWORD). Logs
+  # into the web UI, and lets packages/provision-uptime-kuma.nix drive Kuma's
+  # first-run wizard, which is the only part of its setup that is not
+  # declarative.
   "uptime-kuma-admin.age".publicKeys = users ++ [ nutmeg ];
 
   # Telegram bot credentials for systemd failure notifications (env file with

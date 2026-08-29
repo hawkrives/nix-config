@@ -174,10 +174,9 @@ in
           cur=""
           ${pkgs.coreutils}/bin/sleep 1
         done
-        # An unreachable app is a FAILURE, not a shrug. The old version returned
-        # here and let the unit exit 0, so the whole point of this unit — making
-        # a runtime setting that drifted impossible to silently lose — was itself
-        # silently lost for a day before anyone noticed.
+        # An unreachable app is a FAILURE, not a shrug. This unit exists to stop
+        # a runtime setting drifting unnoticed, so it must not itself be capable
+        # of doing nothing and reporting success.
         [ -n "$cur" ] || { echo "$name: GET failed (not reachable on :$port)" >&2; fail=1; return; }
 
         body=$(${pkgs.jq}/bin/jq '.backupInterval = 1' <<<"$cur")

@@ -51,11 +51,10 @@ in
     ];
   };
 
-  # Plex needs longer than the systemd default to shut down: at 90s it was
-  # hitting `final-sigterm timed out` and being SIGKILLed on every deploy
-  # (2026-08-25, 2026-08-29). Hard-killing it mid-write is precisely how the
-  # library/blobs SQLite DBs that backups.nix snapshots get corrupted, so give
-  # it room to flush instead.
+  # Plex needs longer than the systemd default to shut down: at 90s it hits
+  # `final-sigterm timed out` and is SIGKILLed on every deploy. Hard-killing it
+  # mid-write is how the library/blobs SQLite DBs that backups.nix snapshots
+  # get corrupted, so give it room to flush.
   systemd.services.plex.serviceConfig.TimeoutStopSec = "5min";
 
   services.tautulli = {

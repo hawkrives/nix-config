@@ -42,13 +42,11 @@
 
   # [booting]
   boot.loader.systemd-boot.enable = true;
-  # This is an Apple EFI System Partition and it is only 197M, which is not
-  # enough for an unbounded number of generations: each distinct kernel+initrd
-  # pair costs ~58M, so three of them fill it. With no limit the ESP sat at 90%
-  # (22M free) with 19 entries, and the next nixpkgs bump that changed the
-  # kernel would have failed activation with ENOSPC. The installer
-  # garbage-collects before it writes, so a cap here is a hard bound rather
-  # than a hope. Independent of nh clean, which prunes the profile, not the ESP.
+  # This is an Apple EFI System Partition of only 197M, and a distinct
+  # kernel+initrd pair costs ~58M, so three of them fill it. Without a cap the
+  # ESP runs out and activation fails with ENOSPC. The installer
+  # garbage-collects before it writes, so this is a hard bound rather than a
+  # hope. Independent of nh clean, which prunes the profile, not the ESP.
   boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = true;
 
