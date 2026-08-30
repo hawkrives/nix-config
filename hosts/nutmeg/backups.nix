@@ -11,6 +11,17 @@ in
     enable = true;
     tokenFile = config.age.secrets.telegram-notify.path;
     units = [
+      # The *arr themselves. With Restart=always plus a bounded start limit
+      # (see ./servarr.nix), a transient crash self-heals silently and only a
+      # persistent failure reaches `failed` — which is exactly when it is worth
+      # being told, since an *arr that is merely not running is otherwise
+      # invisible until someone tries to use it.
+      "prowlarr.service"
+      "sonarr.service"
+      "radarr.service"
+      "lidarr.service"
+      "bazarr.service"
+
       # Everything timer-driven and unattended on this host.
       "arr-backup-pin.service"
       "beets-sync.service"

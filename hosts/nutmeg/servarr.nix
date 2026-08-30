@@ -56,6 +56,52 @@ in
   systemd.services.radarr.serviceConfig.UMask = lib.mkForce "0007";
   systemd.services.bazarr.serviceConfig.UMask = lib.mkForce "0007";
 
+  # ── Restart policy ────────────────────────────────────────────────
+  #
+  # These modules ship Restart="on-failure". Each app's own System -> Restart
+  # button exits 0, which "on-failure" does not act on, so using it takes the
+  # service down until a human notices. Nothing else notices either: an *arr
+  # that is simply not running produces no failed unit and no alert.
+  #
+  # Restart=always fixes that, but on its own it trades "silently down" for
+  # "silently flapping", so the start limit is widened to match. RestartSec=10s
+  # against systemd's default 10s StartLimitIntervalSec could never trip the
+  # burst, so a crash-looping app would retry forever; over 300s, five failures
+  # inside five minutes give up and land the unit in `failed`, where
+  # notifyFailure (see ./backups.nix) reports it.
+  #
+  # Net behaviour: the UI restart button works, a transient crash self-heals
+  # quietly, and a persistently broken app pages instead of looping.
+  #
+  # mkForce because upstream assigns Restart directly rather than via mkDefault,
+  # same as the UMask overrides above. Written as leaf paths rather than a
+  # generated attrset because `systemd.services` is already populated by name
+  # elsewhere in this file and cannot also be assigned wholesale.
+  systemd.services.prowlarr.serviceConfig.Restart = lib.mkForce "always";
+  systemd.services.prowlarr.serviceConfig.RestartSec = "10s";
+  systemd.services.prowlarr.startLimitIntervalSec = 300;
+  systemd.services.prowlarr.startLimitBurst = 5;
+
+  systemd.services.sonarr.serviceConfig.Restart = lib.mkForce "always";
+  systemd.services.sonarr.serviceConfig.RestartSec = "10s";
+  systemd.services.sonarr.startLimitIntervalSec = 300;
+  systemd.services.sonarr.startLimitBurst = 5;
+
+  systemd.services.radarr.serviceConfig.Restart = lib.mkForce "always";
+  systemd.services.radarr.serviceConfig.RestartSec = "10s";
+  systemd.services.radarr.startLimitIntervalSec = 300;
+  systemd.services.radarr.startLimitBurst = 5;
+
+  systemd.services.lidarr.serviceConfig.Restart = lib.mkForce "always";
+  systemd.services.lidarr.serviceConfig.RestartSec = "10s";
+  systemd.services.lidarr.startLimitIntervalSec = 300;
+  systemd.services.lidarr.startLimitBurst = 5;
+
+  systemd.services.bazarr.serviceConfig.Restart = lib.mkForce "always";
+  systemd.services.bazarr.serviceConfig.RestartSec = "10s";
+  systemd.services.bazarr.startLimitIntervalSec = 300;
+  systemd.services.bazarr.startLimitBurst = 5;
+
   fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
   fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { };
   fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { };
