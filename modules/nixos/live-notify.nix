@@ -69,12 +69,14 @@ let
     acc: _: c: acc + youtubeUnitsPerCheck * (86400 / c.intervalSeconds)
   ) 0 youtubeChannels;
 
-  # `id`, the channel key `name`, and `discordMention` are Nix-interpolated
-  # directly into the generated shell scripts below at eval time (not
-  # templated at runtime) — same as host-watch's per-target scripts. These
-  # two checks are what keep that literal embedding safe: an id containing a
-  # `"` or `$` would otherwise corrupt the generated script.
+  # `id` and the channel key `name` are Nix-interpolated directly into the
+  # generated shell scripts below at eval time (not templated at runtime) —
+  # same as host-watch's per-target scripts. `discordMention` is also
+  # interpolated, but escaped via lib.escapeShellArg before embedding.
+  # These assertions ensure literal embedding is safe: an id or name
+  # containing `"` or `$` would otherwise corrupt the generated script.
   badIds = lib.filterAttrs (_: c: builtins.match "[A-Za-z0-9_-]+" c.id == null) cfg.channels;
+  badNames = lib.filterAttrs (name: _: builtins.match "[A-Za-z0-9_-]+" name == null) cfg.channels;
   badYoutubeIds = lib.filterAttrs (_: c: !lib.hasPrefix "UC" c.id) youtubeChannels;
 
   mention = c: lib.escapeShellArg (if c.discordMention == null then "" else c.discordMention);
@@ -298,6 +300,10 @@ in
       {
         assertion = badIds == { };
         message = "liveNotify: channel id(s) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts/URLs): " + lib.concatStringsSep ", " (lib.attrNames badIds);
+      }
+      {
+        assertion = badNames == { };
+        message = "liveNotify: channel name(s) (keys) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts): " + lib.concatStringsSep ", " (lib.attrNames badNames);
       }
       {
         assertion = badYoutubeIds == { };
