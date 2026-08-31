@@ -1,0 +1,139 @@
+// ┏┓╻+╻ ╱┏┳┓┏┓┏┳┓┏┓╻
+// ┃┃┃┃┗━┓╹┃╹┣┫┃┃┃┣┫┃   Read the manpage:
+// ╹┗┛╹╱ ╹ ╹ ╹╹╹ ╹╹╹┗┛  $ man nixtamal-manifest
+//
+// Inputs for the non-flake nutmeg build. This is deliberately a SUBSET of
+// flake.nix's inputs: only what nutmeg's system + home configs actually reach
+// for. tuckles/pantry/Techcyte still build from the flake, so disko,
+// nix-darwin, vpn-confinement, nixos-hardware, blueprint and systems have no
+// entry here yet.
+//
+// Every `fresh-cmd` reproduces what `nix flake update` did for that input:
+// resolve the branch the flake tracked, hand the commit to the URL template.
+version "1.3.0"
+default-hash-algorithm SHA-256
+
+// Every input here gets `import`ed from (a NixOS module, an overlay, a
+// package.nix), and importing a path out of a build-time-fetched input is
+// import-from-derivation — which `nix-instantiate --eval` refuses outright and
+// which serialises evaluation everywhere else. Flake inputs are always fetched
+// at eval time, so this is the setting that restores parity. Nixtamal defaults
+// to `build`, so it has to be said explicitly.
+default-fetch-time eval
+
+inputs {
+	// The flake pinned `https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz`
+	// — the *channel* tarball, not a bare branch archive — so this keeps that.
+	// The unversioned channels.nixos.org URL can't itself be a pin (its content
+	// moves), so the fresh-cmd resolves the redirect to the immutable
+	// releases.nixos.org release name and the template pins that. Flakes can
+	// only pin a URL they can hash; deriving the pin by following a redirect is
+	// the one thing here that `nix flake update` structurally cannot do.
+	//
+	// Note this does NOT reproduce the flake's `nixos-version` string. Verified
+	// against the same nixpkgs commit: the flake reports 26.11.20260826.9fbb54b
+	// and this reports 26.11pre1062397.9fbb54b33e91. The latter is the channel's
+	// own `.version-suffix`; the former is nixpkgs' flake.nix overriding it with
+	// flake lock metadata, which there is no non-flake equivalent for.
+	nixpkgs name="nixpkgs-src" {
+		archive {
+			url "https://releases.nixos.org/nixos/unstable/{{fresh_value}}/nixexprs.tar.xz"
+		}
+		hash algorithm=SHA-256
+		fresh-cmd {
+			$ curl -fsSI "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
+			| sed -n "s|^[Ll]ocation:.*/nixos/unstable/\\(nixos-[^/]*\\)/.*|\\1|p"
+			| tr -d "\\r"
+		}
+	}
+
+	// Provides the `age.*` NixOS module. The flake got this via
+	// `inputs.ragenix.nixosModules.default`, but ragenix does not define a
+	// module of its own — it re-exports agenix's verbatim
+	// (`inherit (agenix) nixosModules darwinModules homeManagerModules`). Going
+	// to the source drops ragenix, crane and rust-overlay from the graph, and
+	// with them the rust-overlay `follows` workaround in flake.nix. The
+	// `ragenix` *binary* comes from nixpkgs now (see nix/compat.nix).
+	agenix name="agenix-src" {
+		archive {
+			url "https://github.com/ryantm/agenix/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/ryantm/agenix.git" --refs "refs/heads/main"
+			| cut -f1
+		}
+	}
+
+	nix-minecraft name="nix-minecraft-src" {
+		archive {
+			url "https://github.com/Infinidoge/nix-minecraft/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/Infinidoge/nix-minecraft.git" --refs "refs/heads/master"
+			| cut -f1
+		}
+	}
+
+	tsnsrv name="tsnsrv-src" {
+		archive {
+			url "https://github.com/boinkor-net/tsnsrv/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/boinkor-net/tsnsrv.git" --refs "refs/heads/main"
+			| cut -f1
+		}
+	}
+
+	micasa name="micasa-src" {
+		archive {
+			url "https://github.com/cpcloud/micasa/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/cpcloud/micasa.git" --refs "refs/heads/main"
+			| cut -f1
+		}
+	}
+
+	// The one private input. The flake reached it with `git+https://…`, which
+	// resolves against the *user's* git credentials at eval time. There is no
+	// unauthenticated codeload tarball for a private repo, so this stays a `git`
+	// input with `fetch-time=eval` — that compiles to `builtins.fetchGit`, the
+	// same user-context fetch the flake did.
+	//
+	// KNOWN GAP: `nixtamal lock` shells out to `nix-prefetch-git`, and that
+	// subprocess did not inherit this machine's git credential helper
+	// (`gh auth git-credential`), so locking it fails with "could not read
+	// Username". The lock entry below was written by hand from the rev the
+	// flake.lock already pinned. See the PR description.
+	slime-chat name="slime-chat-src" {
+		git {
+			repository "https://github.com/hawkrives/slime2-twitch-chat.git"
+			branch "main"
+		}
+	}
+
+	home-manager name="home-manager-src" {
+		archive {
+			url "https://github.com/nix-community/home-manager/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/nix-community/home-manager.git" --refs "refs/heads/master"
+			| cut -f1
+		}
+	}
+
+	// micasa's package needs `gitignore.lib.gitignoreSource`; the flake got it
+	// transitively through micasa's own `gitignore` input. Nixtamal has no
+	// transitive-input resolution — every input a build touches has to be named
+	// here — so micasa's dependency becomes ours. This is the structural cost of
+	// dropping flakes: `follows` deduplication is replaced by hand-hoisting.
+	gitignore name="gitignore-src" {
+		archive {
+			url "https://github.com/hercules-ci/gitignore.nix/archive/{{fresh_value}}.tar.gz"
+		}
+		fresh-cmd {
+			$ git ls-remote "https://github.com/hercules-ci/gitignore.nix.git" --refs "refs/heads/master"
+			| cut -f1
+		}
+	}
+}
