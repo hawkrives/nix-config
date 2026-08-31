@@ -42,15 +42,15 @@
 
     # Performance/tuning settings
     ephemeral = true;
-    maxJobs = 4;
+    maxJobs = 6;
     config = {
       virtualisation = {
         vz.nestedVirtualization = true;
         darwin-builder = {
           diskSize = 40 * 1024;
-          memorySize = 11 * 1024;
+          memorySize = 16 * 1024;
         };
-        cores = 6;
+        cores = 8;
       };
     };
   };
