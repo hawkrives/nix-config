@@ -158,4 +158,11 @@ in
   # file: DISCORD_WEBHOOK_URL=). User-provided test credential; expect it to
   # be rotated after the first smoke test in Task 4 (nutmeg).
   "live-notify-takumiMkII.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/kuinanoyumemi channel
+  # (env file: DISCORD_WEBHOOK_URL=). Stored ahead of actually wiring up this
+  # channel — still needs a Twitch app client id/secret
+  # (services.liveNotify.twitch.credentialsFile / a twitch-notify.age secret,
+  # neither exists yet) before it can be added to a host config (nutmeg).
+  "live-notify-kuinanoyumemi.age".publicKeys = users ++ [ nutmeg ];
 }
