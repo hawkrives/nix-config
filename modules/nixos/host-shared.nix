@@ -28,9 +28,20 @@
       pkgs.btop
       pkgs.rage
       # The CLI, from nixpkgs rather than built from the ragenix flake through
-      # crane + a pinned rust-overlay. Same program; see the agenix input in
-      # flake.nix for why the flake went away. Note nixpkgs tracks releases, so
-      # this is 2025.03.09 where the flake built ragenix's main branch.
+      # crane + a pinned rust-overlay. See the agenix input in flake.nix for
+      # why the flake went away.
+      #
+      # nixpkgs builds the 2025.03.09 tag where the flake built main. That
+      # sounds like a downgrade and isn't: 2025.03.09 is the only tag ragenix
+      # has ever cut, and the three commits between it and the rev we pinned
+      # are a lazy_static -> std::LazyLock refactor and two flake.lock bumps.
+      # No CLI, age-format or rules-schema changes.
+      #
+      # The last of those bumps was titled "fix build on newer nixpkgs" — which
+      # is what we were tracking main for. It only touches ragenix's *own*
+      # flake.lock, so it cannot matter here: nixpkgs never reads that flake,
+      # it builds the source tarball with its own Rust toolchain. Which is also
+      # why the rust-overlay workaround can't come back on this path.
       pkgs.ragenix
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
