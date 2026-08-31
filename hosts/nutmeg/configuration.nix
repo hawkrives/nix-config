@@ -16,6 +16,7 @@
     flake.nixosModules.cache-push
     flake.nixosModules.notify-failure
     flake.nixosModules.unit-heartbeat
+    flake.nixosModules.live-notify
 
     # configuration
     ./hardware.nix
@@ -44,6 +45,7 @@
     ./backups.nix
     ./restic.nix
     ./uptime-kuma.nix
+    ./live-notify.nix
     ./beszel.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
