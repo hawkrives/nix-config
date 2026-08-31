@@ -42,18 +42,27 @@
       inputs.flake-utils.inputs.systems.follows = "systems";
     };
 
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+    agenix = {
+      # This is only ever used for its `age.*` module. We used to take that
+      # module from the ragenix flake, but ragenix does not define one — its
+      # flake does `inherit (agenix) nixosModules darwinModules
+      # homeManagerModules`, passing agenix's through verbatim (both `default`s
+      # are the same ./modules/age.nix). Going to the source drops ragenix,
+      # crane and rust-overlay from the input graph, and with them the
+      # rust-overlay `follows` workaround that lived here: ragenix pinned
+      # rust-overlay to Oct 2025, which broke eval against current nixpkgs
+      # (stdenv.isLinux/.isDarwin removal), so we had been tracking a fresh
+      # rust-overlay ourselves purely to feed ragenix.
+      #
+      # The `ragenix` *binary* now comes from nixpkgs — see
+      # modules/nixos/host-shared.nix.
+      url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    ragenix = {
-      url = "github:yaxitech/ragenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      # ragenix pins rust-overlay to Oct 2025, which breaks eval against
-      # current nixpkgs (stdenv.isLinux/.isDarwin removal). Track a fresh
-      # rust-overlay ourselves until upstream ragenix catches up.
-      inputs.rust-overlay.follows = "rust-overlay";
+      # agenix's own darwin/home-manager test inputs; nothing here consumes
+      # them, and letting them pull their own nixpkgs would undo the point.
+      inputs.darwin.follows = "nix-darwin";
+      inputs.home-manager.follows = "home-manager";
+      inputs.systems.follows = "systems";
     };
 
     disko = {

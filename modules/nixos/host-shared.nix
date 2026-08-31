@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  perSystem,
   lib,
   config,
   ...
@@ -28,7 +27,11 @@
     [
       pkgs.btop
       pkgs.rage
-      perSystem.ragenix.default
+      # The CLI, from nixpkgs rather than built from the ragenix flake through
+      # crane + a pinned rust-overlay. Same program; see the agenix input in
+      # flake.nix for why the flake went away. Note nixpkgs tracks releases, so
+      # this is 2025.03.09 where the flake built ragenix's main branch.
+      pkgs.ragenix
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # TODO: only install this on the NAS
