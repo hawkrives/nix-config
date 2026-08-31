@@ -149,4 +149,13 @@ in
   "nix-signing-key-tuckles.age".publicKeys = users ++ [ tuckles ];
   "nix-signing-key-pantry.age".publicKeys = users ++ [ pantry ];
   "nix-signing-key-Techcyte-DGQJV434PF.age".publicKeys = users ++ [ techcyte ];
+
+  # YouTube Data API key for live-notify (env file: YOUTUBE_API_KEY=). Used
+  # for the cheap playlistItems/videos live-check, not search.list (nutmeg).
+  "youtube-notify.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the @TakumiMk-II YouTube channel (env
+  # file: DISCORD_WEBHOOK_URL=). User-provided test credential; expect it to
+  # be rotated after the first smoke test in Task 4 (nutmeg).
+  "live-notify-takumiMkII.age".publicKeys = users ++ [ nutmeg ];
 }
