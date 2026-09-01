@@ -167,4 +167,29 @@ in
   # TWITCH_CLIENT_SECRET=), used to mint a client-credentials app access
   # token on every check. Dedicated app, separate from slime-chat's (nutmeg).
   "twitch-notify.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/arusan0117 channel (env
+  # file: DISCORD_WEBHOOK_URL=).
+  "live-notify-arusan0117.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/honkenhawk channel (env
+  # file: DISCORD_WEBHOOK_URL=).
+  "live-notify-honkenhawk.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook shared by twitch.tv/kuma_ne_ne and
+  # youtube.com/@kuma.ne-ne — same streamer, both platforms post to the same
+  # channel (env file: DISCORD_WEBHOOK_URL=).
+  "live-notify-kuma-ne-ne.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/alphaomegaentmt channel
+  # (env file: DISCORD_WEBHOOK_URL=).
+  "live-notify-alphaomegaentmt.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/grys0l channel (env
+  # file: DISCORD_WEBHOOK_URL=).
+  "live-notify-grys0l.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/ditherdown channel (env
+  # file: DISCORD_WEBHOOK_URL=).
+  "live-notify-ditherdown.age".publicKeys = users ++ [ nutmeg ];
 }
