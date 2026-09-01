@@ -156,7 +156,7 @@ in
 
   # live-notify's Discord webhook for the @TakumiMk-II YouTube channel (env
   # file: DISCORD_WEBHOOK_URL=). User-provided test credential; expect it to
-  # be rotated after the first smoke test in Task 4 (nutmeg).
+  # be rotated after the first smoke test (nutmeg).
   "live-notify-takumiMkII.age".publicKeys = users ++ [ nutmeg ];
 
   # live-notify's Discord webhook for the twitch.tv/kuinanoyumemi channel

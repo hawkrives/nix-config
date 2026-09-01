@@ -102,11 +102,10 @@ let
       exit 1
     fi
 
-    resp=$(curl -sS --fail --max-time 20 \
+    if ! resp=$(curl -sS --fail --max-time 20 \
       -H "Client-Id: $TWITCH_CLIENT_ID" \
       -H "Authorization: Bearer $token" \
-      "https://api.twitch.tv/helix/streams?user_login=${c.id}")
-    if [ $? -ne 0 ]; then
+      "https://api.twitch.tv/helix/streams?user_login=${c.id}"); then
       echo "live-notify-${name}: Twitch streams request failed" >&2
       exit 1
     fi
@@ -154,9 +153,8 @@ let
 
     uploads_playlist="UU${lib.removePrefix "UC" c.id}"
 
-    items=$(curl -sS --fail --max-time 20 \
-      "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploads_playlist&maxResults=5&key=$YOUTUBE_API_KEY")
-    if [ $? -ne 0 ]; then
+    if ! items=$(curl -sS --fail --max-time 20 \
+      "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploads_playlist&maxResults=5&key=$YOUTUBE_API_KEY"); then
       echo "live-notify-${name}: playlistItems request failed" >&2
       exit 1
     fi
@@ -169,9 +167,8 @@ let
     live_json=""
 
     if [ -n "$video_ids" ]; then
-      videos=$(curl -sS --fail --max-time 20 \
-        "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=$video_ids&key=$YOUTUBE_API_KEY")
-      if [ $? -ne 0 ]; then
+      if ! videos=$(curl -sS --fail --max-time 20 \
+        "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=$video_ids&key=$YOUTUBE_API_KEY"); then
         echo "live-notify-${name}: videos request failed" >&2
         exit 1
       fi
