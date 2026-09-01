@@ -160,9 +160,11 @@ in
   "live-notify-takumiMkII.age".publicKeys = users ++ [ nutmeg ];
 
   # live-notify's Discord webhook for the twitch.tv/kuinanoyumemi channel
-  # (env file: DISCORD_WEBHOOK_URL=). Stored ahead of actually wiring up this
-  # channel — still needs a Twitch app client id/secret
-  # (services.liveNotify.twitch.credentialsFile / a twitch-notify.age secret,
-  # neither exists yet) before it can be added to a host config (nutmeg).
+  # (env file: DISCORD_WEBHOOK_URL=).
   "live-notify-kuinanoyumemi.age".publicKeys = users ++ [ nutmeg ];
+
+  # Twitch app credentials for live-notify (env file: TWITCH_CLIENT_ID= and
+  # TWITCH_CLIENT_SECRET=), used to mint a client-credentials app access
+  # token on every check. Dedicated app, separate from slime-chat's (nutmeg).
+  "twitch-notify.age".publicKeys = users ++ [ nutmeg ];
 }
