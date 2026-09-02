@@ -196,4 +196,11 @@ in
   # live-notify's Discord webhook for the twitch.tv/inkyridos channel (env
   # file: DISCORD_WEBHOOK_URL=).
   "live-notify-inkyridos.age".publicKeys = users ++ [ nutmeg ];
+
+  # netrc for the linux-builder VM (techcyte). The host's own netrc-file setting
+  # is local-daemon config and is not forwarded over ssh-ng, so a derivation
+  # built on the VM cannot authenticate its fixed-output fetches — notably the
+  # wheels for Techcyte's private GitLab package index, which 401 without it.
+  # Shared into the guest over virtiofs; see the host's darwin-configuration.
+  "builder-netrc.age".publicKeys = users ++ [ techcyte ];
 }
