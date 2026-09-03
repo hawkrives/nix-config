@@ -10,6 +10,49 @@ let
   # mangling for us, so it stays correct if the mountpoint ever changes.
   musicMount = "${utils.escapeSystemdPath "/mnt/music"}.mount";
 
+  # Plex gives an album exactly ONE artist tile, keyed on the ALBUMARTIST tag, so
+  # every collaboration MusicBrainz credits jointly ("Elvis Costello & Allen
+  # Toussaint") becomes a third tile beside the two real artists' own. This plugin
+  # rewrites the album artist down to the first credited artist; the track-level
+  # ARTIST is left holding the full billing, which Plex surfaces as a per-track
+  # credit (originalTitle) *without* minting a tile for it.
+  primaryAlbumArtist = pkgs.writeTextDir "primaryalbumartist.py" ''
+    """Collapse a multi-artist album credit down to its primary artist."""
+
+    from beets.plugins import BeetsPlugin
+
+
+    class PrimaryAlbumArtistPlugin(BeetsPlugin):
+        def __init__(self):
+            super().__init__()
+            self.register_listener("albuminfo_received", self.collapse)
+
+        def collapse(self, info):
+            # AlbumInfo names these without the "album" prefix; they map onto the
+            # albumartist* / mb_albumartistids media fields on write.
+            ids = getattr(info, "artists_ids", None) or []
+            artists = getattr(info, "artists", None) or []
+            # Gate on the *number of MusicBrainz artist IDs*, never on the name:
+            # "Earth, Wind & Fire", "Crosby, Stills & Nash" and "Brooks & Dunn" are
+            # single artists whose names merely contain separators, and a
+            # string-matching rule would shred them.
+            if len(ids) < 2 or not artists:
+                return
+
+            primary = artists[0]
+            if not primary or info.artist == primary:
+                return
+
+            self._log.debug(
+                "collapsing album artist {0!r} -> {1!r}", info.artist, primary
+            )
+            info.artist = primary
+
+            sorts = getattr(info, "artists_sort", None) or []
+            if sorts and sorts[0]:
+                info.artist_sort = sorts[0]
+  '';
+
   # Config lives in the store (immutable, in git), generated from a Nix attrset so
   # there's no YAML quoting/indent footgun. Surfaced at $BEETSDIR/config.yaml via a
   # tmpfiles symlink (below) so `beet` finds it natively for manual fix-up runs.
@@ -35,12 +78,18 @@ let
     # remaster sorts by the album's original release, not the reissue date.
     original_date = true;
 
+    # beets extends the `beetsplug` namespace package with each pluginpath entry,
+    # so the module is imported as `beetsplug.primaryalbumartist` — the .py sits
+    # directly in the directory, not under a nested beetsplug/.
+    pluginpath = [ "${primaryAlbumArtist}" ];
+
     # `musicbrainz` (default-enabled, but listing `plugins` overrides the default
     # so it must be named) is the MB lookup that `mbsync` uses to pull canonical
     # data by the embedded MBID.
     plugins = [
       "musicbrainz"
       "mbsync"
+      "primaryalbumartist"
     ];
   };
 
