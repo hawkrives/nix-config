@@ -93,6 +93,23 @@ let
     ];
   };
 
+  # GOTCHA (beets 2.x, hit 2026-09-03): setting a singular MusicBrainz id field
+  # by hand does NOT reach the file. The plural list fields are canonical, and an
+  # empty list clobbers the singular at write time, so
+  #
+  #     beet modify mb_artistid=<uuid>            # DB updated, file unchanged
+  #
+  # silently no-ops on disk -- and `beet write` keeps reporting the same pending
+  # change on every subsequent run, which reads like a permissions problem but
+  # isn't. Set BOTH, e.g.
+  #
+  #     beet modify mb_artistid=<uuid> mb_artistids=<uuid>
+  #     beet modify mb_albumartistid=<uuid> mb_albumartistids=<uuid>
+  #
+  # Same shape applies to artist/artists and albumartist/albumartists. Verified
+  # it is not mediafile (writes the TXXX frames fine on its own) and not the
+  # id3v23 setting (both modes write correctly).
+
   # mbsync mode: don't fuzzy-match (which skips collaborative/partial albums) —
   # trust the MBID Lidarr embedded and pull MB-canonical data from it.
   #   1. import -A: add new albums *as-is* (no matching → no skips), recording
