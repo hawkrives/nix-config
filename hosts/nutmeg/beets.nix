@@ -32,14 +32,32 @@ let
             # albumartist* / mb_albumartistids media fields on write.
             ids = getattr(info, "artists_ids", None) or []
             artists = getattr(info, "artists", None) or []
-            # Gate on the *number of MusicBrainz artist IDs*, never on the name:
-            # "Earth, Wind & Fire", "Crosby, Stills & Nash" and "Brooks & Dunn" are
-            # single artists whose names merely contain separators, and a
-            # string-matching rule would shred them.
-            if len(ids) < 2 or not artists:
+            if not artists:
                 return
 
-            primary = artists[0]
+            if len(ids) > 1:
+                # A real collaboration. Gate on the *number of MusicBrainz artist
+                # IDs*, never on the name: "Earth, Wind & Fire", "Crosby, Stills &
+                # Nash" and "Brooks & Dunn" are single artists whose names merely
+                # contain separators, and a string rule would shred them.
+                idx = 0
+            elif len(ids) == 1:
+                # One artist, rendered by MusicBrainz with a join phrase --
+                # <a>Eric Clapton</a> & Friends is name + joinphrase, not a second
+                # entity. beets puts that *rendering* in albumartist, so a fresh
+                # Plex import mints an "Eric Clapton & Friends" tile beside the
+                # real one. Prefer MB's entity: the artists entry that is not the
+                # rendered credit. (albumartist_credit keeps the rendering.)
+                credit = getattr(info, "artist_credit", None)
+                idx = next(
+                    (i for i, a in enumerate(artists) if a and a != credit), None
+                )
+                if idx is None:
+                    return
+            else:
+                return
+
+            primary = artists[idx]
             if not primary or info.artist == primary:
                 return
 
@@ -48,9 +66,11 @@ let
             )
             info.artist = primary
 
+            # Take the sort name from the SAME index -- artists_sort is parallel to
+            # artists in both shapes, so aligning by index avoids re-deriving it.
             sorts = getattr(info, "artists_sort", None) or []
-            if sorts and sorts[0]:
-                info.artist_sort = sorts[0]
+            if idx < len(sorts) and sorts[idx]:
+                info.artist_sort = sorts[idx]
   '';
 
   # Config lives in the store (immutable, in git), generated from a Nix attrset so
