@@ -103,6 +103,17 @@ let
   beetsSync = pkgs.writeShellScript "beets-sync-run" ''
     set -euo pipefail
     beet=${pkgs.beets}/bin/beet
+    # Lidarr renames files under us whenever its NamingConfig changes, and beets
+    # cannot write tags to a path that no longer exists — so the sync degrades
+    # silently while still exiting 0 (found 2026-09-03: 64,791 of 111,926 items
+    # pointed at dead paths, and 33,852 files on disk were unknown to beets).
+    # `update` prunes the dead entries every run so that can't pile up again.
+    # -M: never move files, Lidarr owns the layout.
+    #
+    # NOTE: this prunes, it does not re-find. `incremental` below skips any
+    # directory already imported, so files renamed *in place* stay invisible
+    # until the dir is re-walked with --noincremental.
+    "$beet" update -M
     "$beet" import --noautotag --quiet /mnt/music/data
     # --nomove is critical: mbsync renames files to the beets path format by
     # default when they're inside the library `directory` (= /mnt/music/data),
