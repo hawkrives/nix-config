@@ -113,22 +113,22 @@ let
     ];
   };
 
-  # GOTCHA (beets 2.x, hit 2026-09-03): setting a singular MusicBrainz id field
-  # by hand does NOT reach the file. The plural list fields are canonical, and an
-  # empty list clobbers the singular at write time, so
+  # GOTCHA for manual `beet modify` runs: in beets 2.x the plural list fields are
+  # canonical, and an empty list clobbers its singular counterpart at write time.
+  # Setting only the singular updates the database but never reaches the file:
   #
   #     beet modify mb_artistid=<uuid>            # DB updated, file unchanged
   #
-  # silently no-ops on disk -- and `beet write` keeps reporting the same pending
-  # change on every subsequent run, which reads like a permissions problem but
-  # isn't. Set BOTH, e.g.
+  # `beet write` then recomputes the diff from the database, so it reports the
+  # same pending change on every run, which reads like a permissions problem.
+  # Set BOTH:
   #
   #     beet modify mb_artistid=<uuid> mb_artistids=<uuid>
   #     beet modify mb_albumartistid=<uuid> mb_albumartistids=<uuid>
   #
-  # Same shape applies to artist/artists and albumartist/albumartists. Verified
-  # it is not mediafile (writes the TXXX frames fine on its own) and not the
-  # id3v23 setting (both modes write correctly).
+  # The same shape applies to artist/artists and albumartist/albumartists.
+  # mediafile writes the TXXX frames correctly on its own, and the id3v23 setting
+  # is not involved, so neither is worth suspecting here.
 
   # mbsync mode: don't fuzzy-match (which skips collaborative/partial albums) —
   # trust the MBID Lidarr embedded and pull MB-canonical data from it.
@@ -140,16 +140,15 @@ let
   beetsSync = pkgs.writeShellScript "beets-sync-run" ''
     set -euo pipefail
     beet=${pkgs.beets}/bin/beet
-    # Lidarr renames files under us whenever its NamingConfig changes, and beets
-    # cannot write tags to a path that no longer exists — so the sync degrades
-    # silently while still exiting 0 (found 2026-09-03: 64,791 of 111,926 items
-    # pointed at dead paths, and 33,852 files on disk were unknown to beets).
-    # `update` prunes the dead entries every run so that can't pile up again.
+    # Lidarr renames files whenever its NamingConfig changes, and beets records
+    # absolute paths, so entries go stale. beets cannot write tags to a path it
+    # cannot find, and the sync still exits 0, so the degradation is silent.
+    # `update` prunes stale entries each run to keep that bounded.
     # -M: never move files, Lidarr owns the layout.
     #
-    # NOTE: this prunes, it does not re-find. `incremental` below skips any
-    # directory already imported, so files renamed *in place* stay invisible
-    # until the dir is re-walked with --noincremental.
+    # This prunes but does not re-find: `incremental` below skips any directory
+    # already imported, so files renamed in place stay invisible until the
+    # directory is re-walked with --noincremental.
     "$beet" update -M
     "$beet" import --noautotag --quiet /mnt/music/data
     # --nomove is critical: mbsync renames files to the beets path format by
