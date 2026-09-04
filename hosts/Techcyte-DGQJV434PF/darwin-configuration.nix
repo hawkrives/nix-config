@@ -35,7 +35,14 @@ in {
 
   # @admin is required for nix-builder
   nix.settings.trusted-users = ["root" "@admin"];
-  # nix.settings.substituters = ["https://attic.services.hub.techcyte.com/cache"];
+
+  # Techcyte's attic cache holds what CI builds, including the unfree CUDA
+  # closure no public cache can carry. It is private, so reaching it needs the
+  # token in the netrc below.
+  nix.settings.extra-substituters = ["https://attic.services.hub.techcyte.com/cache"];
+  nix.settings.extra-trusted-public-keys = [
+    "cache:quzasaV3ufU/Y1NACmo8/d0Eh6Ubt0swyRCjQLMee+c="
+  ];
   nix.settings.netrc-file = "/Users/hawken.rives/.netrc"; # string, not path, to avoid copying into the nix store
   nix.settings.extra-sandbox-paths = ["/Users/hawken.rives/.netrc"];
 
@@ -147,7 +154,7 @@ in {
 
   environment.systemPackages = [
     pkgs.amazon-ecr-credential-helper
-    # pkgs.attic-client
+    pkgs.attic-client
     pkgs.nil # for nix lsp for vs code / zed
     # pkgs.devenv
     # pkgs.colima
