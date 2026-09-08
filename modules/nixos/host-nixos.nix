@@ -57,10 +57,10 @@
   # which on nutmeg's 187G root meant ~18G of headroom and a journal that had
   # grown to 4G unnoticed. These hosts are not log-archival machines — anything
   # worth keeping past a few weeks belongs in a backup, not the ring buffer.
-  services.journald.extraConfig = ''
-    SystemMaxUse=1G
-    MaxRetentionSec=1month
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "1G";
+    MaxRetentionSec = "1month";
+  };
 
   # enables the "virtualisation.oci-containers.containers" namespace for running containers
   virtualisation.oci-containers.backend = "podman";
