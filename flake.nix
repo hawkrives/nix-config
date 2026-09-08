@@ -102,16 +102,33 @@
           # away with nutmeg's `wl` driver — see hosts/nutmeg/hardware.nix)
         };
         nixpkgs.overlays = [
-          (final: prev: {
-            inherit (prev.lixPackageSets.latest)
-              nixpkgs-review
-              nix-direnv
-              nix-eval-jobs
-              nix-fast-build
-              colmena
-              ;
+          (
+            final: prev:
+            let
+              lix = prev.lixPackageSets.latest;
+            in
+            {
+              # nix-eval-jobs is built from source inside the Lix package set, so
+              # naming it here is safe. Lix's own overlay takes this one attribute
+              # from the set for the same reason.
+              inherit (lix) nix-eval-jobs;
 
-          })
+              # The rest are *arguments* to the Lix package set: it defines them as
+              # `nix-direnv.override { nix = self.lix; }`, where `nix-direnv` comes
+              # from the final package set. Inheriting them from the set would point
+              # the set back at this overlay and recurse forever, so apply the same
+              # overrides the set applies, reading the base package from prev.
+              nix-direnv = prev.nix-direnv.override { nix = lix.lix; };
+              nixpkgs-review = prev.nixpkgs-review.override { nix = lix.lix; };
+              nix-fast-build = prev.nix-fast-build.override {
+                inherit (lix) nix-eval-jobs;
+              };
+              colmena = prev.colmena.override {
+                nix = lix.lix;
+                inherit (lix) nix-eval-jobs;
+              };
+            }
+          )
         ];
       })
       checks
