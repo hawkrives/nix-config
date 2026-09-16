@@ -81,6 +81,14 @@ let
 
   mention = c: lib.escapeShellArg (if c.discordMention == null then "" else c.discordMention);
 
+  # Flags on every request. --max-time is per attempt, and the retry delay
+  # is not counted against it, so one transient failure costs 30s and one
+  # more try before the unit gives up and pages via OnFailure=.
+  # --retry-all-errors is what covers a DNS resolution failure ("Could not
+  # resolve host", a link blip or resolver hiccup); plain --retry only
+  # covers transient HTTP statuses and a few connection errors.
+  curlOpts = "-sS --fail --max-time 20 --retry 1 --retry-delay 30 --retry-all-errors";
+
   twitchScript = name: c: ''
     set -uo pipefail
 
@@ -93,7 +101,7 @@ let
       exit 1
     fi
 
-    token=$(curl -sS --fail --max-time 20 -X POST "https://id.twitch.tv/oauth2/token" \
+    token=$(curl ${curlOpts} -X POST "https://id.twitch.tv/oauth2/token" \
       --data-urlencode "client_id=$TWITCH_CLIENT_ID" \
       --data-urlencode "client_secret=$TWITCH_CLIENT_SECRET" \
       --data-urlencode "grant_type=client_credentials" | jq -r '.access_token')
@@ -102,7 +110,7 @@ let
       exit 1
     fi
 
-    if ! resp=$(curl -sS --fail --max-time 20 \
+    if ! resp=$(curl ${curlOpts} \
       -H "Client-Id: $TWITCH_CLIENT_ID" \
       -H "Authorization: Bearer $token" \
       "https://api.twitch.tv/helix/streams?user_login=${c.id}"); then
@@ -129,7 +137,7 @@ let
     $lines"; fi
 
       payload=$(jq -n --arg c "$lines" '{content: $c}')
-      if ! curl -sS --fail --max-time 20 -H "Content-Type: application/json" \
+      if ! curl ${curlOpts} -H "Content-Type: application/json" \
            -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null; then
         echo "live-notify-${name}: Discord webhook post failed" >&2
         exit 1
@@ -153,7 +161,7 @@ let
 
     uploads_playlist="UU${lib.removePrefix "UC" c.id}"
 
-    if ! items=$(curl -sS --fail --max-time 20 \
+    if ! items=$(curl ${curlOpts} \
       "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploads_playlist&maxResults=5&key=$YOUTUBE_API_KEY"); then
       echo "live-notify-${name}: playlistItems request failed" >&2
       exit 1
@@ -167,7 +175,7 @@ let
     live_json=""
 
     if [ -n "$video_ids" ]; then
-      if ! videos=$(curl -sS --fail --max-time 20 \
+      if ! videos=$(curl ${curlOpts} \
         "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=$video_ids&key=$YOUTUBE_API_KEY"); then
         echo "live-notify-${name}: videos request failed" >&2
         exit 1
@@ -190,7 +198,7 @@ let
     $lines"; fi
 
       payload=$(jq -n --arg c "$lines" '{content: $c}')
-      if ! curl -sS --fail --max-time 20 -H "Content-Type: application/json" \
+      if ! curl ${curlOpts} -H "Content-Type: application/json" \
            -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null; then
         echo "live-notify-${name}: Discord webhook post failed" >&2
         exit 1
