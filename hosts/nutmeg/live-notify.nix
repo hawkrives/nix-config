@@ -14,6 +14,7 @@
   age.secrets."live-notify-alphaomegaentmt".file = ../../secrets/live-notify-alphaomegaentmt.age;
   age.secrets."live-notify-grys0l".file = ../../secrets/live-notify-grys0l.age;
   age.secrets."live-notify-ditherdown".file = ../../secrets/live-notify-ditherdown.age;
+  age.secrets."live-notify-inkyridos".file = ../../secrets/live-notify-inkyridos.age;
 
   services.liveNotify = {
     enable = true;
@@ -83,6 +84,12 @@
       platform = "twitch";
       id = "ditherdown"; # twitch.tv/ditherdown
       webhookFile = config.age.secrets."live-notify-ditherdown".path;
+    };
+
+    channels.inkyridos = {
+      platform = "twitch";
+      id = "inkyridos"; # twitch.tv/inkyridos
+      webhookFile = config.age.secrets."live-notify-inkyridos".path;
     };
   };
 }

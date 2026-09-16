@@ -192,4 +192,8 @@ in
   # live-notify's Discord webhook for the twitch.tv/ditherdown channel (env
   # file: DISCORD_WEBHOOK_URL=).
   "live-notify-ditherdown.age".publicKeys = users ++ [ nutmeg ];
+
+  # live-notify's Discord webhook for the twitch.tv/inkyridos channel (env
+  # file: DISCORD_WEBHOOK_URL=).
+  "live-notify-inkyridos.age".publicKeys = users ++ [ nutmeg ];
 }
