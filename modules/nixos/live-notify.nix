@@ -50,7 +50,7 @@ let
       };
       intervalSeconds = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 120;
+        default = 300;
         description = ''
           Seconds between checks, via the timer's `OnUnitActiveSec`. Also
           what the YouTube quota assertion below is computed from.
