@@ -62,6 +62,7 @@
       ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCbOPMX9iWXlulmbNXrz6oLw/videos";
       destination = "/mnt/channels/videos/WaLter .NO";
+      restructure = true;
       rateLimit = true;
     };
     channels."peco" = {
@@ -107,6 +108,7 @@
       ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCsvn_Po0SmunchJYOWpOxMg/videos";
       destination = "/mnt/channels/videos/videogamedunkey";
+      restructure = true;
       rateLimit = true;
     };
     channels."ph1lza" = {
@@ -665,6 +667,7 @@
       ignoreErrors = false;
       url = "https://www.youtube.com/channel/UC6zl_U-HEajk9JSHkuTlaZQ/videos";
       destination = "/mnt/channels/videos/Timelab Pro";
+      restructure = true;
       rateLimit = true;
     };
     channels."villainous" = {
