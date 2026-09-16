@@ -14,6 +14,14 @@
       "192.168.1.228"
       "2600:2b00:9b16:6d01::228"
     ];
+
+    # upstream_mode is load_balance, so each query goes to exactly one of the
+    # upstreams configured in the web UI. These catch the query when that one
+    # fails, instead of handing the client back a SERVFAIL.
+    settings.dns.fallback_dns = [
+      "1.1.1.1"
+      "9.9.9.10"
+    ];
   };
 
   # if AdGuard starts before the static v6 address is configured on the
