@@ -23,17 +23,28 @@ let
   hook = pkgs.writeShellScript "cache-push-hook" ''
     set -eu
 
-    # Sign before anything below can bail out. Nix only signs automatically for
-    # builds that actually ran here (LocalDerivationGoal::registerOutputs ->
-    # signPathInfo); the generic DerivationGoal used when build-remote delegates
-    # never signs. So anything a remote builder produced lands in our store
-    # unsigned, gets pushed unsigned (nixremote is a trusted user on pantry, so
-    # the push is accepted), and is then refused by every host's require-sigs
-    # when they try to substitute it back — a silently useless cache entry.
-    # Signing here says "I vouch for what my own builder produced", which is
-    # already the trust relationship. Idempotent on paths we signed at build
-    # time, and never worth failing a build over.
-    ${config.nix.package}/bin/nix store sign --key-file ${keyFile} $OUT_PATHS || true
+    # Sign the whole closure, before anything below can bail out.
+    #
+    # Two gaps let a path pantry cannot verify sit in our store. Nix only signs
+    # automatically for builds that actually ran here
+    # (LocalDerivationGoal::registerOutputs -> signPathInfo); the generic
+    # DerivationGoal used when build-remote delegates never signs. And a path
+    # substituted from a cache pantry does not know — Techcyte's attic, on the
+    # Mac — carries only that cache's signature.
+    #
+    # --recursive rather than just $OUT_PATHS, because nix copy sends the whole
+    # closure and one unverifiable dependency refuses the entire push. Pantry's
+    # daemon does log this connection as a trusted user, but that buys nothing:
+    # ssh-ng runs `nix-daemon --stdio` as nixremote, and that process cannot
+    # authenticate its stdio peer, so it serves us as untrusted and asks the
+    # real daemon to check signatures regardless of trusted-users.
+    #
+    # Signing is also what makes a pushed path worth having: pantry keeps the
+    # signatures, and every host's require-sigs checks them on the way back
+    # out, so a path stored there unsigned is one nobody can substitute.
+    # Idempotent on paths already carrying this key, and never worth failing a
+    # build over.
+    ${config.nix.package}/bin/nix store sign --recursive --key-file ${keyFile} $OUT_PATHS || true
 
     # escape hatch: pause pushing without a rebuild
     [ -e /etc/nix/no-cache-push ] && exit 0
