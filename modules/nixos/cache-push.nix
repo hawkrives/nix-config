@@ -42,8 +42,15 @@ let
     if ! ${pkgs.coreutils}/bin/timeout 2 ${pkgs.bash}/bin/bash -c 'exec 3<>/dev/tcp/${pantryAddr}/22' 2>/dev/null; then
       exit 0
     fi
-    # OUT_PATHS is set by nix; a copy failure only warns, never fails the build.
-    exec ${config.nix.package}/bin/nix copy --to "${store}" $OUT_PATHS
+    # OUT_PATHS is set by nix. A push is an optimisation, never a build
+    # requirement, so a copy failure warns and the hook still exits 0 — nix
+    # fails the build on any non-zero exit from a post-build-hook, so `exec`
+    # here (which hands nix copy's status straight to nix) turned an
+    # unreachable or unhappy cache into a broken local build.
+    if ! ${config.nix.package}/bin/nix copy --to "${store}" $OUT_PATHS; then
+      echo "cache-push: pushing to pantry failed; continuing" >&2
+    fi
+    exit 0
   '';
 in
 {
