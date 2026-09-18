@@ -5,8 +5,11 @@
 # Building mise from source is no alternative: upstream's own flake fails its
 # test suite in the darwin sandbox.
 #
-# To bump: set `version`, then copy the macos-arm64 and macos-x64 `.tar.gz`
-# checksums from https://mise.run (convert with `nix hash to-sri --type sha256`).
+# Renovate bumps `tag` and `sha256` together (see renovate.json5), taking the
+# new checksum from the release's SHASUMS256.txt. By hand: set `tag`, then copy
+# the macos-arm64 `.tar.gz` checksum from https://mise.run.
+#
+# Only aarch64-darwin: nixpkgs has dropped x86_64-darwin.
 { pkgs, ... }:
 let
   inherit (pkgs)
@@ -16,31 +19,21 @@ let
     installShellFiles
     ;
 
-  version = "2026.9.11";
+  # The tag must sit directly above the sha256 of the macos-arm64 .tar.gz:
+  # Renovate's regex in renovate.json5 matches the pair.
+  # renovate: datasource=github-release-attachments depName=jdx/mise
+  tag = "v2026.9.11";
+  sha256 = "34e8296f932c1d6f3b84d924bbb9f2841336d7bee1c373005d479e13664cb6c0";
 
-  # mise's name for each platform, and the sha256 of its tarball
-  platforms = {
-    aarch64-darwin = {
-      arch = "arm64";
-      hash = "sha256-NOgpb5MsHW87hNkku7nyhBM2177hw3MAXUeeE2ZMtsA=";
-    };
-    x86_64-darwin = {
-      arch = "x64";
-      hash = "sha256-RqZ7BQ1T8e55U1P4/17P15MoofZBX0s+3nns2nIj+Wk=";
-    };
-  };
-
-  platform =
-    platforms.${stdenvNoCC.hostPlatform.system}
-      or (throw "mise-bin: no prebuilt mise for ${stdenvNoCC.hostPlatform.system}");
+  version = lib.removePrefix "v" tag;
 in
 stdenvNoCC.mkDerivation {
   pname = "mise-bin";
   inherit version;
 
   src = fetchurl {
-    url = "https://mise.jdx.dev/v${version}/mise-v${version}-macos-${platform.arch}.tar.gz";
-    inherit (platform) hash;
+    url = "https://mise.jdx.dev/${tag}/mise-${tag}-macos-arm64.tar.gz";
+    inherit sha256;
   };
 
   nativeBuildInputs = [ installShellFiles ];
@@ -59,7 +52,7 @@ stdenvNoCC.mkDerivation {
     homepage = "https://mise.jdx.dev";
     license = lib.licenses.mit;
     mainProgram = "mise";
-    platforms = builtins.attrNames platforms;
+    platforms = [ "aarch64-darwin" ];
     sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
   };
 }

@@ -6,4 +6,18 @@
   "nix": {
     "enabled": true,
   },
+  "customManagers": [
+    {
+      // packages/mise-bin.nix pins the prebuilt macOS mise by release tag and
+      // tarball sha256. The github-release-attachments datasource finds the
+      // current sha256 in the release's SHASUMS256.txt and reads the matching
+      // line from the new release's, so tag and hash move together.
+      "customType": "regex",
+      "managerFilePatterns": ["/^packages/mise-bin\\.nix$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*tag = \"(?<currentValue>[^\"]+)\";\\n\\s*sha256 = \"(?<currentDigest>[0-9a-f]{64})\";",
+      ],
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}\n  tag = \"{{{newValue}}}\";\n  sha256 = \"{{{newDigest}}}\";",
+    },
+  ],
 }
