@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  perSystem,
   ...
 }:
 {
@@ -235,6 +236,8 @@
 
     mise = {
       enable = true;
+      # see packages/mise-bin.nix for why macOS takes the upstream binary
+      package = if pkgs.stdenv.hostPlatform.isDarwin then perSystem.self.mise-bin else pkgs.mise;
       globalConfig = {
         # tools."pipx:batrachian-toad" = "0.5.34";
         settings.experimental = true;
