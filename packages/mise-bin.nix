@@ -44,6 +44,11 @@ stdenvNoCC.mkDerivation {
     runHook preInstall
     install -Dm755 bin/mise $out/bin/mise
     installManPage man/man1/mise.1
+
+    # Nix owns this binary, so `mise self-update` (and auto_update) must not
+    # try to replace it. mise looks for this marker beside its resolved binary.
+    mkdir -p $out/lib/mise
+    touch $out/lib/mise/.disable-self-update
     runHook postInstall
   '';
 

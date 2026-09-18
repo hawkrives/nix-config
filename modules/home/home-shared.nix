@@ -241,6 +241,9 @@
       globalConfig = {
         # tools."pipx:batrachian-toad" = "0.5.34";
         settings.experimental = true;
+        # Nix pins mise's version, so skip the daily GitHub check behind the
+        # "new version available" notice.
+        settings.disable_update_warning = true;
       };
     };
   };
