@@ -53,3 +53,30 @@ if [ "$(hostname)" = nutmeg ]; then
 fi
 exec ssh nutmeg channel-archive-status "$@"
 '''
+
+# ── nixtamal (nutmeg only, experimental) ──────────────────────────────────────
+# nutmeg can also be built without flakes, from ./default.nix + nix/tamal/.
+# See README.md § "Building nutmeg without flakes". The flake still owns
+# tuckles, pantry and Techcyte; these tasks do not touch them.
+
+[tasks."nutmeg:tamal"]
+description = "Build nutmeg from the non-flake (nixtamal) entry point"
+run = 'nh os ${ACTION:-build} --file . nixosConfigurations.nutmeg --hostname nutmeg'
+
+# Replaces `nix flake update` for the nixtamal-pinned inputs. Uses the nixtamal
+# that ./default.nix pins, not whatever happens to be on PATH, so a refresh is
+# reproducible.
+[tasks."tamal:refresh"]
+description = "Refresh + relock the nixtamal inputs (cf. update-and-commit)"
+run = '''
+nixtamal=$(nix-build --no-out-link -A packages.nixtamal)/bin/nixtamal
+"$nixtamal" refresh "$@"
+"$nixtamal" check-soundness
+'''
+
+[tasks."tamal:status"]
+description = "Show which nixtamal inputs have drifted from their fresh-cmd"
+run = '''
+nixtamal=$(nix-build --no-out-link -A packages.nixtamal)/bin/nixtamal
+"$nixtamal" list-stale
+'''
