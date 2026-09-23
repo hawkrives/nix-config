@@ -119,17 +119,30 @@ in
 
   systemd.services.soularr = {
     description = "Soularr — drive slskd (Soulseek) from Lidarr's wanted list";
-    # Pull the music mount up at start (for ReadWritePaths) and order after it,
-    # but with Wants/After — NOT RequiresMountsFor. A run can exceed the NFS 5m
-    # idle-unmount (the search phase doesn't touch /mnt), and a hard Requires
-    # would make systemd kill soularr when the mount idle-unmounts (it did: a
-    # 6.5m CJK-churning run got SIGTERM'd). Wants doesn't propagate the stop.
+    # Timer-driven oneshot: the switch must not touch it. A `nixos-rebuild switch`
+    # restarts any changed unit that is currently active, so a switch landing
+    # mid-run stops that run and immediately starts a fresh one — which races
+    # lidarr.service's own restart and dies on a connection-refused to
+    # localhost:8686, failing the activation. Leaving it alone lets the run
+    # finish; the next hourly firing picks up the new config.
+    restartIfChanged = false;
+    # Everything here is Wants/After, never Requires — a hard dependency lets the
+    # dependency's own stop propagate and kill a run in progress.
+    #   mnt-music.mount: pulled up at start for ReadWritePaths, but NOT via
+    #     RequiresMountsFor. A run can exceed the NFS 5m idle-unmount (the search
+    #     phase doesn't touch /mnt), and a Requires would make systemd kill
+    #     soularr when that fires — it did: a 6.5m CJK-churning run got SIGTERM'd.
+    #   lidarr.service: soularr drives lidarr's API, so order after it and pull it
+    #     up. Ordering only gates the *start job*, not readiness — the
+    #     soularr-wait-for-lidarr ExecStartPre below covers the rest.
     after = [
       "network-online.target"
+      "lidarr.service"
       "mnt-music.mount"
     ];
     wants = [
       "network-online.target"
+      "lidarr.service"
       "mnt-music.mount"
     ];
     serviceConfig = {
@@ -152,19 +165,48 @@ in
       # under failed_imports. 0007 makes the temp folder group-writable from
       # creation — same fix and reasoning as slskd's UMask (see tuckles/slskd.nix).
       UMask = "0007";
+      # Type=oneshot defaults TimeoutStartSec to infinity, and systemd will not
+      # start a second run while one is active — so a single wedged run silently
+      # suppresses every hourly firing after it (it did: one run reached 2w 3d).
+      # 6h is far above any legitimate run: the search phase is bounded
+      # by number_of_albums_to_grab × minimum_search_interval, and the wait phase
+      # by [Slskd] stalled_timeout = 3600. Hitting this fires OnFailure, which is
+      # the point — a run this long is broken and should page. --no-lock-file
+      # means the SIGTERM leaves nothing stale behind.
+      TimeoutStartSec = "6h";
       # Both keys exposed to the (non-root) service via systemd credentials.
       LoadCredential = [
         "lidarr-key:${config.age.secrets.lidarr-api-key.path}"
         "slskd-key:${config.age.secrets.slskd-api-key.path}"
       ];
-      ExecStartPre = pkgs.writeShellScript "soularr-render-config" ''
-        set -euo pipefail
-        lk=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' "$CREDENTIALS_DIRECTORY/lidarr-key")
-        sk=$(${pkgs.coreutils}/bin/cat "$CREDENTIALS_DIRECTORY/slskd-key")
-        ${pkgs.gnused}/bin/sed -e "s|@LIDARR_KEY@|$lk|" -e "s|@SLSKD_KEY@|$sk|" \
-          ${configTemplate} > /var/lib/soularr/config.ini
-        ${pkgs.coreutils}/bin/chmod 600 /var/lib/soularr/config.ini
-      '';
+      ExecStartPre = [
+        (pkgs.writeShellScript "soularr-render-config" ''
+          set -euo pipefail
+          lk=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' "$CREDENTIALS_DIRECTORY/lidarr-key")
+          sk=$(${pkgs.coreutils}/bin/cat "$CREDENTIALS_DIRECTORY/slskd-key")
+          ${pkgs.gnused}/bin/sed -e "s|@LIDARR_KEY@|$lk|" -e "s|@SLSKD_KEY@|$sk|" \
+            ${configTemplate} > /var/lib/soularr/config.ini
+          ${pkgs.coreutils}/bin/chmod 600 /var/lib/soularr/config.ini
+        '')
+        # Ordering after lidarr.service is necessary but not sufficient: lidarr is
+        # Type=simple with NotifyAccess=none, so systemd calls its start job done
+        # the instant the process forks — about 10s before it binds 8686. Without
+        # this gate a run that begins in that window (at boot, where the timer's
+        # Persistent=true fires immediately, or while lidarr is restarting) dies on
+        # the first API call with connection-refused. Poll the unauthenticated
+        # /ping until it answers, then hand over to soularr.
+        (pkgs.writeShellScript "soularr-wait-for-lidarr" ''
+          set -euo pipefail
+          for _ in $(${pkgs.coreutils}/bin/seq 60); do
+            if ${pkgs.curl}/bin/curl -fs -m 5 -o /dev/null http://localhost:8686/ping; then
+              exit 0
+            fi
+            ${pkgs.coreutils}/bin/sleep 2
+          done
+          echo "lidarr did not answer /ping within 120s; skipping this run" >&2
+          exit 1
+        '')
+      ];
       # --no-lock-file: systemd already serializes oneshot runs, and soularr's own
       # lock file is left stale if a run is SIGTERM'd (e.g. by an idle-unmount),
       # which then silently exits every subsequent run with code 1.
