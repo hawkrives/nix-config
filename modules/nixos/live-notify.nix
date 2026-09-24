@@ -66,7 +66,8 @@ let
   youtubeUnitsPerCheck = 2;
 
   youtubeDailyUnits = lib.foldlAttrs (
-    acc: _: c: acc + youtubeUnitsPerCheck * (86400 / c.intervalSeconds)
+    acc: _: c:
+    acc + youtubeUnitsPerCheck * (86400 / c.intervalSeconds)
   ) 0 youtubeChannels;
 
   # `id` and the channel key `name` are Nix-interpolated directly into the
@@ -81,17 +82,48 @@ let
 
   mention = c: lib.escapeShellArg (if c.discordMention == null then "" else c.discordMention);
 
-  # Flags on every request. --max-time is per attempt, and the retry delay
-  # is not counted against it, so one transient failure costs 30s and one
-  # more try before the unit gives up and pages via OnFailure=.
-  # --retry-all-errors is what covers a DNS resolution failure ("Could not
-  # resolve host", a link blip or resolver hiccup); plain --retry only
-  # covers transient HTTP statuses and a few connection errors.
-  curlOpts = "-sS --fail --max-time 20 --retry 1 --retry-delay 30 --retry-all-errors";
+  # Every request goes through req(), which classifies curl's exit status.
+  # --max-time is per attempt and the retry delay is not counted against it,
+  # so one transient failure costs 30s and one more try. --retry-all-errors is
+  # what makes that retry cover a DNS resolution failure at all; plain --retry
+  # only covers transient HTTP statuses and a few connection errors.
+  #
+  # If the retry also fails, the exit status says whether this check is broken
+  # or the box simply has no network: 6 (host not resolved), 7 (connect failed)
+  # and 28 (timed out) are an outage, and req reports them as 75 so the caller
+  # skips the run rather than paging. Anything else stays a failure — notably
+  # 22, --fail on an HTTP error, i.e. a bad key or a rejected webhook.
+  #
+  # Retrying *through* an outage instead is not an option: these are oneshot
+  # units on a per-channel intervalSeconds timer and systemd will not start a
+  # run while one is active, so a unit that retried for minutes would suppress
+  # its own schedule. Skipping costs at most one interval of go-live
+  # latency, and because a skip exits before the state file is written, a
+  # pending notification is re-detected and re-sent on the next run.
+  shellPrelude = name: ''
+    req() {
+      local rc=0
+      curl -sS --fail --max-time 20 --retry 1 --retry-delay 30 --retry-all-errors "$@" || rc=$?
+      case "$rc" in
+        6 | 7 | 28) return 75 ;;
+        *) return "$rc" ;;
+      esac
+    }
+
+    # $1 = captured exit status, $2 = what was being attempted.
+    bail() {
+      if [ "$1" -eq 75 ]; then
+        echo "live-notify-${name}: $2: no network, skipping this check" >&2
+        exit 0
+      fi
+      echo "live-notify-${name}: $2 failed" >&2
+      exit 1
+    }
+  '';
 
   twitchScript = name: c: ''
     set -uo pipefail
-
+    ${shellPrelude name}
     if [ -z "''${TWITCH_CLIENT_ID:-}" ] || [ -z "''${TWITCH_CLIENT_SECRET:-}" ]; then
       echo "live-notify-${name}: missing Twitch credentials (services.liveNotify.twitch.credentialsFile)" >&2
       exit 1
@@ -101,22 +133,23 @@ let
       exit 1
     fi
 
-    token=$(curl ${curlOpts} -X POST "https://id.twitch.tv/oauth2/token" \
+    rc=0
+    token=$(req -X POST "https://id.twitch.tv/oauth2/token" \
       --data-urlencode "client_id=$TWITCH_CLIENT_ID" \
       --data-urlencode "client_secret=$TWITCH_CLIENT_SECRET" \
-      --data-urlencode "grant_type=client_credentials" | jq -r '.access_token')
+      --data-urlencode "grant_type=client_credentials" | jq -r '.access_token') || rc=$?
+    if [ "$rc" -ne 0 ]; then bail "$rc" "Twitch token request"; fi
     if [ -z "$token" ] || [ "$token" = "null" ]; then
       echo "live-notify-${name}: failed to obtain a Twitch app access token" >&2
       exit 1
     fi
 
-    if ! resp=$(curl ${curlOpts} \
+    rc=0
+    resp=$(req \
       -H "Client-Id: $TWITCH_CLIENT_ID" \
       -H "Authorization: Bearer $token" \
-      "https://api.twitch.tv/helix/streams?user_login=${c.id}"); then
-      echo "live-notify-${name}: Twitch streams request failed" >&2
-      exit 1
-    fi
+      "https://api.twitch.tv/helix/streams?user_login=${c.id}") || rc=$?
+    if [ "$rc" -ne 0 ]; then bail "$rc" "Twitch streams request"; fi
 
     count=$(echo "$resp" | jq '.data | length')
     state_file="$STATE_DIRECTORY/state"
@@ -137,11 +170,10 @@ let
     $lines"; fi
 
       payload=$(jq -n --arg c "$lines" '{content: $c}')
-      if ! curl ${curlOpts} -H "Content-Type: application/json" \
-           -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null; then
-        echo "live-notify-${name}: Discord webhook post failed" >&2
-        exit 1
-      fi
+      rc=0
+      req -H "Content-Type: application/json" \
+        -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null || rc=$?
+      if [ "$rc" -ne 0 ]; then bail "$rc" "Discord webhook post"; fi
     fi
 
     echo "$cur" > "$state_file"
@@ -149,7 +181,7 @@ let
 
   youtubeScript = name: c: ''
     set -uo pipefail
-
+    ${shellPrelude name}
     if [ -z "''${YOUTUBE_API_KEY:-}" ]; then
       echo "live-notify-${name}: missing YouTube API key (services.liveNotify.youtube.apiKeyFile)" >&2
       exit 1
@@ -161,11 +193,10 @@ let
 
     uploads_playlist="UU${lib.removePrefix "UC" c.id}"
 
-    if ! items=$(curl ${curlOpts} \
-      "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploads_playlist&maxResults=5&key=$YOUTUBE_API_KEY"); then
-      echo "live-notify-${name}: playlistItems request failed" >&2
-      exit 1
-    fi
+    rc=0
+    items=$(req \
+      "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploads_playlist&maxResults=5&key=$YOUTUBE_API_KEY") || rc=$?
+    if [ "$rc" -ne 0 ]; then bail "$rc" "playlistItems request"; fi
 
     video_ids=$(echo "$items" | jq -r '[.items[]?.snippet.resourceId.videoId] | join(",")')
 
@@ -175,11 +206,10 @@ let
     live_json=""
 
     if [ -n "$video_ids" ]; then
-      if ! videos=$(curl ${curlOpts} \
-        "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=$video_ids&key=$YOUTUBE_API_KEY"); then
-        echo "live-notify-${name}: videos request failed" >&2
-        exit 1
-      fi
+      rc=0
+      videos=$(req \
+        "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=$video_ids&key=$YOUTUBE_API_KEY") || rc=$?
+      if [ "$rc" -ne 0 ]; then bail "$rc" "videos request"; fi
       live_json=$(echo "$videos" | jq -c '[.items[] | select(.snippet.liveBroadcastContent == "live")][0]')
       if [ "$live_json" != null ] && [ -n "$live_json" ]; then
         cur=live
@@ -198,11 +228,10 @@ let
     $lines"; fi
 
       payload=$(jq -n --arg c "$lines" '{content: $c}')
-      if ! curl ${curlOpts} -H "Content-Type: application/json" \
-           -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null; then
-        echo "live-notify-${name}: Discord webhook post failed" >&2
-        exit 1
-      fi
+      rc=0
+      req -H "Content-Type: application/json" \
+        -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null || rc=$?
+      if [ "$rc" -ne 0 ]; then bail "$rc" "Discord webhook post"; fi
     fi
 
     echo "$cur" > "$state_file"
@@ -304,15 +333,21 @@ in
       }
       {
         assertion = badIds == { };
-        message = "liveNotify: channel id(s) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts/URLs): " + lib.concatStringsSep ", " (lib.attrNames badIds);
+        message =
+          "liveNotify: channel id(s) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts/URLs): "
+          + lib.concatStringsSep ", " (lib.attrNames badIds);
       }
       {
         assertion = badNames == { };
-        message = "liveNotify: channel name(s) (keys) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts): " + lib.concatStringsSep ", " (lib.attrNames badNames);
+        message =
+          "liveNotify: channel name(s) (keys) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts): "
+          + lib.concatStringsSep ", " (lib.attrNames badNames);
       }
       {
         assertion = badYoutubeIds == { };
-        message = "liveNotify: YouTube channel id(s) must be the UC... channel ID, not an @handle: " + lib.concatStringsSep ", " (lib.attrNames badYoutubeIds);
+        message =
+          "liveNotify: YouTube channel id(s) must be the UC... channel ID, not an @handle: "
+          + lib.concatStringsSep ", " (lib.attrNames badYoutubeIds);
       }
     ];
 
