@@ -95,14 +95,41 @@ in
 
             $log"
 
+            # Retry across a DNS outage. A host that resolves through an AdGuard it
+            # also hosts has no DNS while adguardhome restarts — minutes on a
+            # switch — and that is exactly when units fail, so a single attempt
+            # loses the alert to "Could not resolve host" (it did: nutmeg had no
+            # resolver for 5m52s and the soularr failure never sent). 16 tries
+            # 30s apart covers ~8 minutes.
+            #
+            # Retry only the error classes an outage produces: 6 host not
+            # resolved, 7 connect failed, 28 timed out. Anything else is a real
+            # rejection — 22 is --fail on an HTTP error, i.e. a bad token or chat
+            # id, which no amount of retrying will fix — so fail loudly at once.
+            #
             # --fail so a rejected send is a failed unit rather than silence;
-            # --max-time so a hung api.telegram.org can't wedge this forever.
-            ${pkgs.curl}/bin/curl -sS --fail --max-time 30 \
-              -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-              --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
-              --data-urlencode "text=$text" \
-              --data-urlencode "disable_web_page_preview=true" \
-              >/dev/null
+            # --max-time bounds each individual attempt, not the loop.
+            rc=0
+            for _ in $(${pkgs.coreutils}/bin/seq 16); do
+              rc=0
+              ${pkgs.curl}/bin/curl -sS --fail --max-time 30 \
+                -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+                --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+                --data-urlencode "text=$text" \
+                --data-urlencode "disable_web_page_preview=true" \
+                >/dev/null || rc=$?
+              [ "$rc" -eq 0 ] && exit 0
+              case "$rc" in
+                6 | 7 | 28) ;;
+                *)
+                  echo "notify-failure: curl exited $rc sending $unit's alert; not retryable" >&2
+                  exit 1
+                  ;;
+              esac
+              ${pkgs.coreutils}/bin/sleep 30
+            done
+            echo "notify-failure: api.telegram.org unreachable for ~8min (curl $rc); alert for $unit lost" >&2
+            exit 1
           '';
         };
       }
