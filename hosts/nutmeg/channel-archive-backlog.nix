@@ -58,7 +58,7 @@
     channels."walter-no" = {
       # 230 vids
       enable = true;
-      incremental = false;
+      incremental = true;
       ignoreErrors = false;
       url = "https://www.youtube.com/channel/UCbOPMX9iWXlulmbNXrz6oLw/videos";
       destination = "/mnt/channels/videos/WaLter .NO";

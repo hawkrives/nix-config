@@ -38,7 +38,7 @@
     };
     channels."kuma_ne_ne_yt" = {
       enable = true;
-      incremental = false;
+      incremental = true;
       ignoreErrors = false;
       includeLive = true;
       url = "https://youtube.com/@kuma.ne-ne";
