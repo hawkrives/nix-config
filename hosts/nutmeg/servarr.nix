@@ -265,7 +265,7 @@ in
     enable = true;
     openFirewall = true;
   };
-  services.tsnsrv.services.bazarr.urlParts.port = config.services.bazarr.listenPort;
+  services.tsnsrv.services.bazarr.urlParts.port = config.services.bazarr.settings.general.port;
 
   # Bazarr has no declarative-config option (it owns config.yaml at runtime), so
   # we enforce two things on every start with YAML-aware edits:
