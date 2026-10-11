@@ -179,6 +179,8 @@
     vimdiff = "nvim -d";
   };
 
+  home.shell.enableNushellIntegration = true;
+
   # TODO: relocate this
   home.sessionPath = [
     "$HOME/bin"
@@ -213,7 +215,7 @@
     lazygit.enable = true;
     less.enable = true;
     jq.enable = true;
-    # nushell.enable = true;
+    nushell.enable = true;
     rclone.enable = true;
     readline.enable = true;
     ripgrep.enable = true;
