@@ -216,6 +216,9 @@
     less.enable = true;
     jq.enable = true;
     nushell.enable = true;
+    nushell.plugins = [
+      pkgs.nushellPlugins.query
+    ];
     rclone.enable = true;
     readline.enable = true;
     ripgrep.enable = true;
