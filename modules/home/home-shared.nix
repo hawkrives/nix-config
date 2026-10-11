@@ -74,9 +74,14 @@
             return 1
           end
 
-          # Are we in a jj repo?
-          if not jj root --quiet &>/dev/null
-            return 1
+          # Are we in a jj repo? Walk up looking for .jj using only builtins:
+          # this runs on every prompt, and launching `jj root` costs ~250ms
+          # on machines where endpoint security inspects each exec.
+          set -l dir $PWD
+          while not test -d $dir/.jj
+            test $dir = /
+              and return 1
+            set dir (path dirname $dir)
           end
 
           # Generate prompt
@@ -218,6 +223,7 @@
     nushell.enable = true;
     nushell.plugins = [
       pkgs.nushellPlugins.query
+      pkgs.nushellPlugins.formats
     ];
     rclone.enable = true;
     readline.enable = true;
