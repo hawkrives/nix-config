@@ -86,7 +86,12 @@ in {
       nix.extraOptions = "build-dir = /nix/.rw-store/nix-build-dir\n";
 
       virtualisation = {
-        vz.nestedVirtualization = true;
+        # Off because, with it on under macOS 27.0, the guest's memory was
+        # overwritten (zeroed module code, NULL inode pointers, a clobbered
+        # stack canary) on both 6.18 and 6.12 kernels, panicking within
+        # minutes to days and leaving a VM that never answers ssh. Turning it
+        # off tests whether nested virtualization is the cause.
+        vz.nestedVirtualization = false;
         darwin-builder = {
           # TensorRT alone needs ~30GB at peak: a 6.4GB tarball in the store,
           # 10.7GB unpacked, and a ~10GB install output, on top of its CUDA
