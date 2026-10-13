@@ -29,6 +29,7 @@
     ./home-assistant-matter.nix
     ./plex.nix
     ./servarr.nix
+    ./service-hardening.nix
     ./beets.nix
     ./channel-archive.nix
     ./channel-archive-backlog.nix
