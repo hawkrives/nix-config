@@ -9,7 +9,7 @@
         docker-language-server # official from Docker, Inc
         dockerfile-language-server # for helix
         docker-compose-language-service
-        typescript-language-server
+        # typescript-language-server # pnpm-deps hash mismatch in current nixpkgs
         yaml-language-server
         gopls
         terraform-ls

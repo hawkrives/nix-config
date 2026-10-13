@@ -325,7 +325,7 @@
     # client (~300 MB) into the closure. sqlite-interactive covers SQLite needs.
     # pkgs.sqlit-tui
     pkgs.sqlite-interactive
-    pkgs.terraform
+    # pkgs.terraform # go-modules fetch fails in current nixpkgs
     pkgs.tokei
     pkgs.tree
     pkgs.trippy
