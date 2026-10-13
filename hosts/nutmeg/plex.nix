@@ -55,7 +55,30 @@ in
   # `final-sigterm timed out` and is SIGKILLed on every deploy. Hard-killing it
   # mid-write is how the library/blobs SQLite DBs that backups.nix snapshots
   # get corrupted, so give it room to flush.
-  systemd.services.plex.serviceConfig.TimeoutStopSec = "5min";
+  #
+  # A runaway Plex Transcoder (e.g. a background loudness-analysis job leaking
+  # on a file EasyAudioEncoder can't decode) is capped at the cgroup level, so
+  # the kernel OOM-kills it inside plex.service before the whole box swaps
+  # itself into a global OOM. OOMPolicy=continue keeps the rest of Plex running
+  # when that happens; the default (stop) tears the unit down, and the SIGQUIT
+  # stop then waits out TimeoutStopSec on helpers that ignore it.
+  systemd.services.plex.serviceConfig = {
+    TimeoutStopSec = "5min";
+    OOMPolicy = "continue";
+    MemoryMax = "8G";
+    MemorySwapMax = "1G";
+
+    # Hardening on top of the nixpkgs module's set. Plex runs inside a
+    # bubblewrap FHS env, which needs user/mount namespaces and the mount
+    # syscalls, so RestrictNamespaces, PrivateUsers and SystemCallFilter
+    # aren't usable here.
+    ProtectClock = true;
+    ProtectKernelLogs = true;
+    ProtectHostname = true;
+    SystemCallArchitectures = "native";
+    RemoveIPC = true;
+    PrivateIPC = true;
+  };
 
   services.tautulli = {
     enable = true;
