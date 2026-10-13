@@ -1,4 +1,5 @@
 {
+  lib,
   pkgs,
   config,
   synologyMount,
@@ -51,10 +52,10 @@ in
     ];
   };
 
-  # Plex needs longer than the systemd default to shut down: at 90s it hits
-  # `final-sigterm timed out` and is SIGKILLed on every deploy. Hard-killing it
-  # mid-write is how the library/blobs SQLite DBs that backups.nix snapshots
-  # get corrupted, so give it room to flush.
+  # TimeoutStopSec bounds how long ExecStop below waits for Plex to close its
+  # library/blobs SQLite DBs (which backups.nix snapshots); a normal stop takes
+  # under a second, but hard-killing Plex mid-write is how those DBs get
+  # corrupted, so a slow flush gets room.
   #
   # A runaway Plex Transcoder (e.g. a background loudness-analysis job leaking
   # on a file EasyAudioEncoder can't decode) is capped at the cgroup level, so
@@ -62,22 +63,62 @@ in
   # itself into a global OOM. OOMPolicy=continue keeps the rest of Plex running
   # when that happens; the default (stop) tears the unit down, and the SIGQUIT
   # stop then waits out TimeoutStopSec on helpers that ignore it.
+  #
+  # MainPID is the bubblewrap wrapper, not Plex, and Plex is bwrap's direct
+  # child under --die-with-parent. A plain KillSignal stop SIGQUITs bwrap,
+  # which dies at once and takes Plex down with SIGKILL mid-shutdown, leaving
+  # the library DBs' WAL un-checkpointed. So ExecStop signals only Plex and
+  # waits for it to close its DBs (bounded by TimeoutStopSec). The helpers it
+  # spawns (Script Host, DLNA, Tuner, EasyAudioEncoder) inherit its blocked
+  # SIGINT/SIGQUIT/SIGTERM, so once Plex is gone only SIGKILL can stop them.
   systemd.services.plex.serviceConfig = {
+    ExecStop = "+${pkgs.writeShellScript "plex-graceful-stop" ''
+      pms=$(${pkgs.procps}/bin/pgrep -P "$MAINPID" -x "Plex Media Serv")
+      [ -n "$pms" ] || exit 0
+      kill -QUIT "$pms"
+      while kill -0 "$pms" 2>/dev/null; do ${pkgs.coreutils}/bin/sleep 0.2; done
+      for p in $(< /sys/fs/cgroup/system.slice/plex.service/cgroup.procs); do
+        [ "$p" = "$MAINPID" ] || [ "$p" = "$$" ] || kill -KILL "$p" 2>/dev/null
+      done
+      exit 0
+    ''}";
     TimeoutStopSec = "5min";
     OOMPolicy = "continue";
     MemoryMax = "8G";
     MemorySwapMax = "1G";
 
-    # Hardening on top of the nixpkgs module's set. Plex runs inside a
-    # bubblewrap FHS env, which needs user/mount namespaces and the mount
-    # syscalls, so RestrictNamespaces, PrivateUsers and SystemCallFilter
-    # aren't usable here.
+    # Hardening on top of the nixpkgs module's set, shaped around the
+    # bubblewrap FHS env Plex runs in: bwrap needs to create user + mount
+    # namespaces, call the @mount syscalls, and read /proc/sys/kernel/overflowuid
+    # (so ProcSubset=pid stops it from starting).
     ProtectClock = true;
     ProtectKernelLogs = true;
     ProtectHostname = true;
+    ProtectProc = "invisible";
     SystemCallArchitectures = "native";
     RemoveIPC = true;
     PrivateIPC = true;
+    PrivateUsers = true;
+    CapabilityBoundingSet = "";
+    RestrictNamespaces = [
+      "user"
+      "mnt"
+    ];
+    SystemCallFilter = [
+      "@system-service"
+      "@mount"
+      "~@debug @obsolete @cpu-emulation @raw-io @reboot @swap @module @clock"
+    ];
+    SystemCallErrorNumber = "EPERM";
+    # Only the GPU (VAAPI transcoding) beyond the standard pseudo-devices.
+    DevicePolicy = "closed";
+    DeviceAllow = [ "char-drm rw" ];
+    # Everything read-only except Plex's own state; transcodes go to /dev/shm
+    # (TranscoderTempDirectory), which strict leaves writable. Plex only reads
+    # the media shares, and allowMediaDeletion is off, so read-only /mnt costs
+    # nothing — turning that pref on would need /mnt added here.
+    ProtectSystem = lib.mkForce "strict";
+    ReadWritePaths = [ "/var/lib/plex" ];
   };
 
   services.tautulli = {
