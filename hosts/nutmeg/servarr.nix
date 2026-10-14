@@ -20,11 +20,19 @@ let
   # /run/agenix/<app>-api-key. systemd reads EnvironmentFile= as root before
   # dropping to the service user, so the secret stays root-owned (the default).
   # The env var overrides the <ApiKey> in the app's config.xml at startup.
-  apiKey =
+  #
+  # allowedhosts is the Host-header allowlist. The apps always add localhost,
+  # 127.0.0.1, [::1] and the machine hostname, which covers every on-box client
+  # (seerr, bazarr, recyclarr, soularr, beets, aurral, arr-backup-pin, and the
+  # apps talking to each other). The tailnet name is what tsnsrv passes through
+  # for remote clients like the iPhone app. Radarr refuses host-config PUTs
+  # while this is empty and authentication isn't fully enabled; versions that
+  # predate the setting ignore the env var.
+  arrApp =
     app:
-    servarrApp
-    // {
+    lib.recursiveUpdate servarrApp {
       environmentFiles = [ config.age.secrets."${app}-api-key".path ];
+      settings.server.allowedhosts = "${app}.vaquita-woodpecker.ts.net";
     };
 in
 {
@@ -136,25 +144,25 @@ in
   age.secrets.lidarr-api-key.file = ../../secrets/lidarr-api-key.age;
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
-  services.radarr = apiKey "radarr" // {
+  services.radarr = arrApp "radarr" // {
     enable = true;
   };
   services.tsnsrv.services.radarr.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
-  services.sonarr = apiKey "sonarr" // {
+  services.sonarr = arrApp "sonarr" // {
     enable = true;
   };
   services.tsnsrv.services.sonarr.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
-  services.prowlarr = apiKey "prowlarr" // {
+  services.prowlarr = arrApp "prowlarr" // {
     enable = true;
   };
   services.tsnsrv.services.prowlarr.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
-  services.lidarr = apiKey "lidarr" // {
+  services.lidarr = arrApp "lidarr" // {
     enable = true;
   };
   services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
@@ -208,7 +216,7 @@ in
       set -u
       fail=0
       pin() { # name port apiver keyfile
-        local name=$1 port=$2 ver=$3 key base cur body i
+        local name=$1 port=$2 ver=$3 key base cur body resp i
         key=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' "$4")
         base="http://localhost:$port/api/$ver/config/host"
 
@@ -225,12 +233,21 @@ in
         # of doing nothing and reporting success.
         [ -n "$cur" ] || { echo "$name: GET failed (not reachable on :$port)" >&2; fail=1; return; }
 
+        # Only PUT on drift. The PUT re-submits the whole host config, so any
+        # unrelated validation rule an upgrade adds (Radarr 6.4 rejects an empty
+        # AllowedHosts unless authentication is fully enabled) would otherwise
+        # fail the pin even though backupInterval is already correct.
+        if [ "$(${pkgs.jq}/bin/jq '.backupInterval' <<<"$cur")" = 1 ]; then
+          echo "$name: backupInterval already 1"
+          return
+        fi
+
         body=$(${pkgs.jq}/bin/jq '.backupInterval = 1' <<<"$cur")
-        if ${pkgs.curl}/bin/curl -fsSL -X PUT -H "X-Api-Key: $key" -H "Content-Type: application/json" \
-             -d "$body" "$base" >/dev/null; then
+        if resp=$(${pkgs.curl}/bin/curl -sSL --fail-with-body -X PUT -H "X-Api-Key: $key" \
+             -H "Content-Type: application/json" -d "$body" "$base"); then
           echo "$name: backupInterval pinned to 1"
         else
-          echo "$name: PUT failed" >&2
+          echo "$name: PUT failed: $resp" >&2
           fail=1
         fi
       }
