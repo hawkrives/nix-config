@@ -87,7 +87,9 @@
           (
             final: prev:
             let
-              lix = prev.lixPackageSets.latest;
+              # Pinned to 2.96: nixpkgs' `latest` (2.95.4) doesn't build in the
+              # current snapshot (passes a mimalloc meson flag 2.95 lacks).
+              lix = prev.lixPackageSets.lix_2_96;
             in
             {
               # nix-eval-jobs is built from source inside the Lix package set, so

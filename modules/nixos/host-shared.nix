@@ -68,7 +68,9 @@
   # mkDefault so memory-tight hosts can opt out -- see pantry.
   environment.variables.GC_INITIAL_HEAP_SIZE = lib.mkDefault "4g";
 
-  nix.package = pkgs.lixPackageSets.latest.lix;
+  # 2.96, not `latest` (2.95.4): latest doesn't build in the current nixpkgs
+  # snapshot. Keep in step with the overlay's `lix` in flake.nix.
+  nix.package = pkgs.lixPackageSets.lix_2_96.lix;
 
   # TODO: document
   nix.optimise.automatic = true;

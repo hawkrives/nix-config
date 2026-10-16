@@ -49,7 +49,10 @@ in
         downloads = "/mnt/music/soulseek/complete"; # NFS — same fs as the Lidarr library
         incomplete = "/var/lib/slskd/incomplete"; # local VM disk
       };
-      shares.directories = [ "/mnt/music/data" ]; # read-only library share
+      shares.directories = [
+        "/mnt/music/data" # read-only library share
+        "/mnt/music/tunes"
+      ];
       # API-key auth for Soularr + the web UI. The key is a placeholder here
       # (this ends up in the store); the real value is injected at start.
       web.authentication.api_keys.soularr = {
