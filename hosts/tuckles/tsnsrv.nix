@@ -30,7 +30,7 @@
     };
 
     # slskd web UI at https://slsk.vaquita-woodpecker.ts.net. slskd runs inside
-    # the mullvad netns; tsnsrv can't dial the netns bridge directly (its
+    # the airvpn netns; tsnsrv can't dial the netns bridge directly (its
     # Tailscale fwmark gets dropped by the vpn-confinement rules), so go through
     # the plain localhost:5031 socat forwarder defined in slskd.nix.
     services.slsk.urlParts = {

@@ -1,9 +1,9 @@
 { config, ... }:
 {
   # qui — an alternate web UI for qBittorrent (autobrr/qui). It runs in the host
-  # namespace (it's just a UI). qBittorrent lives in the mullvad netns; from the
+  # namespace (it's just a UI). qBittorrent lives in the airvpn netns; from the
   # host it's reachable at the namespace bridge address 192.168.15.1:6001 (the
-  # mullvad namespaceAddress) — NOT localhost, because the port-forward is a
+  # airvpn namespaceAddress) — NOT localhost, because the port-forward is a
   # PREROUTING DNAT and host-local traffic skips it. So in qui's UI, add the
   # instance as http://192.168.15.1:6001 (no credentials needed).
   services.qui = {

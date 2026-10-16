@@ -59,8 +59,8 @@ in
   # slskd web API key — shared by slskd (tuckles) and Soularr (nutmeg).
   "slskd-api-key.age".publicKeys = users ++ [ nutmeg tuckles ];
 
-  # Mullvad WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
-  "wg-mullvad-tuckles.age".publicKeys = users ++ [ tuckles ];
+  # AirVPN WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
+  "wg-airvpn-tuckles.age".publicKeys = users ++ [ tuckles ];
 
   # Tailscale auth key for tuckles.
   "tailscale-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];

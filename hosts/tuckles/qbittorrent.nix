@@ -4,14 +4,14 @@ let
   # this string: the bridge is <ns>-br and its host-side port veth-<ns>-br. The
   # avahi denyInterfaces below depends on that, so keep them deriving from one
   # source rather than three literals that can drift apart.
-  ns = "mullvad";
+  ns = "airvpn";
 in
 {
-  # VPN namespace bound to the Mullvad WireGuard config; kill-switch is implicit
+  # VPN namespace bound to the AirVPN WireGuard config; kill-switch is implicit
   # (only the wg interface has egress). WebUI is forwarded out to the LAN.
   vpnNamespaces.${ns} = {
     enable = true;
-    wireguardConfigFile = config.age.secrets.wg-mullvad-tuckles.path;
+    wireguardConfigFile = config.age.secrets.wg-airvpn-tuckles.path;
     accessibleFrom = [
       "192.168.1.0/24" # LAN (where the *arr on nutmeg reach the WebUI)
       "100.64.0.0/10" # Tailscale CGNAT range (remote admin of the WebUI)
@@ -31,7 +31,7 @@ in
   };
 
   # Keep avahi off the VPN bridge. Two reasons: publishing this host's LAN
-  # <hostname>.local on a Mullvad bridge is wrong on its face, and avahi binding
+  # <hostname>.local on an AirVPN bridge is wrong on its face, and avahi binding
   # BOTH a bridge and its own member port is a known self-conflict shape --
   # suspected contributor to the 2026-08-26 rename that left tuckles publishing
   # tuckles-3.local and broke every .local deploy. Nothing inside the netns uses
@@ -60,11 +60,11 @@ in
     vpnNamespace = ns;
   };
 
-  # The wg config secret's content can change (e.g. swapping Mullvad city)
+  # The wg config secret's content can change (e.g. swapping AirVPN server)
   # without the unit definition changing, so systemd wouldn't restart the
   # namespace on its own. Restart it when the secret changes so the new config
   # actually loads.
-  systemd.services.${ns}.restartTriggers = [ config.age.secrets.wg-mullvad-tuckles.file ];
+  systemd.services.${ns}.restartTriggers = [ config.age.secrets.wg-airvpn-tuckles.file ];
 
   # qBittorrent downloads to a local TempPath (Session\TempPath in its seeded
   # config) before moving completed files to the per-category NFS save path. But

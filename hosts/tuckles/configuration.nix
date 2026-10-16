@@ -93,7 +93,7 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  age.secrets.wg-mullvad-tuckles.file = ../../secrets/wg-mullvad-tuckles.age;
+  age.secrets.wg-airvpn-tuckles.file = ../../secrets/wg-airvpn-tuckles.age;
   age.secrets.tailscale-authkey-tuckles.file = ../../secrets/tailscale-authkey-tuckles.age;
   age.secrets.qui-session-secret.file = ../../secrets/qui-session-secret.age;
   age.secrets.tsnsrv-authkey-tuckles.file = ../../secrets/tsnsrv-authkey-tuckles.age;

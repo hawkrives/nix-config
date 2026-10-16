@@ -40,10 +40,10 @@ in
     # Soulseek account creds (SLSKD_SLSK_USERNAME / SLSKD_SLSK_PASSWORD) come
     # straight from the ragenix env secret.
     environmentFile = config.age.secrets.slskd-env.path;
-    openFirewall = false; # Mullvad has no inbound forward; listen_port is outbound-only.
+    openFirewall = false; # inbound peers arrive via AirVPN's port forward into the netns, not the host firewall.
 
     settings = {
-      soulseek.listen_port = 50300;
+      soulseek.listen_port = 55571; # forwarded by AirVPN (reserved in the client area)
       web.port = 5030;
       directories = {
         downloads = "/mnt/music/soulseek/complete"; # NFS — same fs as the Lidarr library
@@ -61,10 +61,10 @@ in
   };
 
   systemd.services.slskd = {
-    # Confine to the same Mullvad namespace qBittorrent uses (kill-switch implicit).
+    # Confine to the same AirVPN namespace qBittorrent uses (kill-switch implicit).
     vpnConfinement = {
       enable = true;
-      vpnNamespace = "mullvad";
+      vpnNamespace = "airvpn";
     };
     # NB: deliberately NOT RequiresMountsFor=/mnt/music. The NFS mounts
     # idle-unmount after 5m (x-systemd.idle-timeout); a hard Requires on the
@@ -111,7 +111,7 @@ in
   # it fine. Bridge it with a plain socat forwarder on localhost:5031 and point
   # the slsk tsnsrv node at that (see tsnsrv.nix).
   systemd.services.slskd-web-proxy = {
-    description = "localhost:5031 -> slskd web UI in the mullvad netns (for tsnsrv)";
+    description = "localhost:5031 -> slskd web UI in the airvpn netns (for tsnsrv)";
     after = [ "slskd.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
