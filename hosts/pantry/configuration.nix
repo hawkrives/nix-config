@@ -77,6 +77,11 @@
     ];
   };
 
+  # pantry only builds and serves Nix paths; it runs no containers.
+  virtualisation.podman.enable = false;
+
+  programs.neovim.enable = false;
+
   environment.systemPackages = with pkgs; [
     curl
     btop
