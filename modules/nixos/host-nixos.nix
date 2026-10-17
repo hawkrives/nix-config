@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   inputs,
   ...
 }: {
@@ -8,8 +9,9 @@
     inputs.agenix.nixosModules.default
   ];
 
+  # mkDefault so hosts that don't want an editor (pantry, tuckles) can turn it off.
   programs.neovim = {
-    enable = true;
+    enable = lib.mkDefault true;
     package = pkgs.neovim-unwrapped;
     withRuby = false;
     withNodeJs = false;
@@ -21,6 +23,15 @@
   # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
   # <https://schmiggolas.dev/posts/2024/nh/>
   programs.nh.enable = true;
+
+  # Every host is flake-only, so the nixos-generate-config script is dead weight.
+  # It also embeds bcachefs-tools for filesystem detection, which pulled that
+  # package into every closure.
+  system.tools.nixos-generate-config.enable = false;
+
+  # No host has bcache devices. nixpkgs enables this by default, which installs
+  # bcache-tools and its initrd udev hooks.
+  boot.bcache.enable = false;
 
   # [memory management] zswap + systemd-oomd, applied to every Linux host.
   #
@@ -64,8 +75,9 @@
 
   # enables the "virtualisation.oci-containers.containers" namespace for running containers
   virtualisation.oci-containers.backend = "podman";
+  # mkDefault so hosts that run no containers (pantry) can turn podman off.
   virtualisation.podman = {
-    enable = true;
+    enable = lib.mkDefault true;
 
     # periodically prune Podman resources. `--all` is load-bearing: the bare
     # `podman system prune` this runs by default only reaps *dangling* images,
