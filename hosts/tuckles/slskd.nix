@@ -60,6 +60,25 @@ in
         role = "readwrite";
         cidr = "0.0.0.0/0,::/0";
       };
+      # slskd keeps searches and finished transfers forever by default; Soularr's
+      # ~200 searches/day had grown search.db past 4 GB. Values are minutes.
+      # Pruning deletes rows but never VACUUMs, so the file stays at its peak size
+      # and reuses the freed pages.
+      retention =
+        let
+          month = 30 * 24 * 60;
+          transfers = {
+            succeeded = month;
+            failed = month; # errored, cancelled, rejected, timed out, aborted
+          };
+        in
+        {
+          search = month;
+          transfers = {
+            upload = transfers;
+            download = transfers;
+          };
+        };
     };
   };
 
