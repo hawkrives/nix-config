@@ -42,7 +42,10 @@
       # flake.lock, so it cannot matter here: nixpkgs never reads that flake,
       # it builds the source tarball with its own Rust toolchain. Which is also
       # why the rust-overlay workaround can't come back on this path.
-      pkgs.ragenix
+      # Built against lix, not cppnix: ragenix shells out to a nix binary
+      # (RAGENIX_NIX_BIN_PATH), and without this override cppnix would be
+      # pulled into every closure as a second nix.
+      (pkgs.ragenix.override { nix = config.nix.package; })
     ]
     ++ (pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # TODO: only install this on the NAS
