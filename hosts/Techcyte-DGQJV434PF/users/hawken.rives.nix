@@ -28,7 +28,6 @@
       pkgs.docker-compose-language-service
       pkgs.dockerfile-language-server
       pkgs.nil
-      pkgs.nixd
       pkgs.pi-coding-agent
       pkgs.ruff
       pkgs.sql-formatter
