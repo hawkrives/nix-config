@@ -38,6 +38,7 @@
   # packages available to all users
   environment.systemPackages = [
     pkgs.isd # TUI to work with systemd
+    pkgs.jq # the *arr/qBittorrent/slskd APIs are all JSON
   ];
 
   # Select internationalisation properties.
