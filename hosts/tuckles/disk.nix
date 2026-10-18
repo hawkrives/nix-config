@@ -1,7 +1,6 @@
 # disko layout for the tuckles VM (single virtual disk, legacy BIOS/GRUB).
 # Confirm the disk node at install time with `lsblk` (virtio => /dev/vda).
-{ ... }:
-{
+{...}: {
   disko.devices.disk.main = {
     device = "/dev/vda";
     type = "disk";

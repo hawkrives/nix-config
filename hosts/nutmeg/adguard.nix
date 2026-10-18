@@ -1,11 +1,10 @@
-{ ... }:
-let
+{...}: let
   webPort = 5380;
 in {
   # it's OK to open :53, because the router won't allow unexpected connections
   # from the internet to the machines
-  networking.firewall.allowedTCPPorts = [ 53 ];
-  networking.firewall.allowedUDPPorts = [ 53 ];
+  networking.firewall.allowedTCPPorts = [53];
+  networking.firewall.allowedUDPPorts = [53];
 
   services.adguardhome = {
     enable = true;

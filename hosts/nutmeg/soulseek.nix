@@ -2,8 +2,7 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   py = pkgs.python3Packages;
 
   # music-tag and slskd-api aren't in nixpkgs; build them from PyPI.
@@ -15,8 +14,8 @@ let
       url = "https://files.pythonhosted.org/packages/fc/f4/ebcdd2fc9bfaf569b795250090e4f4088dc65a5a3e32c53baa9bfc3fc296/music-tag-0.4.3.tar.gz";
       hash = "sha256-Cqtubu2o3w9TFuwtIZC9dFYbfgNWKrCRzo1Wh828//Y=";
     };
-    build-system = [ py.setuptools ];
-    propagatedBuildInputs = [ py.mutagen ];
+    build-system = [py.setuptools];
+    propagatedBuildInputs = [py.mutagen];
     doCheck = false;
   };
 
@@ -29,7 +28,7 @@ let
       url = "https://files.pythonhosted.org/packages/83/d8/4f06e30ca269ce08076fa42b62727a6c6c8983b28aa9028e51221eeb92a0/slskd_api-0.1.5-py3-none-any.whl";
       hash = "sha256-3gPCGgtfK2MW+NvycMaFkIW/VS6B7WAkqxkvUdRWpMA=";
     };
-    propagatedBuildInputs = [ py.requests ];
+    propagatedBuildInputs = [py.requests];
     doCheck = false;
   };
 
@@ -46,8 +45,8 @@ let
     # Latin/romaji alias pulled from the MusicBrainz API (artist/release-group
     # foreign IDs Lidarr already provides). Search augmentation only — matching is
     # unchanged. Toggled by [Search Settings] romaji_search (default true).
-    patches = [ ./soularr-romaji.patch ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
+    patches = [./soularr-romaji.patch];
+    nativeBuildInputs = [pkgs.makeWrapper];
     pythonEnv = pkgs.python3.withPackages (_: [
       music-tag
       slskd-api
@@ -112,8 +111,7 @@ let
     use_extension_whitelist = False
     extensions_whitelist = lrc,nfo,txt
   '';
-in
-{
+in {
   age.secrets.slskd-api-key.file = ../../secrets/slskd-api-key.age;
   # lidarr-api-key.age is declared in servarr.nix.
 
@@ -153,8 +151,8 @@ in
       # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve
       # out the download dir. And gid 100 ("users") to write the setgid 1036:100
       # tree, so the files Lidarr later hardlink-imports inherit the shared group.
-      ReadWritePaths = [ "/mnt/music/soulseek/complete" ];
-      SupplementaryGroups = [ "users" ];
+      ReadWritePaths = ["/mnt/music/soulseek/complete"];
+      SupplementaryGroups = ["users"];
       # soularr builds its own "Artist - Album (Year)" temp folder (os.mkdir) and
       # moves the downloaded tracks into it before triggering Lidarr's import.
       # Lidarr's import is move-mode: it hardlinks each track into the library and
@@ -216,7 +214,7 @@ in
 
   systemd.timers.soularr = {
     description = "Run Soularr hourly";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "hourly";
       Persistent = true;

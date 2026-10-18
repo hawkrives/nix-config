@@ -1,9 +1,12 @@
-{ config, inputs, ... }:
 {
+  config,
+  inputs,
+  ...
+}: {
   # nixosModules.default (rather than .slime-chat) also applies the flake's
   # overlay, so the module's `package` default (`pkgs.slime-chat`) resolves
   # without wiring the overlay ourselves.
-  imports = [ inputs.slime-chat.nixosModules.default ];
+  imports = [inputs.slime-chat.nixosModules.default];
 
   # TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET for the Twitch OAuth app, kept out
   # of the world-readable store. Values mirror the hand-run copy's mise.toml.

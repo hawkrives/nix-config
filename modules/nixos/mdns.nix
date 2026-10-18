@@ -1,8 +1,11 @@
 # mDNS via avahi: publish this host as <hostname>.local and resolve other
 # hosts' .local names through NSS. Used so nutmeg's *arr can reach the download
 # clients on tuckles at tuckles.local without any DNS rewrites.
-{ config, pkgs, ... }:
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   avahiCfg = config.services.avahi;
 
   # avahi publishes services.avahi.hostName when it's set and falls back to the
@@ -124,8 +127,7 @@ let
       fi
     '';
   };
-in
-{
+in {
   services.avahi = {
     enable = true;
     nssmdns4 = true; # resolve *.local A (IPv4) records via getaddrinfo/NSS
@@ -146,7 +148,7 @@ in
   # is down this still needs to run -- that is the case worth recovering from.
   systemd.services.avahi-name-check = {
     description = "Verify avahi still publishes this host's .local name";
-    after = [ "avahi-daemon.service" ];
+    after = ["avahi-daemon.service"];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${nameCheck}/bin/avahi-name-check";
@@ -154,7 +156,7 @@ in
   };
 
   systemd.timers.avahi-name-check = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnBootSec = "3min";
       OnUnitActiveSec = "5min";

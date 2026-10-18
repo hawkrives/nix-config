@@ -10,9 +10,9 @@
 # the macos-arm64 `.tar.gz` checksum from https://mise.run.
 #
 # Only aarch64-darwin: nixpkgs has dropped x86_64-darwin.
-{ pkgs, ... }:
-let
-  inherit (pkgs)
+{pkgs, ...}: let
+  inherit
+    (pkgs)
     lib
     stdenvNoCC
     fetchurl
@@ -27,37 +27,37 @@ let
 
   version = lib.removePrefix "v" tag;
 in
-stdenvNoCC.mkDerivation {
-  pname = "mise-bin";
-  inherit version;
+  stdenvNoCC.mkDerivation {
+    pname = "mise-bin";
+    inherit version;
 
-  src = fetchurl {
-    url = "https://mise.jdx.dev/${tag}/mise-${tag}-macos-arm64.tar.gz";
-    inherit sha256;
-  };
+    src = fetchurl {
+      url = "https://mise.jdx.dev/${tag}/mise-${tag}-macos-arm64.tar.gz";
+      inherit sha256;
+    };
 
-  nativeBuildInputs = [ installShellFiles ];
+    nativeBuildInputs = [installShellFiles];
 
-  # The tarball also carries a fish vendor_conf.d script that activates mise.
-  # It is left out on purpose: home-manager's programs.mise already does that.
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 bin/mise $out/bin/mise
-    installManPage man/man1/mise.1
+    # The tarball also carries a fish vendor_conf.d script that activates mise.
+    # It is left out on purpose: home-manager's programs.mise already does that.
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 bin/mise $out/bin/mise
+      installManPage man/man1/mise.1
 
-    # Nix owns this binary, so `mise self-update` (and auto_update) must not
-    # try to replace it. mise looks for this marker beside its resolved binary.
-    mkdir -p $out/lib/mise
-    touch $out/lib/mise/.disable-self-update
-    runHook postInstall
-  '';
+      # Nix owns this binary, so `mise self-update` (and auto_update) must not
+      # try to replace it. mise looks for this marker beside its resolved binary.
+      mkdir -p $out/lib/mise
+      touch $out/lib/mise/.disable-self-update
+      runHook postInstall
+    '';
 
-  meta = {
-    description = "Dev tools, env vars, and tasks in one CLI (prebuilt release binary)";
-    homepage = "https://mise.jdx.dev";
-    license = lib.licenses.mit;
-    mainProgram = "mise";
-    platforms = [ "aarch64-darwin" ];
-    sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
-  };
-}
+    meta = {
+      description = "Dev tools, env vars, and tasks in one CLI (prebuilt release binary)";
+      homepage = "https://mise.jdx.dev";
+      license = lib.licenses.mit;
+      mainProgram = "mise";
+      platforms = ["aarch64-darwin"];
+      sourceProvenance = [lib.sourceTypes.binaryNativeCode];
+    };
+  }

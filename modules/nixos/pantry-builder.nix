@@ -11,16 +11,14 @@
 # host that wants an x86_64-linux builder and has no local one; if you do import
 # it alongside another builder, mind that speedFactor = 2 below outranks the
 # nix-darwin/NixOS default of 1.
-{ ... }:
-let
+{...}: let
   # pantry over the tailnet — same stable IP used by the cache config (nutmeg runs
   # --accept-dns=false, so MagicDNS won't resolve there; the tailnet IP always does).
   pantryAddr = "100.120.197.118";
   # base64 of pantry's ssh_host_ed25519_key.pub (type+key, no comment) — pins the
   # builder's host key. Same literal as cache-push.nix / host-shared.nix.
   pantryHostKeyB64 = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUJpVVEwUGxtMmNlb25WRVJBUDBtNU5vRUgzOUozakNzdXhRZ094VzFLNjc=";
-in
-{
+in {
   nix.distributedBuilds = true;
   # let pantry pull build inputs from the public caches itself instead of the
   # client uploading every dependency over ssh.
@@ -31,11 +29,11 @@ in
       hostName = pantryAddr;
       sshUser = "nixremote";
       sshKey = "/etc/ssh/ssh_host_ed25519_key";
-      systems = [ "x86_64-linux" ];
+      systems = ["x86_64-linux"];
       publicHostKey = pantryHostKeyB64;
       maxJobs = 4;
       speedFactor = 2;
-      supportedFeatures = [ "kvm" ];
+      supportedFeatures = ["kvm"];
     }
   ];
 }

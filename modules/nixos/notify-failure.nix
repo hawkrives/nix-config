@@ -22,11 +22,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.services.notifyFailure;
-in
-{
+in {
   options.services.notifyFailure = {
     enable = lib.mkEnableOption "Telegram notifications for failed systemd units";
 
@@ -42,8 +40,8 @@ in
 
     units = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ ];
-      example = [ "service-backup-plex.service" ];
+      default = [];
+      example = ["service-backup-plex.service"];
       description = ''
         Units to attach OnFailure to. Names must include the `.service` suffix.
 
@@ -67,7 +65,7 @@ in
             EnvironmentFile = lib.mkIf (cfg.tokenFile != null) cfg.tokenFile;
             # Nothing here touches the filesystem beyond reading the journal.
             DynamicUser = true;
-            SupplementaryGroups = [ "systemd-journal" ];
+            SupplementaryGroups = ["systemd-journal"];
             ProtectSystem = "strict";
             ProtectHome = true;
             PrivateTmp = true;
@@ -144,14 +142,14 @@ in
       {
         systemd.services = lib.listToAttrs (
           map (
-            u:
-            let
+            u: let
               base = lib.removeSuffix ".service" u;
             in
-            lib.nameValuePair base {
-              onFailure = [ "notify-failure@${base}.service" ];
-            }
-          ) cfg.units
+              lib.nameValuePair base {
+                onFailure = ["notify-failure@${base}.service"];
+              }
+          )
+          cfg.units
         );
       }
     ]

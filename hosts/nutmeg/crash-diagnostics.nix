@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   # [crash forensics]
   #
   # nutmeg (Apple Mac mini6,2, Late 2012) has silently hard-stopped at least
@@ -78,7 +77,7 @@
   # recovers a wedged *userspace* (systemd starved, root fs stuck) but CANNOT
   # recover a true hard lockup where the kernel itself stops running — that case
   # is covered by kernel.hardlockup_panic above, not by this.
-  boot.kernelModules = [ "softdog" ];
+  boot.kernelModules = ["softdog"];
 
   # 120s is deliberately generous. PID 1 missing a ping for two minutes on a
   # box this busy means something is genuinely wrong, and a false-positive
@@ -102,5 +101,5 @@
     defaults.autodetected = "-a -o on -S on -s (S/../.././02|L/../../6/03)";
   };
 
-  environment.systemPackages = [ pkgs.smartmontools ];
+  environment.systemPackages = [pkgs.smartmontools];
 }

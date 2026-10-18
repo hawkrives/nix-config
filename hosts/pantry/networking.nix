@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # DHCP via systemd-networkd. Pin a static DHCP reservation on the router for
   # this VM's MAC if you want a stable LAN IP.
   systemd.network.networks."10-lan" = {
@@ -14,7 +13,7 @@
     enable = true;
     openFirewall = true;
     authKeyFile = config.age.secrets.tailscale-authkey-pantry.path;
-    extraUpFlags = [ "--advertise-tags=tag:pantry" ];
+    extraUpFlags = ["--advertise-tags=tag:pantry"];
   };
-  networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
+  networking.firewall.trustedInterfaces = [config.services.tailscale.interfaceName];
 }

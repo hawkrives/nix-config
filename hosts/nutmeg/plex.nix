@@ -4,8 +4,7 @@
   config,
   synologyMount,
   ...
-}:
-let
+}: let
   # NB: `name` goes to fetchFromGitHub directly rather than wrapping the fetch
   # in `builtins.path` (as the nixpkgs plex example does) -- builtins.path has
   # to realise its argument, which makes evaluating this host an IFD that only
@@ -36,8 +35,7 @@ let
     rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
     sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
   };
-in
-{
+in {
   services.plex = {
     enable = true;
     openFirewall = true;
@@ -112,13 +110,13 @@ in
     SystemCallErrorNumber = "EPERM";
     # Only the GPU (VAAPI transcoding) beyond the standard pseudo-devices.
     DevicePolicy = "closed";
-    DeviceAllow = [ "char-drm rw" ];
+    DeviceAllow = ["char-drm rw"];
     # Everything read-only except Plex's own state; transcodes go to /dev/shm
     # (TranscoderTempDirectory), which strict leaves writable. Plex only reads
     # the media shares, and allowMediaDeletion is off, so read-only /mnt costs
     # nothing — turning that pref on would need /mnt added here.
     ProtectSystem = lib.mkForce "strict";
-    ReadWritePaths = [ "/var/lib/plex" ];
+    ReadWritePaths = ["/var/lib/plex"];
   };
 
   services.tautulli = {
@@ -141,12 +139,12 @@ in
   # with the library dirs at 0770. Plex's own uid isn't the owner (1036), so it
   # needs gid 100 to traverse/read shows and music (movies happen to be 0777).
   # Read-only is all Plex needs; the *arr services do the writing (see servarr.nix).
-  users.users.plex.extraGroups = [ "users" ];
+  users.users.plex.extraGroups = ["users"];
 
-  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" { };
-  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" { };
-  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" { };
-  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" { };
+  fileSystems."/var/lib/plex/media-shows" = synologyMount "/volume1/media-shows" {};
+  fileSystems."/var/lib/plex/media-channels" = synologyMount "/volume1/media-channels" {};
+  fileSystems."/var/lib/plex/media-music" = synologyMount "/volume1/media-music" {};
+  fileSystems."/var/lib/plex/media-movies" = synologyMount "/volume1/media-movies" {};
 
   # Plex's Butler task backs up the library + blobs DBs here every 3 days and
   # keeps several rotations (~1.6G each), which had quietly eaten 6.3G of the
@@ -166,7 +164,7 @@ in
   # Butler keeps dated rotations to fall back to if a corrupt DB gets backed up.
   fileSystems."/var/lib/plex/backup" =
     synologyMount "/volume1/app-servarr/plex/butler-backups"
-      { };
+    {};
 
   # need uid/gid to match the NAS
   # users.groups.servarr.gid = 1050;

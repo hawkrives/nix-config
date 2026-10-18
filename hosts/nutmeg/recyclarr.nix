@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # Bare-key secrets (raw value, no KEY= prefix) — recyclarr's `_secret`
   # LoadCredential substitution wants the key itself. Same keys as the
   # *-api-key.age env-files used by radarr/sonarr, just unwrapped.
@@ -35,9 +34,18 @@
         };
 
         quality_profiles = [
-          { trash_id = "9d142234e45d6143785ac55f5a9e8dc9"; reset_unmatched_scores.enabled = true; } # WEB-1080p (Alternative)
-          { trash_id = "dfa5eaae7894077ad6449169b6eb03e0"; reset_unmatched_scores.enabled = true; } # WEB-2160p (Alternative)
-          { trash_id = "20e0fc959f1f1704bed501f23bdae76f"; reset_unmatched_scores.enabled = true; } # [Anime] Remux-1080p
+          {
+            trash_id = "9d142234e45d6143785ac55f5a9e8dc9";
+            reset_unmatched_scores.enabled = true;
+          } # WEB-1080p (Alternative)
+          {
+            trash_id = "dfa5eaae7894077ad6449169b6eb03e0";
+            reset_unmatched_scores.enabled = true;
+          } # WEB-2160p (Alternative)
+          {
+            trash_id = "20e0fc959f1f1704bed501f23bdae76f";
+            reset_unmatched_scores.enabled = true;
+          } # [Anime] Remux-1080p
           {
             # Carried over from the old config — not a trash-guides template.
             # Named to match the guide's "[Anime] Remux-1080p" format.
@@ -81,7 +89,7 @@
                   "HDTV-1080p"
                 ];
               }
-              { name = "Bluray-720p"; }
+              {name = "Bluray-720p";}
               {
                 name = "WEB 720p";
                 qualities = [
@@ -90,7 +98,7 @@
                   "HDTV-720p"
                 ];
               }
-              { name = "Bluray-480p"; }
+              {name = "Bluray-480p";}
               {
                 name = "WEB 480p";
                 qualities = [
@@ -98,8 +106,8 @@
                   "WEBRip-480p"
                 ];
               }
-              { name = "DVD"; }
-              { name = "SDTV"; }
+              {name = "DVD";}
+              {name = "SDTV";}
             ];
           }
         ];
@@ -109,11 +117,11 @@
         custom_format_groups.add = [
           {
             trash_id = "158188097a58d7687dee647e04af0da3"; # [Optional] Golden Rule HD
-            select = [ "47435ece6b99a0b477caf360e79ba0bb" ]; # x265 (HD)
+            select = ["47435ece6b99a0b477caf360e79ba0bb"]; # x265 (HD)
           }
           {
             trash_id = "e3f37512790f00d0e89e54fe5e790d1c"; # [Optional] Golden Rule UHD
-            select = [ "9b64dff695c2115facf1b6ea59c9bd07" ]; # x265 (no HDR/DV)
+            select = ["9b64dff695c2115facf1b6ea59c9bd07"]; # x265 (no HDR/DV)
           }
           {
             # Both members (HD/UHD Streaming Boost) are required CFs, so they're
@@ -153,11 +161,26 @@
         };
 
         quality_profiles = [
-          { trash_id = "d1d67249d3890e49bc12e275d989a7e9"; reset_unmatched_scores.enabled = true; } # HD Bluray + WEB
-          { trash_id = "64fb5f9858489bdac2af690e27c8f42f"; reset_unmatched_scores.enabled = true; } # UHD Bluray + WEB
-          { trash_id = "9ca12ea80aa55ef916e3751f4b874151"; reset_unmatched_scores.enabled = true; } # Remux + WEB 1080p
-          { trash_id = "fd161a61e3ab826d3a22d53f935696dd"; reset_unmatched_scores.enabled = true; } # Remux + WEB 2160p
-          { trash_id = "722b624f9af1e492284c4bc842153a38"; reset_unmatched_scores.enabled = true; } # [Anime] Remux-1080p
+          {
+            trash_id = "d1d67249d3890e49bc12e275d989a7e9";
+            reset_unmatched_scores.enabled = true;
+          } # HD Bluray + WEB
+          {
+            trash_id = "64fb5f9858489bdac2af690e27c8f42f";
+            reset_unmatched_scores.enabled = true;
+          } # UHD Bluray + WEB
+          {
+            trash_id = "9ca12ea80aa55ef916e3751f4b874151";
+            reset_unmatched_scores.enabled = true;
+          } # Remux + WEB 1080p
+          {
+            trash_id = "fd161a61e3ab826d3a22d53f935696dd";
+            reset_unmatched_scores.enabled = true;
+          } # Remux + WEB 2160p
+          {
+            trash_id = "722b624f9af1e492284c4bc842153a38";
+            reset_unmatched_scores.enabled = true;
+          } # [Anime] Remux-1080p
         ];
 
         # The hd/uhd-bluray-web + remux-web-1080p/2160p templates all share the
@@ -165,11 +188,11 @@
         custom_format_groups.add = [
           {
             trash_id = "f8bf8eab4617f12dfdbd16303d8da245"; # [Optional] Golden Rule HD
-            select = [ "dc98083864ea246d05a42df0d05f81cc" ]; # x265 (HD)
+            select = ["dc98083864ea246d05a42df0d05f81cc"]; # x265 (HD)
           }
           {
             trash_id = "ff204bbcecdd487d1cefcefdbf0c278d"; # [Optional] Golden Rule UHD
-            select = [ "839bea857ed2c0a8e084f3cbdbd65ecb" ]; # x265 (no HDR/DV)
+            select = ["839bea857ed2c0a8e084f3cbdbd65ecb"]; # x265 (no HDR/DV)
           }
           {
             trash_id = "a3ac6af01d78e4f21fcb75f601ac96df"; # [Unwanted] Unwanted Formats

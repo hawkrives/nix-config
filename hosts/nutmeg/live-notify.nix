@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # YouTube Data API key, Twitch app credentials, and each channel's own
   # Discord webhook. Two channels share a webhook with a sibling channel on
   # the other platform (same streamer, one Discord destination) — see the

@@ -1,8 +1,10 @@
-{ config, lib, ... }:
-let
-  arrExcludes = [ "MediaCover" "Backups" "logs" ];
-in
 {
+  config,
+  lib,
+  ...
+}: let
+  arrExcludes = ["MediaCover" "Backups" "logs"];
+in {
   # Telegram push for anything here that fails. The service-backup jobs are the
   # motivating case: they run at 00:00-01:00, nobody watches the journal, and a
   # backup that quietly stopped working is only discovered when it's needed.
@@ -10,32 +12,33 @@ in
   services.notifyFailure = {
     enable = true;
     tokenFile = config.age.secrets.telegram-notify.path;
-    units = [
-      # The *arr themselves. With Restart=always plus a bounded start limit
-      # (see ./servarr.nix), a transient crash self-heals silently and only a
-      # persistent failure reaches `failed` — which is exactly when it is worth
-      # being told, since an *arr that is merely not running is otherwise
-      # invisible until someone tries to use it.
-      "prowlarr.service"
-      "sonarr.service"
-      "radarr.service"
-      "lidarr.service"
-      "bazarr.service"
+    units =
+      [
+        # The *arr themselves. With Restart=always plus a bounded start limit
+        # (see ./servarr.nix), a transient crash self-heals silently and only a
+        # persistent failure reaches `failed` — which is exactly when it is worth
+        # being told, since an *arr that is merely not running is otherwise
+        # invisible until someone tries to use it.
+        "prowlarr.service"
+        "sonarr.service"
+        "radarr.service"
+        "lidarr.service"
+        "bazarr.service"
 
-      # Everything timer-driven and unattended on this host.
-      "arr-backup-pin.service"
-      "beets-sync.service"
-      "soularr.service"
-      "lidarr-beets-pin.service"
-      "recyclarr.service"
-      "adf-autoscan.service"
-      "avahi-name-check.service"
-    ]
-    # …plus one per service-backup job, derived from the jobs themselves so a
-    # new job can't be added without also being watched.
-    ++ map (n: "service-backup-${n}.service") (
-      lib.attrNames config.services.serviceBackup.jobs
-    );
+        # Everything timer-driven and unattended on this host.
+        "arr-backup-pin.service"
+        "beets-sync.service"
+        "soularr.service"
+        "lidarr-beets-pin.service"
+        "recyclarr.service"
+        "adf-autoscan.service"
+        "avahi-name-check.service"
+      ]
+      # …plus one per service-backup job, derived from the jobs themselves so a
+      # new job can't be added without also being watched.
+      ++ map (n: "service-backup-${n}.service") (
+        lib.attrNames config.services.serviceBackup.jobs
+      );
   };
 
   services.serviceBackup = {
@@ -44,37 +47,37 @@ in
     jobs = {
       sonarr = {
         root = config.services.sonarr.dataDir; # /var/lib/sonarr/.config/NzbDrone
-        sqlite = [ "sonarr.db" ];
+        sqlite = ["sonarr.db"];
         excludes = arrExcludes;
       };
       radarr = {
         root = config.services.radarr.dataDir; # /var/lib/radarr/.config/Radarr
-        sqlite = [ "radarr.db" ];
+        sqlite = ["radarr.db"];
         excludes = arrExcludes;
       };
       lidarr = {
         root = config.services.lidarr.dataDir; # /var/lib/lidarr/.config/Lidarr
-        sqlite = [ "lidarr.db" ];
+        sqlite = ["lidarr.db"];
         excludes = arrExcludes;
       };
       prowlarr = {
         root = config.services.prowlarr.dataDir; # /var/lib/prowlarr (DynamicUser-symlinked)
-        sqlite = [ "prowlarr.db" ];
+        sqlite = ["prowlarr.db"];
         excludes = arrExcludes;
       };
       bazarr = {
         root = config.services.bazarr.dataDir; # /var/lib/bazarr
-        sqlite = [ "db/bazarr.db" ];
+        sqlite = ["db/bazarr.db"];
         path = "config"; # config/config.yaml etc.
       };
       jellyseerr = {
         root = config.services.seerr.configDir; # /var/lib/jellyseerr/config (DynamicUser)
-        sqlite = [ "db/db.sqlite3" ];
+        sqlite = ["db/db.sqlite3"];
         path = "settings.json";
       };
       tautulli = {
         root = config.services.tautulli.dataDir; # /var/lib/tautulli
-        sqlite = [ "tautulli.db" ];
+        sqlite = ["tautulli.db"];
         path = "config.ini";
       };
       plex = {
@@ -107,7 +110,7 @@ in
       # points into the nix store and would restore as a dangling link.
       beets = {
         root = "/var/lib/beets";
-        sqlite = [ "library.db" ];
+        sqlite = ["library.db"];
         excludes = [
           "*.bak"
           "import.log"
@@ -125,15 +128,15 @@ in
       # is 64KB.
       slime-chat = {
         root = "/var/lib/slime-chat";
-        sqlite = [ "villager-chat.db" ];
-        excludes = [ "playlists" ];
+        sqlite = ["villager-chat.db"];
+        excludes = ["playlists"];
       };
 
       soularr = {
         root = "/var/lib/soularr";
         # config.ini is rendered from nix; the failed-import denylist is the only
         # real runtime state. Whole dir minus the stale lock.
-        excludes = [ "*.lock" ];
+        excludes = ["*.lock"];
       };
 
       # Beszel monitoring hub (PocketBase). The metric history and the admin
@@ -148,7 +151,7 @@ in
       # needs both data.db and id_ed25519 back in place.
       beszel = {
         root = "/var/lib/beszel-hub";
-        sqlite = [ "beszel_data/data.db" ];
+        sqlite = ["beszel_data/data.db"];
         path = "beszel_data";
       };
     };

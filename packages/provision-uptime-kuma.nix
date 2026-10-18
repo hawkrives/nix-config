@@ -13,23 +13,22 @@
 #
 # Not part of any system closure — this is a `nix run` package, so the Chromium
 # it pulls in only lands on disk if someone actually runs it.
-{ pkgs, ... }:
-let
+{pkgs, ...}: let
   inherit (pkgs) writeShellApplication python3 playwright-driver;
 
-  py = python3.withPackages (ps: [ ps.playwright ]);
+  py = python3.withPackages (ps: [ps.playwright]);
 
   script = ./provision-uptime-kuma.py;
 in
-writeShellApplication {
-  name = "provision-uptime-kuma";
-  runtimeInputs = [ py ];
-  text = ''
-    # Chromium comes from the nixpkgs-pinned browser bundle, not from
-    # `playwright install` (which would try to download at runtime).
-    export PLAYWRIGHT_BROWSERS_PATH=${playwright-driver.browsers}
-    export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
-    exec ${py}/bin/python3 ${script} "$@"
-  '';
-  meta.mainProgram = "provision-uptime-kuma";
-}
+  writeShellApplication {
+    name = "provision-uptime-kuma";
+    runtimeInputs = [py];
+    text = ''
+      # Chromium comes from the nixpkgs-pinned browser bundle, not from
+      # `playwright install` (which would try to download at runtime).
+      export PLAYWRIGHT_BROWSERS_PATH=${playwright-driver.browsers}
+      export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
+      exec ${py}/bin/python3 ${script} "$@"
+    '';
+    meta.mainProgram = "provision-uptime-kuma";
+  }

@@ -2,14 +2,17 @@
 # /mnt/channels (streams/music/gaming/videos/learning/settei/... — for Plex
 # library scanning). Per-channel `enable` defaults false (module-wide); active
 # channels set enable=true. Staged backlog lives in channel-archive-backlog.nix.
-{ config, pkgs, ... }:
 {
+  config,
+  pkgs,
+  ...
+}: {
   age.secrets.plex-token.file = ../../secrets/plex-token.age;
 
   # Reads the local mbox mail channelArchive.alertUser delivers to
   # /var/mail/natsume on non-403/429 failures — no MTA involved, just a
   # reader for the mbox file the service appends to directly.
-  environment.systemPackages = [ pkgs.mailutils ];
+  environment.systemPackages = [pkgs.mailutils];
 
   services.channelArchive = {
     enable = true;

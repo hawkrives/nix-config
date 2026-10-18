@@ -3,8 +3,7 @@
   config,
   utils,
   ...
-}:
-let
+}: let
   # The music share's systemd mount-unit name, derived from the path rather than
   # hand-spelled ("mnt-music.mount") — escapeSystemdPath does the dash/escape
   # mangling for us, so it stays correct if the mountpoint ever changes.
@@ -76,7 +75,7 @@ let
   # Config lives in the store (immutable, in git), generated from a Nix attrset so
   # there's no YAML quoting/indent footgun. Surfaced at $BEETSDIR/config.yaml via a
   # tmpfiles symlink (below) so `beet` finds it natively for manual fix-up runs.
-  beetsConfig = (pkgs.formats.yaml { }).generate "beets-config.yaml" {
+  beetsConfig = (pkgs.formats.yaml {}).generate "beets-config.yaml" {
     directory = "/mnt/music/data"; # files already live here; Lidarr owns the layout
     library = "/var/lib/beets/library.db";
 
@@ -101,7 +100,7 @@ let
     # beets extends the `beetsplug` namespace package with each pluginpath entry,
     # so the module is imported as `beetsplug.primaryalbumartist` — the .py sits
     # directly in the directory, not under a nested beetsplug/.
-    pluginpath = [ "${primaryAlbumArtist}" ];
+    pluginpath = ["${primaryAlbumArtist}"];
 
     # `musicbrainz` (default-enabled, but listing `plugins` overrides the default
     # so it must be named) is the MB lookup that `mbsync` uses to pull canonical
@@ -216,15 +215,14 @@ let
         | req -X POST "$api/notification?forceSave=true" -H 'Content-Type: application/json' -d @- >/dev/null
     fi
   '';
-in
-{
-  users.groups.beets = { };
+in {
+  users.groups.beets = {};
   users.users.beets = {
     isSystemUser = true;
     group = "beets";
     # gid 100 ("users") → inherit the group-write the NAS grants on the media tree,
     # exactly like the *arr service users in servarr.nix.
-    extraGroups = [ "users" ];
+    extraGroups = ["users"];
     home = "/var/lib/beets";
   };
 
@@ -266,7 +264,7 @@ in
       Type = "oneshot";
       User = "beets";
       Group = "beets";
-      SupplementaryGroups = [ "users" ];
+      SupplementaryGroups = ["users"];
       # Match the *arr services: keep the group-write bit on anything beets
       # touches so the shared gid-100 model holds (see servarr.nix). beets writes
       # tags in place (move=false) rather than creating files, so this mostly
@@ -281,7 +279,7 @@ in
 
   systemd.timers.beets-sync = {
     description = "Periodic beets re-tag (backstop for the Lidarr trigger)";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       # Every 4h — just a backstop now that the Lidarr custom script triggers a
       # run on each import/upgrade.
@@ -294,9 +292,9 @@ in
   # ── Enforce Lidarr's scrub-off + custom-script connection on every boot ──
   systemd.services.lidarr-beets-pin = {
     description = "Pin Lidarr tagging config + beets-sync connection (for beets)";
-    after = [ "lidarr.service" ];
-    wants = [ "lidarr.service" ];
-    wantedBy = [ "multi-user.target" ];
+    after = ["lidarr.service"];
+    wants = ["lidarr.service"];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;

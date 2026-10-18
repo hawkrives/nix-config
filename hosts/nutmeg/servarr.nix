@@ -4,8 +4,7 @@
   config,
   synologyMount,
   ...
-}:
-let
+}: let
   servarrApp = {
     # enable = true;
     openFirewall = true;
@@ -28,26 +27,24 @@ let
   # for remote clients like the iPhone app. Radarr refuses host-config PUTs
   # while this is empty and authentication isn't fully enabled; versions that
   # predate the setting ignore the env var.
-  arrApp =
-    app:
+  arrApp = app:
     lib.recursiveUpdate servarrApp {
-      environmentFiles = [ config.age.secrets."${app}-api-key".path ];
+      environmentFiles = [config.age.secrets."${app}-api-key".path];
       settings.server.allowedhosts = "${app}.vaquita-woodpecker.ts.net";
     };
-in
-{
+in {
   # The NAS media tree is owned by the old stack's shared identity (uid 1036,
   # gid 100 = "users") with group-write on the library dirs. Our per-app service
   # users each live only in their own group, so they can't write to the shared
   # media over NFS (NFS sec=sys passes uid/gid through). Add them to "users"
   # (gid 100) so they inherit the group-write the NAS already grants. radarr
   # only worked by luck (/mnt/movies happens to be 0777); shows/music are 0770.
-  users.users.sonarr.extraGroups = [ "users" ];
-  users.users.radarr.extraGroups = [ "users" ];
-  users.users.lidarr.extraGroups = [ "users" ];
+  users.users.sonarr.extraGroups = ["users"];
+  users.users.radarr.extraGroups = ["users"];
+  users.users.lidarr.extraGroups = ["users"];
   # bazarr writes sidecar subtitles next to the media in /mnt/{shows,movies},
   # so it needs the same group-write access as the *arr that own those trees.
-  users.users.bazarr.extraGroups = [ "users" ];
+  users.users.bazarr.extraGroups = ["users"];
 
   # …but group membership is only half of it: the shared model also needs every
   # file/dir these services create to carry the group-write bit, so the *next*
@@ -110,33 +107,33 @@ in
   systemd.services.bazarr.startLimitIntervalSec = 300;
   systemd.services.bazarr.startLimitBurst = 5;
 
-  fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" { readOnly = true; };
-  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" { };
-  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" { };
-  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" { };
-  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" { };
+  fileSystems."/mnt/photos" = synologyMount "/volume1/media-photos" {readOnly = true;};
+  fileSystems."/mnt/shows" = synologyMount "/volume1/media-shows" {};
+  fileSystems."/mnt/channels" = synologyMount "/volume1/media-channels" {};
+  fileSystems."/mnt/music" = synologyMount "/volume1/media-music" {};
+  fileSystems."/mnt/movies" = synologyMount "/volume1/media-movies" {};
 
   fileSystems."/var/lib/lidarr/.config/Lidarr/MediaCover" =
     synologyMount "/volume1/app-servarr/lidarr/MediaCover"
-      { };
+    {};
   fileSystems."/var/lib/lidarr/.config/Lidarr/Backups" =
     synologyMount "/volume1/app-servarr/lidarr/Backups"
-      { };
+    {};
 
   fileSystems."/var/lib/radarr/.config/Radarr/MediaCover" =
     synologyMount "/volume1/app-servarr/radarr/MediaCover"
-      { };
+    {};
   fileSystems."/var/lib/radarr/.config/Radarr/Backups" =
     synologyMount "/volume1/app-servarr/radarr/Backups"
-      { };
+    {};
   fileSystems."/var/lib/sonarr/.config/NzbDrone/MediaCover" =
     synologyMount "/volume1/app-servarr/sonarr/MediaCover"
-      { };
+    {};
   fileSystems."/var/lib/sonarr/.config/NzbDrone/Backups" =
     synologyMount "/volume1/app-servarr/sonarr/Backups"
-      { };
+    {};
 
-  fileSystems."/mnt/servarr" = synologyMount "/volume1/app-servarr" { };
+  fileSystems."/mnt/servarr" = synologyMount "/volume1/app-servarr" {};
 
   age.secrets.radarr-api-key.file = ../../secrets/radarr-api-key.age;
   age.secrets.sonarr-api-key.file = ../../secrets/sonarr-api-key.age;
@@ -144,27 +141,35 @@ in
   age.secrets.lidarr-api-key.file = ../../secrets/lidarr-api-key.age;
 
   # ── Radarr (:7878) ────────────────────────────────────────────────
-  services.radarr = arrApp "radarr" // {
-    enable = true;
-  };
+  services.radarr =
+    arrApp "radarr"
+    // {
+      enable = true;
+    };
   services.tsnsrv.services.radarr.urlParts.port = config.services.radarr.settings.server.port;
 
   # ── Sonarr (:8989) ────────────────────────────────────────────────
-  services.sonarr = arrApp "sonarr" // {
-    enable = true;
-  };
+  services.sonarr =
+    arrApp "sonarr"
+    // {
+      enable = true;
+    };
   services.tsnsrv.services.sonarr.urlParts.port = config.services.sonarr.settings.server.port;
 
   # ── Prowlarr (:9696) ——————————————————————————————————————————————
-  services.prowlarr = arrApp "prowlarr" // {
-    enable = true;
-  };
+  services.prowlarr =
+    arrApp "prowlarr"
+    // {
+      enable = true;
+    };
   services.tsnsrv.services.prowlarr.urlParts.port = config.services.prowlarr.settings.server.port;
 
   # ── Lidarr (:8686) ────────────────────────────────────────────────
-  services.lidarr = arrApp "lidarr" // {
-    enable = true;
-  };
+  services.lidarr =
+    arrApp "lidarr"
+    // {
+      enable = true;
+    };
   services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
 
   # ── Daily *arr backup enforcement ─────────────────────────────────
@@ -260,7 +265,7 @@ in
   };
   systemd.timers.arr-backup-pin = {
     description = "Daily: re-assert *arr backup interval";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "daily";
       Persistent = true;
@@ -301,25 +306,23 @@ in
   #
   # Runs as root ('+') to read the root-owned secrets, then hands the file back
   # to bazarr. Enforces rather than bootstraps (skips if config.yaml is absent).
-  systemd.services.bazarr.serviceConfig.ExecStartPre =
-    let
-      pin = pkgs.writeShellScript "bazarr-pin" ''
-        set -euo pipefail
-        cfg=${config.services.bazarr.dataDir}/config/config.yaml
-        [ -f "$cfg" ] || exit 0
-        ${pkgs.yq-go}/bin/yq -i '.general.ip = "::"' "$cfg"
-        if ${pkgs.yq-go}/bin/yq -e '.radarr and .sonarr' "$cfg" >/dev/null 2>&1; then
-          rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
-          skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
-          RKEY="$rkey" SKEY="$skey" ${pkgs.yq-go}/bin/yq -i '
-              .radarr.ip = "127.0.0.1" | .radarr.apikey = strenv(RKEY)
-            | .sonarr.ip = "127.0.0.1" | .sonarr.apikey = strenv(SKEY)
-          ' "$cfg"
-        fi
-        ${pkgs.coreutils}/bin/chown ${config.services.bazarr.user}:${config.services.bazarr.group} "$cfg"
-      '';
-    in
-    [ "+${pin}" ];
+  systemd.services.bazarr.serviceConfig.ExecStartPre = let
+    pin = pkgs.writeShellScript "bazarr-pin" ''
+      set -euo pipefail
+      cfg=${config.services.bazarr.dataDir}/config/config.yaml
+      [ -f "$cfg" ] || exit 0
+      ${pkgs.yq-go}/bin/yq -i '.general.ip = "::"' "$cfg"
+      if ${pkgs.yq-go}/bin/yq -e '.radarr and .sonarr' "$cfg" >/dev/null 2>&1; then
+        rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
+        skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
+        RKEY="$rkey" SKEY="$skey" ${pkgs.yq-go}/bin/yq -i '
+            .radarr.ip = "127.0.0.1" | .radarr.apikey = strenv(RKEY)
+          | .sonarr.ip = "127.0.0.1" | .sonarr.apikey = strenv(SKEY)
+        ' "$cfg"
+      fi
+      ${pkgs.coreutils}/bin/chown ${config.services.bazarr.user}:${config.services.bazarr.group} "$cfg"
+    '';
+  in ["+${pin}"];
 
   # ── Seerr (:5055) ─────────────────────────────────────────────────
   # Seerr (formerly Jellyseerr) — an actively-maintained Overseerr fork that adds
@@ -341,24 +344,22 @@ in
   # (truncate-in-place via cat keeps the dynamic-uid ownership). No-ops until the
   # servers exist, so it enforces rather than bootstraps. The plex *token* is
   # still a runtime OAuth thing (signed in via the UI) — not managed here.
-  systemd.services.seerr.serviceConfig.ExecStartPre =
-    let
-      pin = pkgs.writeShellScript "seerr-pin-arr" ''
-        set -euo pipefail
-        cfg=${config.services.seerr.configDir}/settings.json
-        [ -f "$cfg" ] || exit 0
-        ${pkgs.jq}/bin/jq -e '(.radarr | length > 0) and (.sonarr | length > 0)' "$cfg" >/dev/null 2>&1 || exit 0
-        rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
-        skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
-        tmp=$(${pkgs.coreutils}/bin/mktemp)
-        ${pkgs.jq}/bin/jq --arg rk "$rkey" --arg sk "$skey" '
-            .plex.ip = "127.0.0.1"
-          | .radarr[0].hostname = "127.0.0.1" | .radarr[0].apiKey = $rk
-          | .sonarr[0].hostname = "127.0.0.1" | .sonarr[0].apiKey = $sk
-        ' "$cfg" > "$tmp"
-        ${pkgs.coreutils}/bin/cat "$tmp" > "$cfg"
-        ${pkgs.coreutils}/bin/rm -f "$tmp"
-      '';
-    in
-    [ "+${pin}" ];
+  systemd.services.seerr.serviceConfig.ExecStartPre = let
+    pin = pkgs.writeShellScript "seerr-pin-arr" ''
+      set -euo pipefail
+      cfg=${config.services.seerr.configDir}/settings.json
+      [ -f "$cfg" ] || exit 0
+      ${pkgs.jq}/bin/jq -e '(.radarr | length > 0) and (.sonarr | length > 0)' "$cfg" >/dev/null 2>&1 || exit 0
+      rkey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.radarr-api-key.path})
+      skey=$(${pkgs.gnused}/bin/sed -n 's/.*APIKEY=//p' ${config.age.secrets.sonarr-api-key.path})
+      tmp=$(${pkgs.coreutils}/bin/mktemp)
+      ${pkgs.jq}/bin/jq --arg rk "$rkey" --arg sk "$skey" '
+          .plex.ip = "127.0.0.1"
+        | .radarr[0].hostname = "127.0.0.1" | .radarr[0].apiKey = $rk
+        | .sonarr[0].hostname = "127.0.0.1" | .sonarr[0].apiKey = $sk
+      ' "$cfg" > "$tmp"
+      ${pkgs.coreutils}/bin/cat "$tmp" > "$cfg"
+      ${pkgs.coreutils}/bin/rm -f "$tmp"
+    '';
+  in ["+${pin}"];
 }

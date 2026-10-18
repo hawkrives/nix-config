@@ -5,8 +5,7 @@
   inputs,
   config,
   ...
-}:
-{
+}: {
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
@@ -40,7 +39,7 @@
   ];
   # Synology VMM's virtual GPU stalls the kernel's KMS console mid-boot; disable
   # mode-setting so the (headless) console keeps working.
-  boot.kernelParams = [ "nomodeset" ];
+  boot.kernelParams = ["nomodeset"];
 
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
@@ -64,12 +63,12 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO" # techcyte (mac, push + pull)
     ];
   };
-  nix.settings.trusted-users = [ "nixremote" ];
+  nix.settings.trusted-users = ["nixremote"];
 
   # Admin login.
   users.users.nix = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO5cvA90dd+syRxeLBrQEdwBGmM4kC4pZBcbnya1g5sw natsume@nutmeg"

@@ -44,8 +44,7 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.services.unitHeartbeat;
 
   unitName = u: lib.removeSuffix ".service" u;
@@ -55,27 +54,27 @@ let
   # then mismatch anything that does enforce it. Catch it at eval instead.
   tooLong = lib.filter (u: lib.stringLength (unitName u.unit) > 32) cfg.units;
 
-  sqlStr = s: "'" + lib.replaceStrings [ "'" ] [ "''" ] s + "'";
+  sqlStr = s: "'" + lib.replaceStrings ["'"] ["''"] s + "'";
 
   # One idempotent upsert per unit. INSERT ... WHERE NOT EXISTS rather than
   # INSERT OR REPLACE: replace would rewrite the primary key and orphan every
   # heartbeat row that references this monitor, silently wiping its history.
-  desiredSql = lib.concatMapStrings (
-    u:
-    let
-      n = unitName u.unit;
-      i = toString u.interval;
-    in
-    ''
-      INSERT INTO monitor (name, type, push_token, interval, retry_interval, user_id, active)
-        SELECT ${sqlStr n}, 'push', ${sqlStr n}, ${i}, ${i},
-               (SELECT id FROM user ORDER BY id LIMIT 1), 1
-        WHERE NOT EXISTS (SELECT 1 FROM monitor WHERE name = ${sqlStr n});
-      UPDATE monitor SET type = 'push', push_token = ${sqlStr n},
-             interval = ${i}, retry_interval = ${i}, active = 1
-        WHERE name = ${sqlStr n};
-    ''
-  ) cfg.units;
+  desiredSql =
+    lib.concatMapStrings (
+      u: let
+        n = unitName u.unit;
+        i = toString u.interval;
+      in ''
+        INSERT INTO monitor (name, type, push_token, interval, retry_interval, user_id, active)
+          SELECT ${sqlStr n}, 'push', ${sqlStr n}, ${i}, ${i},
+                 (SELECT id FROM user ORDER BY id LIMIT 1), 1
+          WHERE NOT EXISTS (SELECT 1 FROM monitor WHERE name = ${sqlStr n});
+        UPDATE monitor SET type = 'push', push_token = ${sqlStr n},
+               interval = ${i}, retry_interval = ${i}, active = 1
+          WHERE name = ${sqlStr n};
+      ''
+    )
+    cfg.units;
 
   # Normalised snapshot of what we care about, so the sync can tell "already
   # correct" from "needs a restart" without diffing 116 columns.
@@ -88,11 +87,12 @@ let
       FROM monitor WHERE type = 'push' ORDER BY name;
   '';
 
-  desiredState = lib.concatMapStrings (
-    u: "${unitName u.unit}|${unitName u.unit}|${toString u.interval}|1\n"
-  ) cfg.units;
-in
-{
+  desiredState =
+    lib.concatMapStrings (
+      u: "${unitName u.unit}|${unitName u.unit}|${toString u.interval}|1\n"
+    )
+    cfg.units;
+in {
   options.services.unitHeartbeat = {
     enable = lib.mkEnableOption "success heartbeats to an Uptime Kuma push monitor";
 
@@ -113,7 +113,7 @@ in
     };
 
     units = lib.mkOption {
-      default = [ ];
+      default = [];
       description = ''
         Units to heartbeat on success, each with the interval Kuma should expect
         a ping within.
@@ -151,7 +151,7 @@ in
       {
         assertions = [
           {
-            assertion = tooLong == [ ];
+            assertion = tooLong == [];
             message =
               "unitHeartbeat: unit name(s) longer than monitor.push_token's 32 chars: "
               + lib.concatMapStringsSep ", " (u: unitName u.unit) tooLong;
@@ -165,9 +165,9 @@ in
         # live write is not enough.
         systemd.services.uptime-kuma-monitor-sync = {
           description = "Sync Uptime Kuma push monitors from the NixOS config";
-          after = [ "uptime-kuma.service" ];
-          wants = [ "uptime-kuma.service" ];
-          wantedBy = [ "multi-user.target" ];
+          after = ["uptime-kuma.service"];
+          wants = ["uptime-kuma.service"];
+          wantedBy = ["multi-user.target"];
           # The desired set is embedded in the script below, so this unit's
           # definition changes whenever the config does — which is what makes
           # it re-run on deploy rather than only at boot.
@@ -258,10 +258,12 @@ in
       {
         systemd.services = lib.listToAttrs (
           map (
-            u: lib.nameValuePair (unitName u.unit) {
-              onSuccess = [ "unit-heartbeat@${unitName u.unit}.service" ];
-            }
-          ) cfg.units
+            u:
+              lib.nameValuePair (unitName u.unit) {
+                onSuccess = ["unit-heartbeat@${unitName u.unit}.service"];
+              }
+          )
+          cfg.units
         );
       }
     ]

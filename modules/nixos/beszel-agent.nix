@@ -20,8 +20,7 @@
 # SMART monitoring is deliberately NOT enabled here — it loosens the systemd
 # sandbox, so it's opted into per host on real hardware only: nutmeg today, and
 # bigpond whenever it comes back (it is parked in hosts-disabled/).
-{ config, ... }:
-{
+{config, ...}: {
   age.secrets.beszel-token.file = ../../secrets/beszel-token.age;
 
   services.beszel.agent = {

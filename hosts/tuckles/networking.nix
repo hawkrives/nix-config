@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # DHCP via systemd-networkd (configuration.nix sets useNetworkd). The router
   # pins this host to 192.168.1.66 via a static DHCP reservation on its MAC.
   systemd.network.networks."10-lan" = {
@@ -14,7 +13,7 @@
     enable = true;
     openFirewall = true;
     authKeyFile = config.age.secrets.tailscale-authkey-tuckles.path;
-    extraUpFlags = [ "--advertise-tags=tag:container,tag:servarr" ];
+    extraUpFlags = ["--advertise-tags=tag:container,tag:servarr"];
   };
-  networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
+  networking.firewall.trustedInterfaces = [config.services.tailscale.interfaceName];
 }

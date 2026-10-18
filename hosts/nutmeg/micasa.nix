@@ -1,4 +1,8 @@
-{perSystem, inputs, ...}: {
+{
+  perSystem,
+  inputs,
+  ...
+}: {
   imports = [
     inputs.micasa.nixosModules.default
   ];

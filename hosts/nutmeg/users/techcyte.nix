@@ -7,5 +7,4 @@
     flake.homeModules.helix-shared
     flake.homeModules.sqlite-shared
   ];
-
 }

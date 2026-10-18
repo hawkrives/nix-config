@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # Tailscale OAuth client secret (scoped to tag:tsnsrv), used by tsnsrv to mint
   # its own node keys. tsnsrv reads it through systemd LoadCredential as root,
   # so the root-owned 0400 agenix default is all it needs.
@@ -15,7 +14,7 @@
 
     defaults = {
       authKeyPath = config.age.secrets.tsnsrv-authkey-nutmeg.path;
-      tags = [ "tag:tsnsrv-nutmeg" ];
+      tags = ["tag:tsnsrv-nutmeg"];
       ephemeral = true;
       # tsnetVerbose = true;
 

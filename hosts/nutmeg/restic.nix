@@ -16,8 +16,7 @@
   utils,
   synologyMount,
   ...
-}:
-let
+}: let
   # The NAS share the service-backup mirror lives on, as a systemd unit name.
   # Derived rather than hand-spelled "mnt-servarr.mount", so it stays correct
   # if the mountpoint ever moves.
@@ -73,50 +72,50 @@ let
   password = config.age.secrets.restic-password-nutmeg.path;
 
   # Shared by both repos. See the note in secrets/secrets.nix on why one key.
-  paths = [
-    # Paperless: the EXPORT, not /var/lib/paperless.
-    #
-    # This host runs paperless against PostgreSQL (PAPERLESS_DBENGINE=postgresql,
-    # database.createLocally = true), so the document *metadata* — tags,
-    # correspondents, dates, the lot — lives in postgres, not under the data dir.
-    # Backing up /var/lib/paperless gets a pile of PDFs with no index, which
-    # looks like a working backup and is not. Note the db.sqlite3 in that
-    # directory is inert and not the live database, so it is no substitute.
-    #
-    # document_exporter writes a self-contained, restorable tree: originals plus
-    # a manifest carrying everything from the DB. It also stops the paperless
-    # services while it runs, so the export is consistent rather than a hot copy.
-    config.services.paperless.exporter.directory
+  paths =
+    [
+      # Paperless: the EXPORT, not /var/lib/paperless.
+      #
+      # This host runs paperless against PostgreSQL (PAPERLESS_DBENGINE=postgresql,
+      # database.createLocally = true), so the document *metadata* — tags,
+      # correspondents, dates, the lot — lives in postgres, not under the data dir.
+      # Backing up /var/lib/paperless gets a pile of PDFs with no index, which
+      # looks like a working backup and is not. Note the db.sqlite3 in that
+      # directory is inert and not the live database, so it is no substitute.
+      #
+      # document_exporter writes a self-contained, restorable tree: originals plus
+      # a manifest carrying everything from the DB. It also stops the paperless
+      # services while it runs, so the export is consistent rather than a hot copy.
+      config.services.paperless.exporter.directory
 
-    # Home Assistant, minus the two things that dominate its size (see excludes).
-    config.users.users.homeassistant.home
+      # Home Assistant, minus the two things that dominate its size (see excludes).
+      config.users.users.homeassistant.home
 
-    # Matter fabric credentials. 2.4MB of json/ini, and the single worst
-    # size-to-pain ratio on this host: losing it means re-pairing every Matter
-    # device by hand. No SQLite here, so a plain file copy is safe.
-    "/var/lib/home-assistant-matter"
+      # Matter fabric credentials. 2.4MB of json/ini, and the single worst
+      # size-to-pain ratio on this host: losing it means re-pairing every Matter
+      # device by hand. No SQLite here, so a plain file copy is safe.
+      "/var/lib/home-assistant-matter"
 
-    # AdGuard's hand-tuned config. `data/` is excluded wholesale below — it is
-    # ~930MB of query log plus 60MB of filter lists that re-download
-    # themselves, and none of it is configuration.
-    "/var/lib/private/AdGuardHome"
+      # AdGuard's hand-tuned config. `data/` is excluded wholesale below — it is
+      # ~930MB of query log plus 60MB of filter lists that re-download
+      # themselves, and none of it is configuration.
+      "/var/lib/private/AdGuardHome"
 
-    # The service-backup output for the whole fleet. This is the cheap way to
-    # get every *arr, Plex, Tautulli, beszel, soularr and the tuckles download
-    # clients off site: service-backup has already done the hard part, taking
-    # transactionally-consistent `sqlite3 .backup` snapshots of live databases,
-    # so restic only has to copy the results. Backing up the LIVE dirs instead
-    # would mean hot-copying SQLite files that are being written, which is not
-    # a backup.
-    #
-    # Safe from recursion: this is /volume1/app-servarr, while the NAS restic
-    # repo lives on /volume1/app-backup — a different share.
-    "/mnt/servarr/backups/nutmeg"
-    "/mnt/servarr/backups/tuckles"
-
-  ]
-  # The Syncthing tree on the NAS — see syncthingBackup above.
-  ++ lib.optional syncthingBackup "/mnt/syncthing";
+      # The service-backup output for the whole fleet. This is the cheap way to
+      # get every *arr, Plex, Tautulli, beszel, soularr and the tuckles download
+      # clients off site: service-backup has already done the hard part, taking
+      # transactionally-consistent `sqlite3 .backup` snapshots of live databases,
+      # so restic only has to copy the results. Backing up the LIVE dirs instead
+      # would mean hot-copying SQLite files that are being written, which is not
+      # a backup.
+      #
+      # Safe from recursion: this is /volume1/app-servarr, while the NAS restic
+      # repo lives on /volume1/app-backup — a different share.
+      "/mnt/servarr/backups/nutmeg"
+      "/mnt/servarr/backups/tuckles"
+    ]
+    # The Syncthing tree on the NAS — see syncthingBackup above.
+    ++ lib.optional syncthingBackup "/mnt/syncthing";
 
   excludes = [
     # 2.9G of daily ~210MB tarballs whose contents are internally gzipped, so
@@ -207,20 +206,20 @@ let
   # module generates per backup (createWrapper defaults true), pre-loaded with
   # that repo's RESTIC_REPOSITORY and RESTIC_PASSWORD_FILE. Staggered onto
   # different days so two --read-data runs never overlap.
-  checkedRepos = {
-    nas = {
-      wrapper = "/run/current-system/sw/bin/restic-nas";
-      schedule = "Mon *-*-* 05:00:00";
+  checkedRepos =
+    {
+      nas = {
+        wrapper = "/run/current-system/sw/bin/restic-nas";
+        schedule = "Mon *-*-* 05:00:00";
+      };
+    }
+    // lib.optionalAttrs enableOffsite {
+      offsite = {
+        wrapper = "/run/current-system/sw/bin/restic-offsite";
+        schedule = "Wed *-*-* 05:00:00";
+      };
     };
-  }
-  // lib.optionalAttrs enableOffsite {
-    offsite = {
-      wrapper = "/run/current-system/sw/bin/restic-offsite";
-      schedule = "Wed *-*-* 05:00:00";
-    };
-  };
-in
-{
+in {
   age.secrets.restic-ssh-key-nutmeg.file = ../../secrets/restic-ssh-key-nutmeg.age;
   age.secrets.restic-password-nutmeg.file = ../../secrets/restic-password-nutmeg.age;
 
@@ -236,7 +235,7 @@ in
   # silently did not. If the export disappears the mount fails, the restic
   # jobs fail, and notify-failure says so.
   fileSystems = lib.optionalAttrs syncthingBackup {
-    "/mnt/syncthing" = synologyMount "/volume2/syncthing" { readOnly = true; };
+    "/mnt/syncthing" = synologyMount "/volume2/syncthing" {readOnly = true;};
   };
 
   # Turn on paperless's own exporter so there is something correct to back up.
@@ -261,10 +260,8 @@ in
   # that has to be seeded by hand is exactly the kind of imperative state this
   # repo keeps trying to get rid of.
   programs.ssh.knownHosts = {
-    "192.168.1.194".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILs4U5pSxhPtHJbYtqf306kgXYAYjri8CI+O9YtR1xzV";
-    "de3044.rsync.net".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIObQN4P/deJ/k4P4kXh6a9K4Q89qdyywYetp9h3nwfPo";
+    "192.168.1.194".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILs4U5pSxhPtHJbYtqf306kgXYAYjri8CI+O9YtR1xzV";
+    "de3044.rsync.net".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIObQN4P/deJ/k4P4kXh6a9K4Q89qdyywYetp9h3nwfPo";
   };
 
   programs.ssh.extraConfig = ''
@@ -297,32 +294,35 @@ in
     # /volume1/app-backup` succeeding is a red herring, because that is the
     # shell, not the sftp subsystem. Check with:
     #   printf 'ls /\n' | sftp -b - restic-nas
-    nas = common // {
-      repository = "sftp:restic-nas:/app-backup/restic/nutmeg";
-      timerConfig = {
-        OnCalendar = "03:00";
-        Persistent = true;
-        RandomizedDelaySec = "30m";
+    nas =
+      common
+      // {
+        repository = "sftp:restic-nas:/app-backup/restic/nutmeg";
+        timerConfig = {
+          OnCalendar = "03:00";
+          Persistent = true;
+          RandomizedDelaySec = "30m";
+        };
+        # Cheap over the LAN, so verify structure every run.
+        runCheck = true;
       };
-      # Cheap over the LAN, so verify structure every run.
-      runCheck = true;
-    };
 
     # ── Off site (rsync.net) ───────────────────────────────────────────
     # Same account the Synology's Hyper Backup already uses, in its own
     # subdirectory so the two cannot collide.
-    offsite = lib.mkIf enableOffsite (common // {
-      repository = "sftp:restic-offsite:restic/nutmeg";
-      timerConfig = {
-        OnCalendar = "04:00";
-        Persistent = true;
-        RandomizedDelaySec = "1h";
-      };
-      # Verification is a separate weekly unit (restic-check-offsite below),
-      # not runCheck, so that "the backup broke" and "the repo is corrupt"
-      # cannot be confused for one another in the alert.
-      runCheck = false;
-    });
+    offsite = lib.mkIf enableOffsite (common
+      // {
+        repository = "sftp:restic-offsite:restic/nutmeg";
+        timerConfig = {
+          OnCalendar = "04:00";
+          Persistent = true;
+          RandomizedDelaySec = "1h";
+        };
+        # Verification is a separate weekly unit (restic-check-offsite below),
+        # not runCheck, so that "the backup broke" and "the repo is corrupt"
+        # cannot be confused for one another in the alert.
+        runCheck = false;
+      });
   };
 
   # ── Integrity checks ──────────────────────────────────────────────────
@@ -363,67 +363,72 @@ in
   #
   # Merged into one `systemd.services` definition rather than several, since a
   # bare attribute path cannot be assigned twice in the same attrset.
-  systemd.services = {
-    restic-backups-nas = {
-      after = [ "paperless-exporter.service" servarrMount ] ++ lib.optional syncthingBackup syncthingMount;
-      wants = [ servarrMount ] ++ lib.optional syncthingBackup syncthingMount;
-    };
-  }
-  // lib.optionalAttrs enableOffsite {
-    restic-backups-offsite = {
-      after = [ "paperless-exporter.service" servarrMount ] ++ lib.optional syncthingBackup syncthingMount;
-      wants = [ servarrMount ] ++ lib.optional syncthingBackup syncthingMount;
-      # Pushes over the WAN; keep it from starving interactive use.
-      serviceConfig = {
-        IOSchedulingClass = "idle";
-        Nice = 10;
-      };
-    };
-  }
-  // lib.mapAttrs' (
-    name: repo:
-    lib.nameValuePair "restic-check-${name}" {
-      description = "Verify the integrity of the ${name} restic repository";
-      # Ordered after the backup so a check never contends with it for the
-      # repository lock; the timers are also hours apart.
-      after = [ "restic-backups-${name}.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        # The generated wrapper already carries RESTIC_REPOSITORY and
-        # RESTIC_PASSWORD_FILE, so there is no credential handling here.
-        ExecStart = "${repo.wrapper} check --read-data";
-        # Verification is never urgent enough to slow down the box.
-        Nice = 15;
-        IOSchedulingClass = "idle";
+  systemd.services =
+    {
+      restic-backups-nas = {
+        after = ["paperless-exporter.service" servarrMount] ++ lib.optional syncthingBackup syncthingMount;
+        wants = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
       };
     }
-  ) checkedRepos;
+    // lib.optionalAttrs enableOffsite {
+      restic-backups-offsite = {
+        after = ["paperless-exporter.service" servarrMount] ++ lib.optional syncthingBackup syncthingMount;
+        wants = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
+        # Pushes over the WAN; keep it from starving interactive use.
+        serviceConfig = {
+          IOSchedulingClass = "idle";
+          Nice = 10;
+        };
+      };
+    }
+    // lib.mapAttrs' (
+      name: repo:
+        lib.nameValuePair "restic-check-${name}" {
+          description = "Verify the integrity of the ${name} restic repository";
+          # Ordered after the backup so a check never contends with it for the
+          # repository lock; the timers are also hours apart.
+          after = ["restic-backups-${name}.service"];
+          serviceConfig = {
+            Type = "oneshot";
+            # The generated wrapper already carries RESTIC_REPOSITORY and
+            # RESTIC_PASSWORD_FILE, so there is no credential handling here.
+            ExecStart = "${repo.wrapper} check --read-data";
+            # Verification is never urgent enough to slow down the box.
+            Nice = 15;
+            IOSchedulingClass = "idle";
+          };
+        }
+    )
+    checkedRepos;
 
-  systemd.timers = lib.mapAttrs' (
-    name: repo:
-    lib.nameValuePair "restic-check-${name}" {
-      description = "Weekly integrity check of the ${name} restic repository";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnCalendar = repo.schedule;
-        Persistent = true;
-        RandomizedDelaySec = "1h";
-      };
-    }
-  ) checkedRepos;
+  systemd.timers =
+    lib.mapAttrs' (
+      name: repo:
+        lib.nameValuePair "restic-check-${name}" {
+          description = "Weekly integrity check of the ${name} restic repository";
+          wantedBy = ["timers.target"];
+          timerConfig = {
+            OnCalendar = repo.schedule;
+            Persistent = true;
+            RandomizedDelaySec = "1h";
+          };
+        }
+    )
+    checkedRepos;
 
   # Both restic jobs and the exporter they depend on. A silent backup failure is
   # the worst kind, since you find out when you need the backup.
-  services.notifyFailure.units = [
-    "restic-backups-nas.service"
-    "paperless-exporter.service"
-  ]
-  # Only watch the offsite unit when it actually exists; naming a non-existent
-  # unit here would quietly define an empty stub (see notify-failure.nix).
-  ++ lib.optional enableOffsite "restic-backups-offsite.service"
-  # A check that fails is the single most important alert here: it means the
-  # backups you have been trusting are not restorable.
-  ++ map (n: "restic-check-${n}.service") (lib.attrNames checkedRepos);
+  services.notifyFailure.units =
+    [
+      "restic-backups-nas.service"
+      "paperless-exporter.service"
+    ]
+    # Only watch the offsite unit when it actually exists; naming a non-existent
+    # unit here would quietly define an empty stub (see notify-failure.nix).
+    ++ lib.optional enableOffsite "restic-backups-offsite.service"
+    # A check that fails is the single most important alert here: it means the
+    # backups you have been trusting are not restorable.
+    ++ map (n: "restic-check-${n}.service") (lib.attrNames checkedRepos);
 
   # …and a heartbeat, because a check unit that silently stops being scheduled
   # looks exactly like one that keeps passing. Weekly cadence + 1h jitter, so
@@ -437,7 +442,7 @@ in
   # defaults true), pre-set with the repo and password, for restores:
   #   restic-nas snapshots
   #   restic-nas restore latest --target /tmp/restore
-  environment.systemPackages = [ pkgs.restic ];
+  environment.systemPackages = [pkgs.restic];
 
   # Assert the exporter directory is actually inside what we back up, so a
   # future change to either can't silently decouple them.

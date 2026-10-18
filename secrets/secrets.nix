@@ -24,115 +24,118 @@ let
     pantry
     bigpond
   ];
-in
-{
+in {
   # Example secret proving the workflow end-to-end. Wired on nutmeg only.
-  "example.age".publicKeys = users ++ [ nutmeg ];
+  "example.age".publicKeys = users ++ [nutmeg];
 
   # paperless superuser password (nutmeg).
-  "paperless-admin-pass.age".publicKeys = users ++ [ nutmeg ];
+  "paperless-admin-pass.age".publicKeys = users ++ [nutmeg];
 
   # peertube signing secret (nutmeg).
-  "peertube-secret.age".publicKeys = users ++ [ nutmeg ];
+  "peertube-secret.age".publicKeys = users ++ [nutmeg];
 
   # lidarr API key, injected via environmentFiles (nutmeg).
-  "lidarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+  "lidarr-api-key.age".publicKeys = users ++ [nutmeg];
 
   # radarr API key, injected via environmentFiles (nutmeg).
-  "radarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+  "radarr-api-key.age".publicKeys = users ++ [nutmeg];
 
   # sonarr API key, injected via environmentFiles (nutmeg).
-  "sonarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+  "sonarr-api-key.age".publicKeys = users ++ [nutmeg];
 
   # prowlarr API key, injected via environmentFiles (nutmeg).
-  "prowlarr-api-key.age".publicKeys = users ++ [ nutmeg ];
+  "prowlarr-api-key.age".publicKeys = users ++ [nutmeg];
 
   # Bare radarr/sonarr API keys (value only, no KEY= prefix) for recyclarr, whose
   # `_secret` LoadCredential substitution wants the raw key. Same keys as the
   # *-api-key.age env-files above, just unwrapped (nutmeg).
-  "radarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
-  "sonarr-api-key-bare.age".publicKeys = users ++ [ nutmeg ];
+  "radarr-api-key-bare.age".publicKeys = users ++ [nutmeg];
+  "sonarr-api-key-bare.age".publicKeys = users ++ [nutmeg];
 
   # Soulseek account credentials for slskd (tuckles only).
-  "slskd-env.age".publicKeys = users ++ [ tuckles ];
+  "slskd-env.age".publicKeys = users ++ [tuckles];
 
   # slskd web API key — shared by slskd (tuckles) and Soularr (nutmeg).
-  "slskd-api-key.age".publicKeys = users ++ [ nutmeg tuckles ];
+  "slskd-api-key.age".publicKeys = users ++ [nutmeg tuckles];
 
   # AirVPN WireGuard config (full wg-quick file) for the VPN namespace (tuckles).
-  "wg-airvpn-tuckles.age".publicKeys = users ++ [ tuckles ];
+  "wg-airvpn-tuckles.age".publicKeys = users ++ [tuckles];
 
   # Tailscale auth key for tuckles.
-  "tailscale-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
+  "tailscale-authkey-tuckles.age".publicKeys = users ++ [tuckles];
 
   # Tailscale auth key for pantry (cache VM).
-  "tailscale-authkey-pantry.age".publicKeys = users ++ [ pantry ];
+  "tailscale-authkey-pantry.age".publicKeys = users ++ [pantry];
 
   # Tailscale auth key for bigpond (T2 MacBook builder).
-  "tailscale-authkey-bigpond.age".publicKeys = users ++ [ bigpond ];
+  "tailscale-authkey-bigpond.age".publicKeys = users ++ [bigpond];
 
   # qui (alternate qBittorrent web UI) session secret (tuckles).
-  "qui-session-secret.age".publicKeys = users ++ [ tuckles ];
+  "qui-session-secret.age".publicKeys = users ++ [tuckles];
 
   # Bare tailscale OAuth client secret (no ?ephemeral query) for tsnsrv's OAuth
   # key minting on tuckles. Same OAuth client as tailscale-authkey-tuckles.
-  "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [ tuckles ];
+  "tsnsrv-authkey-tuckles.age".publicKeys = users ++ [tuckles];
 
   # Same, for nutmeg. It grants the ability to mint tailnet nodes, so it lives
   # here rather than as a file on the host, where it would be readable by every
   # local user — `techcyte` has ssh access to nutmeg.
-  "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+  "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [nutmeg];
 
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
   # injected via environmentFile (nutmeg).
-  "slime-chat-env.age".publicKeys = users ++ [ nutmeg ];
+  "slime-chat-env.age".publicKeys = users ++ [nutmeg];
 
   # Home Assistant long-lived access token (raw JWT, no trailing newline) for
   # driving the HA REST/WebSocket API instead of hand-editing .storage (nutmeg).
-  "hass-token.age".publicKeys = users ++ [ nutmeg ];
+  "hass-token.age".publicKeys = users ++ [nutmeg];
 
   # Plex API token for channel-archive's post-download restructure step
   # (nutmeg).
-  "plex-token.age".publicKeys = users ++ [ nutmeg ];
+  "plex-token.age".publicKeys = users ++ [nutmeg];
 
   # Beszel universal registration token (env-file: TOKEN=…). Every agent uses
   # the same token to self-register with the hub on nutmeg, so every host that
   # runs an agent is a recipient.
-  "beszel-token.age".publicKeys = users ++ [
-    nutmeg
-    tuckles
-    pantry
-    bigpond
-  ];
+  "beszel-token.age".publicKeys =
+    users
+    ++ [
+      nutmeg
+      tuckles
+      pantry
+      bigpond
+    ];
 
   # restic repository password (nutmeg). ONE password for both the NAS and the
   # rsync.net repo: the two hold identical data and the same host writes both,
   # so splitting them buys nothing. Losing this file means the backups are
   # unrecoverable — it belongs in a password manager as well as here. Read it
   # back with: cd secrets && EDITOR=cat ragenix -e restic-password-nutmeg.age
-  "restic-password-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+  "restic-password-nutmeg.age".publicKeys = users ++ [nutmeg];
 
   # SSH private key restic uses to reach both SFTP destinations (the Synology
   # and rsync.net). Deliberately NOT reusing /etc/ssh/ssh_host_ed25519_key the
   # way cache-push does: that key is nutmeg's identity to the rest of the
   # fleet, and handing a copy of its authority to a third-party provider's
   # authorized_keys is a wider blast radius than a purpose-made key.
-  "restic-ssh-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
+  "restic-ssh-key-nutmeg.age".publicKeys = users ++ [nutmeg];
 
   # Uptime Kuma admin account (env file: UPTIME_KUMA_USER / _PASSWORD). Logs
   # into the web UI, and lets packages/provision-uptime-kuma.nix drive Kuma's
   # first-run wizard, which is the only part of its setup that is not
   # declarative.
-  "uptime-kuma-admin.age".publicKeys = users ++ [ nutmeg ];
+  "uptime-kuma-admin.age".publicKeys = users ++ [nutmeg];
 
   # Telegram bot credentials for systemd failure notifications (env file with
   # TELEGRAM_BOT_TOKEN= and TELEGRAM_CHAT_ID=). Every host that runs the
   # notify-failure module needs it.
-  "telegram-notify.age".publicKeys = users ++ [
-    nutmeg
-    tuckles
-    pantry
-  ];
+  "telegram-notify.age".publicKeys =
+    users
+    ++ [
+      nutmeg
+      tuckles
+      pantry
+    ];
 
   # Binary-cache signing keys, one per host, named for networking.hostName so
   # host-shared.nix can pick its own by interpolation. Each is readable only by
@@ -145,62 +148,62 @@ in
   #   cd secrets && EDITOR='cp ../key' ragenix -e nix-signing-key-<host>.age
   # Names are unique in nix's trusted-key map, so re-keying a host revokes
   # everything it signed before rather than adding to it.
-  "nix-signing-key-nutmeg.age".publicKeys = users ++ [ nutmeg ];
-  "nix-signing-key-tuckles.age".publicKeys = users ++ [ tuckles ];
-  "nix-signing-key-pantry.age".publicKeys = users ++ [ pantry ];
-  "nix-signing-key-Techcyte-DGQJV434PF.age".publicKeys = users ++ [ techcyte ];
+  "nix-signing-key-nutmeg.age".publicKeys = users ++ [nutmeg];
+  "nix-signing-key-tuckles.age".publicKeys = users ++ [tuckles];
+  "nix-signing-key-pantry.age".publicKeys = users ++ [pantry];
+  "nix-signing-key-Techcyte-DGQJV434PF.age".publicKeys = users ++ [techcyte];
 
   # YouTube Data API key for live-notify (env file: YOUTUBE_API_KEY=). Used
   # for the cheap playlistItems/videos live-check, not search.list (nutmeg).
-  "youtube-notify.age".publicKeys = users ++ [ nutmeg ];
+  "youtube-notify.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the @TakumiMk-II YouTube channel (env
   # file: DISCORD_WEBHOOK_URL=). User-provided test credential; expect it to
   # be rotated after the first smoke test (nutmeg).
-  "live-notify-takumiMkII.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-takumiMkII.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/kuinanoyumemi channel
   # (env file: DISCORD_WEBHOOK_URL=).
-  "live-notify-kuinanoyumemi.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-kuinanoyumemi.age".publicKeys = users ++ [nutmeg];
 
   # Twitch app credentials for live-notify (env file: TWITCH_CLIENT_ID= and
   # TWITCH_CLIENT_SECRET=), used to mint a client-credentials app access
   # token on every check. Dedicated app, separate from slime-chat's (nutmeg).
-  "twitch-notify.age".publicKeys = users ++ [ nutmeg ];
+  "twitch-notify.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/arusan0117 channel (env
   # file: DISCORD_WEBHOOK_URL=).
-  "live-notify-arusan0117.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-arusan0117.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/honkenhawk channel (env
   # file: DISCORD_WEBHOOK_URL=).
-  "live-notify-honkenhawk.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-honkenhawk.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook shared by twitch.tv/kuma_ne_ne and
   # youtube.com/@kuma.ne-ne — same streamer, both platforms post to the same
   # channel (env file: DISCORD_WEBHOOK_URL=).
-  "live-notify-kuma-ne-ne.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-kuma-ne-ne.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/alphaomegaentmt channel
   # (env file: DISCORD_WEBHOOK_URL=).
-  "live-notify-alphaomegaentmt.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-alphaomegaentmt.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/grys0l channel (env
   # file: DISCORD_WEBHOOK_URL=).
-  "live-notify-grys0l.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-grys0l.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/ditherdown channel (env
   # file: DISCORD_WEBHOOK_URL=).
-  "live-notify-ditherdown.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-ditherdown.age".publicKeys = users ++ [nutmeg];
 
   # live-notify's Discord webhook for the twitch.tv/inkyridos channel (env
   # file: DISCORD_WEBHOOK_URL=).
-  "live-notify-inkyridos.age".publicKeys = users ++ [ nutmeg ];
+  "live-notify-inkyridos.age".publicKeys = users ++ [nutmeg];
 
   # netrc for the linux-builder VM (techcyte). The host's own netrc-file setting
   # is local-daemon config and is not forwarded over ssh-ng, so a derivation
   # built on the VM cannot authenticate its fixed-output fetches — notably the
   # wheels for Techcyte's private GitLab package index, which 401 without it.
   # Shared into the guest over virtiofs; see the host's darwin-configuration.
-  "builder-netrc.age".publicKeys = users ++ [ techcyte ];
+  "builder-netrc.age".publicKeys = users ++ [techcyte];
 }

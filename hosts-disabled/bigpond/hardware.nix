@@ -2,8 +2,7 @@
   inputs,
   lib,
   ...
-}:
-{
+}: {
   imports = [
     # T2 kernel patches + apple-bce (keyboard/trackpad/audio bridge), Touch Bar,
     # APFS. Load-bearing for T2 support; no custom kernel flake needed.
@@ -23,7 +22,7 @@
   # t2linux project's binary cache so bigpond downloads the kernel instead of
   # compiling it. mkAfter so this appends to host-shared's substituter list rather
   # than conflicting. (Third-party cache — the official t2linux one.)
-  nix.settings.extra-substituters = lib.mkAfter [ "https://cache.soopy.moe" ];
+  nix.settings.extra-substituters = lib.mkAfter ["https://cache.soopy.moe"];
   nix.settings.extra-trusted-public-keys = lib.mkAfter [
     "cache.soopy.moe-1:0RZVsQeR+GOh0VQI9rvnHz55nVXkFardDqfm4+afjPo="
   ];

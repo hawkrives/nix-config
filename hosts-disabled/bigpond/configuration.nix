@@ -6,8 +6,7 @@
   config,
   lib,
   ...
-}:
-{
+}: {
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
@@ -55,7 +54,7 @@
   # Primary admin user.
   users.users.pinklady = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO5cvA90dd+syRxeLBrQEdwBGmM4kC4pZBcbnya1g5sw" # natsume
@@ -72,7 +71,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO" # techcyte (mac)
     ];
   };
-  nix.settings.trusted-users = [ "nixremote" ];
+  nix.settings.trusted-users = ["nixremote"];
 
   # Age-based retention GC (same mechanism as pantry/tuckles).
   programs.nh.clean = {

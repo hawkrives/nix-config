@@ -18,8 +18,12 @@
 # a job — as jellyfin's library.db did when 10.11 consolidated it away — produced
 # a passing run forever. Set `optional = true` on a job whose paths legitimately
 # come and go.
-{ lib, config, pkgs, ... }:
-let
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}: let
   cfg = config.services.serviceBackup;
 
   jobModule = lib.types.submodule {
@@ -30,7 +34,7 @@ let
       };
       sqlite = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = [ ];
+        default = [];
         description = "Database files (relative to root) to snapshot consistently.";
       };
       path = lib.mkOption {
@@ -40,7 +44,7 @@ let
       };
       excludes = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = [ ];
+        default = [];
         description = "Extra rsync excludes (on top of the always-excluded *.db*).";
       };
       optional = lib.mkOption {
@@ -60,49 +64,49 @@ let
     };
   };
 
-  mkScript = name: job:
-    let
-      dest = "${cfg.dest}/${name}";
-      src = "${job.root}/${job.path}";
-      excludeArgs = lib.concatMapStringsSep " " (e: "--exclude=${lib.escapeShellArg e}")
-        ([ "*.db" "*.db-wal" "*.db-shm" "*.db-journal" ] ++ job.excludes);
+  mkScript = name: job: let
+    dest = "${cfg.dest}/${name}";
+    src = "${job.root}/${job.path}";
+    excludeArgs =
+      lib.concatMapStringsSep " " (e: "--exclude=${lib.escapeShellArg e}")
+      (["*.db" "*.db-wal" "*.db-shm" "*.db-journal"] ++ job.excludes);
 
-      # Missing sources either fail the job or are noted and skipped.
-      missing = what: path:
-        if job.optional then
-          ''echo "note: ${name}: ${what} absent, skipping (optional): ${path}"''
-        else
-          ''{ echo "ERROR: ${name}: ${what} not found: ${path}" >&2; fail=1; }'';
+    # Missing sources either fail the job or are noted and skipped.
+    missing = what: path:
+      if job.optional
+      then ''echo "note: ${name}: ${what} absent, skipping (optional): ${path}"''
+      else ''{ echo "ERROR: ${name}: ${what} not found: ${path}" >&2; fail=1; }'';
 
-      sqliteCmds = lib.concatMapStringsSep "\n" (db: ''
+    sqliteCmds =
+      lib.concatMapStringsSep "\n" (db: ''
         if [ -f ${lib.escapeShellArg "${job.root}/${db}"} ]; then
           sqlite3 ${lib.escapeShellArg "${job.root}/${db}"} ".backup '${dest}/${baseNameOf db}'" \
             || { echo "ERROR: ${name}: sqlite snapshot failed: ${db}" >&2; fail=1; }
         else
           ${missing "database" "${job.root}/${db}"}
         fi
-      '') job.sqlite;
-    in ''
-      set -uo pipefail
-      fail=0
-      mkdir -p ${lib.escapeShellArg dest}
+      '')
+      job.sqlite;
+  in ''
+    set -uo pipefail
+    fail=0
+    mkdir -p ${lib.escapeShellArg dest}
 
-      if [ -e ${lib.escapeShellArg src} ]; then
-        rsync -a --delete ${excludeArgs} \
-          ${lib.escapeShellArg src} ${lib.escapeShellArg "${dest}/"} \
-          || { echo "ERROR: ${name}: rsync failed" >&2; fail=1; }
-      else
-        ${missing "path" src}
-      fi
+    if [ -e ${lib.escapeShellArg src} ]; then
+      rsync -a --delete ${excludeArgs} \
+        ${lib.escapeShellArg src} ${lib.escapeShellArg "${dest}/"} \
+        || { echo "ERROR: ${name}: rsync failed" >&2; fail=1; }
+    else
+      ${missing "path" src}
+    fi
 
-      ${sqliteCmds}
+    ${sqliteCmds}
 
-      exit "$fail"
-    '';
+    exit "$fail"
+  '';
 
   unitName = name: "service-backup-${name}";
-in
-{
+in {
   options.services.serviceBackup = {
     enable = lib.mkEnableOption "app-aware service-state backups to the NAS";
     dest = lib.mkOption {
@@ -125,7 +129,7 @@ in
     };
     jobs = lib.mkOption {
       type = lib.types.attrsOf jobModule;
-      default = { };
+      default = {};
       description = "Backup jobs, keyed by service name.";
     };
   };
@@ -134,21 +138,26 @@ in
     systemd.services = lib.mapAttrs' (name: job:
       lib.nameValuePair (unitName name) {
         description = "Back up ${name} state to the NAS";
-        path = [ pkgs.rsync pkgs.sqlite pkgs.coreutils ];
+        path = [pkgs.rsync pkgs.sqlite pkgs.coreutils];
         serviceConfig.Type = "oneshot";
         script = mkScript name job;
-      }) cfg.jobs;
+      })
+    cfg.jobs;
 
     systemd.timers = lib.mapAttrs' (name: job:
       lib.nameValuePair (unitName name) {
         description = "Scheduled backup of ${name} state to the NAS";
-        wantedBy = [ "timers.target" ];
+        wantedBy = ["timers.target"];
         timerConfig = {
-          OnCalendar = if job.schedule != null then job.schedule else cfg.schedule;
+          OnCalendar =
+            if job.schedule != null
+            then job.schedule
+            else cfg.schedule;
           Persistent = true;
           RandomizedDelaySec = cfg.randomizedDelaySec;
         };
-      }) cfg.jobs;
+      })
+    cfg.jobs;
 
     # `systemctl start service-backup.target` runs every job at once, which is
     # what the old single unit gave you for free. Nothing pulls this in on a

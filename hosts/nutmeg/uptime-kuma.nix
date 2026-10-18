@@ -13,8 +13,7 @@
 # hard stops (see ./crash-diagnostics.nix). The Beszel hub has the same problem.
 # That gap is covered from the outside by the watcher on pantry
 # (modules/nixos/host-watch.nix), not from here.
-{ config, ... }:
-{
+{config, ...}: {
   services.uptime-kuma = {
     enable = true;
     settings = {
@@ -42,11 +41,11 @@
   # to rebuild. Small (SQLite), so this is cheap.
   services.serviceBackup.jobs.uptime-kuma = {
     root = "/var/lib/uptime-kuma";
-    sqlite = [ "kuma.db" ];
+    sqlite = ["kuma.db"];
     optional = true; # the db only appears after first-run setup
   };
 
-  services.notifyFailure.units = [ "uptime-kuma.service" ];
+  services.notifyFailure.units = ["uptime-kuma.service"];
 
   # ── The heartbeats ────────────────────────────────────────────────────
   #
@@ -82,18 +81,40 @@
   services.unitHeartbeat = {
     enable = true;
     baseUrl = "http://127.0.0.1:3010";
-    units = [
-      { unit = "restic-backups-nas.service"; interval = 90000; } # daily + 30m jitter
-      { unit = "paperless-exporter.service"; interval = 90000; } # daily 01:30, no jitter
-      { unit = "arr-backup-pin.service"; interval = 90000; } # daily + 20m jitter
-      { unit = "recyclarr.service"; interval = 90000; } # daily
-      { unit = "beets-sync.service"; interval = 21600; } # every 4h + 10m jitter
-      { unit = "soularr.service"; interval = 7200; } # hourly + 5m jitter
-      { unit = "avahi-name-check.service"; interval = 1800; } # every 5m
-    ]
-    ++ map (n: {
-      unit = "service-backup-${n}.service";
-      interval = 93600; # daily + up to 1h jitter
-    }) (builtins.attrNames config.services.serviceBackup.jobs);
+    units =
+      [
+        {
+          unit = "restic-backups-nas.service";
+          interval = 90000;
+        } # daily + 30m jitter
+        {
+          unit = "paperless-exporter.service";
+          interval = 90000;
+        } # daily 01:30, no jitter
+        {
+          unit = "arr-backup-pin.service";
+          interval = 90000;
+        } # daily + 20m jitter
+        {
+          unit = "recyclarr.service";
+          interval = 90000;
+        } # daily
+        {
+          unit = "beets-sync.service";
+          interval = 21600;
+        } # every 4h + 10m jitter
+        {
+          unit = "soularr.service";
+          interval = 7200;
+        } # hourly + 5m jitter
+        {
+          unit = "avahi-name-check.service";
+          interval = 1800;
+        } # every 5m
+      ]
+      ++ map (n: {
+        unit = "service-backup-${n}.service";
+        interval = 93600; # daily + up to 1h jitter
+      }) (builtins.attrNames config.services.serviceBackup.jobs);
   };
 }

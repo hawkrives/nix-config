@@ -4,8 +4,7 @@
   pkgs,
   inputs,
   ...
-}:
-{
+}: {
   imports = [
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
@@ -53,7 +52,7 @@
     inputs.tsnsrv.nixosModules.default
   ];
 
-  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
+  nixpkgs.overlays = [inputs.nix-minecraft.overlay];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
@@ -67,7 +66,7 @@
 
   users.users."natsume" = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     shell = pkgs.fish;
   };
 
@@ -77,7 +76,7 @@
   # natsume; host-server keeps execWheelOnly on.
   security.sudo.wheelNeedsPassword = false;
 
-  users.groups.techcyte = { };
+  users.groups.techcyte = {};
   users.users.techcyte = {
     isNormalUser = true;
     group = "techcyte";
@@ -93,7 +92,7 @@
 
   # for slime. TCP only — slime-chat is an HTTP server, so the UDP half of this
   # rule never matched anything.
-  networking.firewall.allowedTCPPorts = [ 9100 ];
+  networking.firewall.allowedTCPPorts = [9100];
 
   programs.nh = {
     flake = "/home/natsume/nix-config#${hostName}";

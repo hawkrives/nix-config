@@ -14,8 +14,7 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.services.liveNotify;
 
   channelType = lib.types.submodule {
@@ -65,10 +64,13 @@ let
   # 1 unit for playlistItems.list + 1 for videos.list, per check.
   youtubeUnitsPerCheck = 2;
 
-  youtubeDailyUnits = lib.foldlAttrs (
-    acc: _: c:
-    acc + youtubeUnitsPerCheck * (86400 / c.intervalSeconds)
-  ) 0 youtubeChannels;
+  youtubeDailyUnits =
+    lib.foldlAttrs (
+      acc: _: c:
+        acc + youtubeUnitsPerCheck * (86400 / c.intervalSeconds)
+    )
+    0
+    youtubeChannels;
 
   # `id` and the channel key `name` are Nix-interpolated directly into the
   # generated shell scripts below at eval time (not templated at runtime) —
@@ -80,7 +82,12 @@ let
   badNames = lib.filterAttrs (name: _: builtins.match "[A-Za-z0-9_-]+" name == null) cfg.channels;
   badYoutubeIds = lib.filterAttrs (_: c: !lib.hasPrefix "UC" c.id) youtubeChannels;
 
-  mention = c: lib.escapeShellArg (if c.discordMention == null then "" else c.discordMention);
+  mention = c:
+    lib.escapeShellArg (
+      if c.discordMention == null
+      then ""
+      else c.discordMention
+    );
 
   # Every request goes through req(), which classifies curl's exit status.
   # --max-time is per attempt and the retry delay is not counted against it,
@@ -244,7 +251,11 @@ let
       DynamicUser = true;
       StateDirectory = "live-notify-${name}";
       EnvironmentFile = [
-        (if c.platform == "twitch" then cfg.twitch.credentialsFile else cfg.youtube.apiKeyFile)
+        (
+          if c.platform == "twitch"
+          then cfg.twitch.credentialsFile
+          else cfg.youtube.apiKeyFile
+        )
         c.webhookFile
       ];
       ProtectSystem = "strict";
@@ -257,12 +268,15 @@ let
       pkgs.jq
       pkgs.coreutils
     ];
-    script = if c.platform == "twitch" then twitchScript name c else youtubeScript name c;
+    script =
+      if c.platform == "twitch"
+      then twitchScript name c
+      else youtubeScript name c;
   };
 
   mkChannelTimer = name: c: {
     description = "Periodic live-check for ${name}";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       # OnBootSec kicks off the first run; OnUnitActiveSec repeats it from
       # there. OnUnitActiveSec alone never fires a first run, since it is
@@ -273,8 +287,7 @@ let
       RandomizedDelaySec = "10s";
     };
   };
-in
-{
+in {
   options.services.liveNotify = {
     enable = lib.mkEnableOption "Discord alerts when a watched Twitch/YouTube channel goes live";
 
@@ -312,7 +325,7 @@ in
 
     channels = lib.mkOption {
       type = lib.types.attrsOf channelType;
-      default = { };
+      default = {};
       description = "Channels to watch, keyed by a short name used in the unit name.";
     };
   };
@@ -324,39 +337,43 @@ in
         message = "liveNotify: configured YouTube channel(s) would use ${toString youtubeDailyUnits} quota units/day, over the ${toString cfg.youtube.dailyQuotaBudget}-unit budget (services.liveNotify.youtube.dailyQuotaBudget) — raise the budget, lengthen intervalSeconds, or drop a channel.";
       }
       {
-        assertion = youtubeChannels == { } || cfg.youtube.apiKeyFile != null;
+        assertion = youtubeChannels == {} || cfg.youtube.apiKeyFile != null;
         message = "liveNotify: YouTube channel(s) configured but services.liveNotify.youtube.apiKeyFile is not set";
       }
       {
-        assertion = twitchChannels == { } || cfg.twitch.credentialsFile != null;
+        assertion = twitchChannels == {} || cfg.twitch.credentialsFile != null;
         message = "liveNotify: Twitch channel(s) configured but services.liveNotify.twitch.credentialsFile is not set";
       }
       {
-        assertion = badIds == { };
+        assertion = badIds == {};
         message =
           "liveNotify: channel id(s) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts/URLs): "
           + lib.concatStringsSep ", " (lib.attrNames badIds);
       }
       {
-        assertion = badNames == { };
+        assertion = badNames == {};
         message =
           "liveNotify: channel name(s) (keys) must match [A-Za-z0-9_-]+ (embedded literally into generated scripts): "
           + lib.concatStringsSep ", " (lib.attrNames badNames);
       }
       {
-        assertion = badYoutubeIds == { };
+        assertion = badYoutubeIds == {};
         message =
           "liveNotify: YouTube channel id(s) must be the UC... channel ID, not an @handle: "
           + lib.concatStringsSep ", " (lib.attrNames badYoutubeIds);
       }
     ];
 
-    systemd.services = lib.mapAttrs' (
-      name: c: lib.nameValuePair "live-notify-${name}" (mkChannelService name c)
-    ) cfg.channels;
-    systemd.timers = lib.mapAttrs' (
-      name: c: lib.nameValuePair "live-notify-${name}" (mkChannelTimer name c)
-    ) cfg.channels;
+    systemd.services =
+      lib.mapAttrs' (
+        name: c: lib.nameValuePair "live-notify-${name}" (mkChannelService name c)
+      )
+      cfg.channels;
+    systemd.timers =
+      lib.mapAttrs' (
+        name: c: lib.nameValuePair "live-notify-${name}" (mkChannelTimer name c)
+      )
+      cfg.channels;
 
     services.notifyFailure.units = map (n: "live-notify-${n}.service") (lib.attrNames cfg.channels);
   };

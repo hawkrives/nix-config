@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # Beszel — lightweight fleet monitoring. This is the hub: the web UI plus the
   # PocketBase database that holds every agent's metric history.
   #

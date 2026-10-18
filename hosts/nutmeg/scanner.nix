@@ -1,5 +1,8 @@
-{ lib, pkgs, ... }:
-let
+{
+  lib,
+  pkgs,
+  ...
+}: let
   scannerHost = "EPSON86794C.local";
   consumeDir = "/var/lib/paperless/consume";
   stagingDir = "/var/lib/adf-autoscan";
@@ -231,14 +234,13 @@ let
       done
     '';
   };
-in
-{
+in {
   # Epson ET-3958, reached over eSCL/AirScan. sane-airscan speaks eSCL over
   # HTTPS, so no USB, no udev rules, and no proprietary Epson driver is needed.
   # The device is addressed by its mDNS name rather than a DHCP lease.
   hardware.sane = {
     enable = true;
-    extraBackends = [ pkgs.sane-airscan ];
+    extraBackends = [pkgs.sane-airscan];
 
     # nixpkgs ships two eSCL backends. sane-backends' own `escl` backend
     # returns only the FRONT of each sheet in ADF Duplex mode on this device,
@@ -246,10 +248,10 @@ in
     # the same scanner correctly, so remove `escl` to make it impossible to
     # select the broken one by accident. This also stops `scanimage -L` dumping
     # the printer's HTML landing page to stderr, which `escl` probes on port 80.
-    disabledDefaultBackends = [ "escl" ];
+    disabledDefaultBackends = ["escl"];
   };
 
-  environment.systemPackages = [ adf-scan-once ];
+  environment.systemPackages = [adf-scan-once];
 
   # Web UI for everything the feeder cannot do: books, passports, receipts, and
   # any scan needing non-default settings. Writes finished files straight into
@@ -285,8 +287,8 @@ in
       "network-online.target"
       "paperless-consumer.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
 
     # No SANE environment here: adf-scan-once scopes SANE_CONFIG_DIR and
     # LD_LIBRARY_PATH to its own scanimage call, so this unit does not need
@@ -304,7 +306,7 @@ in
       ProtectHome = true;
       PrivateTmp = true;
       NoNewPrivileges = true;
-      ReadWritePaths = [ consumeDir ];
+      ReadWritePaths = [consumeDir];
     };
   };
 }

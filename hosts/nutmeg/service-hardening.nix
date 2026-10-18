@@ -1,5 +1,4 @@
-{ ... }:
-let
+{...}: let
   # Baseline sandbox: the set nixpkgs' radarr and sonarr modules ship, for the
   # media services whose modules ship little or none of it. These all run as an
   # unprivileged user, talk only TCP/Unix sockets, and touch the NAS through the
@@ -42,8 +41,7 @@ let
       "@chown"
     ];
   };
-in
-{
+in {
   # Each service starts from the baseline; deviations go in its own `//` so
   # they're visible next to the service they're for.
 
@@ -61,7 +59,9 @@ in
   systemd.services.soularr.serviceConfig = hardening;
 
   # Node enumerates interfaces over netlink (os.networkInterfaces).
-  systemd.services.seerr.serviceConfig = hardening // {
-    RestrictAddressFamilies = hardening.RestrictAddressFamilies ++ [ "AF_NETLINK" ];
-  };
+  systemd.services.seerr.serviceConfig =
+    hardening
+    // {
+      RestrictAddressFamilies = hardening.RestrictAddressFamilies ++ ["AF_NETLINK"];
+    };
 }

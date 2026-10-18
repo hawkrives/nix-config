@@ -2,8 +2,11 @@
 # so an unreachable cache (offline / off-tailnet) never hangs a build. Cross-platform
 # (only sets nix.settings.post-build-hook). Imported by nutmeg, tuckles, and the Mac
 # (techcyte) — NOT pantry itself.
-{ config, pkgs, ... }:
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   # pantry over the tailnet. nutmeg runs --accept-dns=false, so the MagicDNS name
   # won't resolve there; the tailnet IP is stable and works on every host, and
   # tailscale still uses the direct LAN path when local.
@@ -63,7 +66,6 @@ let
     fi
     exit 0
   '';
-in
-{
+in {
   nix.settings.post-build-hook = "${hook}";
 }

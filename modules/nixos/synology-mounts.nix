@@ -5,18 +5,13 @@
   lib,
   utils,
   ...
-}:
-let
+}: let
   synology = "192.168.1.194";
-  nfsMount =
-    sharePath:
-    {
-      readOnly ? false,
-    }:
-    {
-      fsType = "nfs";
-      device = sharePath;
-      options = [
+  nfsMount = sharePath: {readOnly ? false}: {
+    fsType = "nfs";
+    device = sharePath;
+    options =
+      [
         "nfsvers=4.1"
         "noatime"
         "_netdev"
@@ -30,8 +25,8 @@ let
         # actually bounds an attempt here.
         "x-systemd.mount-timeout=15s"
       ]
-      ++ lib.lists.optionals readOnly [ "ro" ];
-    };
+      ++ lib.lists.optionals readOnly ["ro"];
+  };
   synologyMount = sharePath: options: nfsMount "${synology}:${sharePath}" options;
 
   # Every mount this module produced, found by the NAS address rather than by a
@@ -39,8 +34,7 @@ let
   synologyMounts = lib.filter (fs: fs.device != null && lib.hasPrefix "${synology}:" fs.device) (
     lib.attrValues config.fileSystems
   );
-in
-{
+in {
   _module.args.synologyMount = synologyMount;
 
   # Drop the start rate limit on these mounts. The stock five starts per ten
@@ -56,13 +50,14 @@ in
   systemd.units = lib.listToAttrs (
     map (
       fs:
-      lib.nameValuePair "${utils.escapeSystemdPath fs.mountPoint}.mount" {
-        overrideStrategy = "asDropin";
-        text = ''
-          [Unit]
-          StartLimitIntervalSec=0
-        '';
-      }
-    ) synologyMounts
+        lib.nameValuePair "${utils.escapeSystemdPath fs.mountPoint}.mount" {
+          overrideStrategy = "asDropin";
+          text = ''
+            [Unit]
+            StartLimitIntervalSec=0
+          '';
+        }
+    )
+    synologyMounts
   );
 }

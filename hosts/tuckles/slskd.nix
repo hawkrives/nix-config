@@ -3,13 +3,12 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.services.slskd;
   # Regenerate slskd's config exactly as the upstream module does (filter nulls,
   # YAML), but with an API-key placeholder so the real key stays out of the
   # world-readable Nix store. A root ExecStartPre patches the key in at runtime.
-  yamlFormat = pkgs.formats.yaml { };
+  yamlFormat = pkgs.formats.yaml {};
   # removeAttrs "global" mirrors upstream: slskd renamed its `global` config
   # section to `transfers`, and the module keeps a mkRenamedOptionModule alias
   # for it. That alias is a *declared* option, so it shows up in cfg.settings
@@ -19,10 +18,9 @@ let
   # is never forced.
   cleanSettings = lib.filterAttrsRecursive (
     _: v: (builtins.tryEval v).success && v != null
-  ) (lib.removeAttrs cfg.settings [ "global" ]);
+  ) (lib.removeAttrs cfg.settings ["global"]);
   configTemplate = yamlFormat.generate "slskd-template.yml" cleanSettings;
-in
-{
+in {
   age.secrets.slskd-env.file = ../../secrets/slskd-env.age;
   age.secrets.slskd-api-key.file = ../../secrets/slskd-api-key.age;
 
@@ -33,7 +31,7 @@ in
   # gid-100 reasoning as the *arr users in servarr.nix; NFS sec=sys passes the
   # supplementary gid through (PrivateUsers is forced off below to preserve it).
   # It also covers writing downloads into /mnt/music/soulseek/complete.
-  users.users.slskd.extraGroups = [ "users" ];
+  users.users.slskd.extraGroups = ["users"];
 
   services.slskd = {
     enable = true;
@@ -64,21 +62,19 @@ in
       # ~200 searches/day had grown search.db past 4 GB. Values are minutes.
       # Pruning deletes rows but never VACUUMs, so the file stays at its peak size
       # and reuses the freed pages.
-      retention =
-        let
-          month = 30 * 24 * 60;
-          transfers = {
-            succeeded = month;
-            failed = month; # errored, cancelled, rejected, timed out, aborted
-          };
-        in
-        {
-          search = month;
-          transfers = {
-            upload = transfers;
-            download = transfers;
-          };
+      retention = let
+        month = 30 * 24 * 60;
+        transfers = {
+          succeeded = month;
+          failed = month; # errored, cancelled, rejected, timed out, aborted
         };
+      in {
+        search = month;
+        transfers = {
+          upload = transfers;
+          download = transfers;
+        };
+      };
     };
   };
 
@@ -112,19 +108,20 @@ in
       UMask = "0007";
       RuntimeDirectory = "slskd"; # /run/slskd for the patched config
       ExecStartPre = lib.mkBefore [
-        ("+" + (pkgs.writeShellScript "slskd-render-config" ''
-          set -euo pipefail
-          key=$(${pkgs.coreutils}/bin/cat ${config.age.secrets.slskd-api-key.path})
-          ${pkgs.gnused}/bin/sed "s|@SLSKD_API_KEY@|$key|" ${configTemplate} > /run/slskd/slskd.yml
-          ${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} /run/slskd/slskd.yml
-          ${pkgs.coreutils}/bin/chmod 600 /run/slskd/slskd.yml
-        ''))
+        ("+"
+          + (pkgs.writeShellScript "slskd-render-config" ''
+            set -euo pipefail
+            key=$(${pkgs.coreutils}/bin/cat ${config.age.secrets.slskd-api-key.path})
+            ${pkgs.gnused}/bin/sed "s|@SLSKD_API_KEY@|$key|" ${configTemplate} > /run/slskd/slskd.yml
+            ${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} /run/slskd/slskd.yml
+            ${pkgs.coreutils}/bin/chmod 600 /run/slskd/slskd.yml
+          ''))
       ];
       ExecStart = lib.mkForce "${cfg.package}/bin/slskd --app-dir /var/lib/slskd --config /run/slskd/slskd.yml";
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 5030 ]; # web UI on the LAN (via the netns port-map)
+  networking.firewall.allowedTCPPorts = [5030]; # web UI on the LAN (via the netns port-map)
 
   # tsnsrv embeds Tailscale, so its backend dials carry Tailscale's fwmark
   # (0x80000); the vpn-confinement netns rules drop marked packets, so tsnsrv
@@ -134,8 +131,8 @@ in
   # the slsk tsnsrv node at that (see tsnsrv.nix).
   systemd.services.slskd-web-proxy = {
     description = "localhost:5031 -> slskd web UI in the airvpn netns (for tsnsrv)";
-    after = [ "slskd.service" ];
-    wantedBy = [ "multi-user.target" ];
+    after = ["slskd.service"];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       ExecStart = "${pkgs.socat}/bin/socat TCP4-LISTEN:5031,bind=127.0.0.1,fork,reuseaddr TCP4:192.168.15.1:5030";
       DynamicUser = true;

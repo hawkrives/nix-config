@@ -2,8 +2,7 @@
   pkgs,
   perSystem,
   ...
-}:
-{
+}: {
   programs.fish = {
     enable = true;
 
@@ -244,7 +243,10 @@
     mise = {
       enable = true;
       # see packages/mise-bin.nix for why macOS takes the upstream binary
-      package = if pkgs.stdenv.hostPlatform.isDarwin then perSystem.self.mise-bin else pkgs.mise;
+      package =
+        if pkgs.stdenv.hostPlatform.isDarwin
+        then perSystem.self.mise-bin
+        else pkgs.mise;
       globalConfig = {
         # tools."pipx:batrachian-toad" = "0.5.34";
         settings.experimental = true;
@@ -266,104 +268,104 @@
 
   # TODO: use programs.ssh to control the ssh config file
 
-  home.packages = [
-    # pkgs.nixos-generators
+  home.packages =
+    [
+      # pkgs.nixos-generators
 
-    pkgs.alejandra # nix formatter
-    pkgs.bartib
-    pkgs.buildah
-    pkgs.certbot
-    pkgs.curl
-    pkgs.diffoci
-    pkgs.dive
-    pkgs.doggo # maintained fork of dogdns
-    pkgs.dust
-    pkgs.entr
-    pkgs.ffmpeg-headless
-    pkgs.freeze # code screenshot
-    pkgs.fx # tui json viewer
-    pkgs.glab # gitlab cli
-    pkgs.graphviz
-    pkgs.gron
-    pkgs.htmlq
-    pkgs.hyperfine
-    pkgs.imagemagick
-    # pkgs.jj-fzf
-    pkgs.jless
-    pkgs.lazyjj
-    pkgs.lnav
-    pkgs.lsof
-    pkgs.mariadb.client
-    pkgs.nix-output-monitor
-    pkgs.oras
-    pkgs.parallel
-    pkgs.procs
-    pkgs.pstree
-    pkgs.pv
-    pkgs.readline
-    pkgs.rlwrap
-    pkgs.rustup
-    pkgs.shellcheck
-    pkgs.shfmt
-    pkgs.skopeo
-    # sqlit-tui bundles mysql-connector-python, which drags the full mysql
-    # client (~300 MB) into the closure. sqlite-interactive covers SQLite needs.
-    # pkgs.sqlit-tui
-    pkgs.sqlite-interactive
-    # pkgs.terraform # go-modules fetch fails in current nixpkgs
-    pkgs.tokei
-    pkgs.tree
-    pkgs.trippy
-    pkgs.unzip
-    pkgs.watch
-    # pkgs.watchexec
-    pkgs.wget
-    pkgs.xh
-    pkgs.xz
-    pkgs.yq-go
-    pkgs.zstd
+      pkgs.alejandra # nix formatter
+      pkgs.bartib
+      pkgs.buildah
+      pkgs.certbot
+      pkgs.curl
+      pkgs.diffoci
+      pkgs.dive
+      pkgs.doggo # maintained fork of dogdns
+      pkgs.dust
+      pkgs.entr
+      pkgs.ffmpeg-headless
+      pkgs.freeze # code screenshot
+      pkgs.fx # tui json viewer
+      pkgs.glab # gitlab cli
+      pkgs.graphviz
+      pkgs.gron
+      pkgs.htmlq
+      pkgs.hyperfine
+      pkgs.imagemagick
+      # pkgs.jj-fzf
+      pkgs.jless
+      pkgs.lazyjj
+      pkgs.lnav
+      pkgs.lsof
+      pkgs.mariadb.client
+      pkgs.nix-output-monitor
+      pkgs.oras
+      pkgs.parallel
+      pkgs.procs
+      pkgs.pstree
+      pkgs.pv
+      pkgs.readline
+      pkgs.rlwrap
+      pkgs.rustup
+      pkgs.shellcheck
+      pkgs.shfmt
+      pkgs.skopeo
+      # sqlit-tui bundles mysql-connector-python, which drags the full mysql
+      # client (~300 MB) into the closure. sqlite-interactive covers SQLite needs.
+      # pkgs.sqlit-tui
+      pkgs.sqlite-interactive
+      # pkgs.terraform # go-modules fetch fails in current nixpkgs
+      pkgs.tokei
+      pkgs.tree
+      pkgs.trippy
+      pkgs.unzip
+      pkgs.watch
+      # pkgs.watchexec
+      pkgs.wget
+      pkgs.xh
+      pkgs.xz
+      pkgs.yq-go
+      pkgs.zstd
 
-    # pkgs.gemini-cli
-    # pkgs.github-copilot-cli
-    # pkgs.codex
-    pkgs.claude-code
+      # pkgs.gemini-cli
+      # pkgs.github-copilot-cli
+      # pkgs.codex
+      pkgs.claude-code
 
-    # pkgs.nodejs-slim
-    pkgs.pnpm
+      # pkgs.nodejs-slim
+      pkgs.pnpm
 
-    # TODO: move into separate flakes
-    # pkgs.packwiz # for meloncraft-modpack
-  ]
-  # you can also look at the current user's config (`config`) or the system
-  # config (`osConfig`), but note that osConfig is null if the homeManager
-  # config is evaluated separately as in `nh home switch .#`.
-  ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [ pkgs.cocoapods ])
-  ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isLinux) [ ]);
+      # TODO: move into separate flakes
+      # pkgs.packwiz # for meloncraft-modpack
+    ]
+    # you can also look at the current user's config (`config`) or the system
+    # config (`osConfig`), but note that osConfig is null if the homeManager
+    # config is evaluated separately as in `nh home switch .#`.
+    ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [pkgs.cocoapods])
+    ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isLinux) []);
 
   targets =
-    if pkgs.stdenv.hostPlatform.isDarwin then
-      {
-        darwin.defaults = {
-          "com.apple.dock".autohide = true;
-          "com.apple.dock".mru-spaces = false;
-          "com.apple.dock".mouse-over-hilite-stack = true;
-          "com.apple.dock".showhidden = true;
-          "com.apple.dock".slow-motion-allowed = false;
+    if pkgs.stdenv.hostPlatform.isDarwin
+    then {
+      darwin.defaults = {
+        "com.apple.dock".autohide = true;
+        "com.apple.dock".mru-spaces = false;
+        "com.apple.dock".mouse-over-hilite-stack = true;
+        "com.apple.dock".showhidden = true;
+        "com.apple.dock".slow-motion-allowed = false;
 
-          "screencapture".disable-shadow = true;
+        "screencapture".disable-shadow = true;
 
-          "com.apple.finder".ShowPathbar = true;
-          "com.apple.finder".ShowStatusBar = true;
+        "com.apple.finder".ShowPathbar = true;
+        "com.apple.finder".ShowStatusBar = true;
 
-          "com.apple.menuextra.clock".Show24Hour = true;
-          "com.apple.menuextra.clock".ShowAMPM = false;
+        "com.apple.menuextra.clock".Show24Hour = true;
+        "com.apple.menuextra.clock".ShowAMPM = false;
 
-          "universalaccess".closeViewScrollWheelToggle = true; # Use scroll gesture with the Ctrl (^) modifier key to zoom.
-          # "universalaccess".reduceMotion = true;
-        };
-      }
-    else
-      { };
+        "universalaccess".closeViewScrollWheelToggle = true; # Use scroll gesture with the Ctrl (^) modifier key to zoom.
+        # "universalaccess".reduceMotion = true;
+      };
+    }
+    else {};
 
   # The state version is required and should stay at the version you originally installed.
   home.stateVersion = "23.05";

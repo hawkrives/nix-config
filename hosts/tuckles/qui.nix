@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # qui — an alternate web UI for qBittorrent (autobrr/qui). It runs in the host
   # namespace (it's just a UI). qBittorrent lives in the airvpn netns; from the
   # host it's reachable at the namespace bridge address 192.168.15.1:6001 (the

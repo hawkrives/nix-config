@@ -14,8 +14,7 @@
   pkgs,
   utils,
   ...
-}:
-let
+}: let
   cfg = config.services.channelArchive;
 
   nfoGenerator = ./nfo.py;
@@ -38,7 +37,7 @@ let
   };
 
   channelModule = lib.types.submodule (
-    { name, ... }: {
+    {name, ...}: {
       options = {
         enable = lib.mkOption {
           type = lib.types.bool;
@@ -156,177 +155,181 @@ let
 
   serviceName = name: "channel-archive-${name}";
 
-  mkService =
-    name: ch:
-    let
-      metaArgs = lib.optionals ch.writeMetadata [
-        "--write-info-json"
-        # Per-video metadata only: without this, yt-dlp also writes a
-        # playlist-level "<channel> [<id>].info.json", and nfo.py then emits a
-        # junk .nfo for the playlist itself. Suppress the playlist metafiles.
-        "--no-write-playlist-metafiles"
-        "--write-thumbnail"
-        "--convert-thumbnails"
-        "jpg"
-        "--embed-metadata"
-      ];
-      formatArgs = lib.optionals (ch.format != "") [
-        "-f"
-        ch.format
-      ];
-      # see the `ignoreErrors` option: --abort-on-error is the default and stays
-      # unless a channel explicitly opts out
-      # Only YouTube answers a bot-block with a bare 403; Twitch returns 403 for
-      # the expired media behind an old clip, which is an ordinary dead item, not
-      # a block. Counting it as one made ditherdown-clips report RATE-LIMITED for
-      # a problem that had nothing to do with rate limits.
-      isYouTube = lib.hasInfix "youtube.com" ch.url || lib.hasInfix "youtu.be" ch.url;
-      blockPattern = lib.concatStringsSep "|" (
+  mkService = name: ch: let
+    metaArgs = lib.optionals ch.writeMetadata [
+      "--write-info-json"
+      # Per-video metadata only: without this, yt-dlp also writes a
+      # playlist-level "<channel> [<id>].info.json", and nfo.py then emits a
+      # junk .nfo for the playlist itself. Suppress the playlist metafiles.
+      "--no-write-playlist-metafiles"
+      "--write-thumbnail"
+      "--convert-thumbnails"
+      "jpg"
+      "--embed-metadata"
+    ];
+    formatArgs = lib.optionals (ch.format != "") [
+      "-f"
+      ch.format
+    ];
+    # see the `ignoreErrors` option: --abort-on-error is the default and stays
+    # unless a channel explicitly opts out
+    # Only YouTube answers a bot-block with a bare 403; Twitch returns 403 for
+    # the expired media behind an old clip, which is an ordinary dead item, not
+    # a block. Counting it as one made ditherdown-clips report RATE-LIMITED for
+    # a problem that had nothing to do with rate limits.
+    isYouTube = lib.hasInfix "youtube.com" ch.url || lib.hasInfix "youtu.be" ch.url;
+    blockPattern = lib.concatStringsSep "|" (
+      [
+        "HTTP Error 429"
+        "Sign in to confirm"
+        "not a bot"
+      ]
+      ++ lib.optional isYouTube "HTTP Error 403"
+    );
+    blockSource =
+      if isYouTube
+      then "YouTube"
+      else "the source";
+
+    # --abort-on-error stops at the first error instead of limping through the
+    # rest of the playlist: channel listings are newest-first, so if that first
+    # error is a genuine bot-block this caps the run to one item instead of
+    # hundreds. The flip side -- a permanently-broken item wedging the channel
+    # forever -- is what alertUser and the `ignoreErrors` escape hatch exist for.
+    errorArgs =
+      if ch.ignoreErrors
+      then ["--ignore-errors"]
+      else ["--abort-on-error"];
+
+    # see the `incremental` option: safe only on a caught-up channel
+    incrementalArgs = lib.optionals ch.incremental ["--break-on-existing"];
+
+    rateLimitArgs = lib.optionals ch.rateLimit [
+      "--sleep-requests"
+      "1.5"
+      "--min-sleep-interval"
+      "5"
+      "--max-sleep-interval"
+      "30"
+    ];
+    # Skip live/premiere content: currently-live streams, scheduled premieres,
+    # and past-live VODs (was_live/post_live). Shorts need no filter — the
+    # channel URLs target the `/videos` tab, which never lists Shorts.
+    # The `?` on each operator matters: without it a MISSING live_status makes
+    # the comparison fail, so the filter rejects the item. Twitch clips report
+    # live_status=NA, so the un-suffixed form rejected every clip that was not
+    # already archived -- ditherdown-clips looked healthy for months ("finished,
+    # 0 new") while being structurally unable to fetch anything. Verified: the
+    # old filter passes 0 of 3 clips, this passes 3 of 3, and it still rejects a
+    # genuine was_live VOD, which is the whole point of the filter.
+    liveFilterArgs = lib.optionals (!ch.includeLive) [
+      "--match-filter"
+      "live_status !=? is_live & live_status !=? is_upcoming & live_status !=? was_live & live_status !=? post_live"
+    ];
+    credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null) [
+      "plex-token:${cfg.plexTokenFile}"
+    ];
+    ytdlpArgs = lib.concatStringsSep " " (
+      map lib.escapeShellArg (
         [
-          "HTTP Error 429"
-          "Sign in to confirm"
-          "not a bot"
+          "--download-archive"
+          "${ch.destination}/archive.txt"
+          "--output"
+          "${ch.destination}/%(title)s [%(id)s].%(ext)s"
+          "--no-overwrites"
+          "--continue"
+          # fetch live streams from the beginning
+          "--live-from-start"
+          # Default is --no-lazy-playlist: yt-dlp parses the ENTIRE playlist
+          # before downloading anything, so a 1000-video channel costs ~33
+          # paginated requests up front on every run. Lazy processing also
+          # makes --max-downloads actually bound discovery -- without it the
+          # cap only stops downloads, after the full walk has already
+          # happened. Disables n_entries/--playlist-random/--playlist-reverse,
+          # none of which this module uses.
+          "--lazy-playlist"
+          "--max-downloads"
+          (toString cfg.maxDownloads)
+          # yt-dlp spawns ffmpeg/ffprobe itself for merging and thumbnail
+          # conversion, resolving them off PATH -- substitution in `script`
+          # cannot reach that. Pin the location so the ffmpeg doing the
+          # muxing is the one this module depends on, not whatever PATH
+          # happens to surface first.
+          "--ffmpeg-location"
+          "${pkgs.ffmpeg}/bin"
         ]
-        ++ lib.optional isYouTube "HTTP Error 403"
-      );
-      blockSource = if isYouTube then "YouTube" else "the source";
+        ++ errorArgs
+        ++ formatArgs
+        ++ metaArgs
+        ++ rateLimitArgs
+        ++ incrementalArgs
+        ++ liveFilterArgs
+        ++ ch.extraArgs
+        ++ [ch.url]
+      )
+    );
+    # /mnt/channels is an all_squash NFS export: every write (even root's) maps
+    # to the anon uid 1024:users. The parent bucket dir is group-writable to
+    # `users` and ReadWritePaths grants the sandbox that parent, so the service
+    # creates its own destination dir here — no manual NAS-side setup needed.
+    # Runs with NO `+` prefix — inside the sandbox as the DynamicUser
+    # (SupplementaryGroups=users) — so mkdir/`-w` match what yt-dlp will see.
+    # setgid on the parent propagates group `users` to the new dir.
+    preStart = pkgs.writeShellScript "channel-archive-${name}-pre" ''
+      ${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg ch.destination} 2>/dev/null || true
+      if [ ! -d ${lib.escapeShellArg ch.destination} ] || [ ! -w ${lib.escapeShellArg ch.destination} ]; then
+        echo "channel-archive: destination ${ch.destination} missing or not writable — ensure its parent bucket exists on the NAS and is group-writable to 'users'" >&2
+        exit 1
+      fi
 
-      # --abort-on-error stops at the first error instead of limping through the
-      # rest of the playlist: channel listings are newest-first, so if that first
-      # error is a genuine bot-block this caps the run to one item instead of
-      # hundreds. The flip side -- a permanently-broken item wedging the channel
-      # forever -- is what alertUser and the `ignoreErrors` escape hatch exist for.
-      errorArgs = if ch.ignoreErrors then [ "--ignore-errors" ] else [ "--abort-on-error" ];
-
-      # see the `incremental` option: safe only on a caught-up channel
-      incrementalArgs = lib.optionals ch.incremental [ "--break-on-existing" ];
-
-      rateLimitArgs = lib.optionals ch.rateLimit [
-        "--sleep-requests"
-        "1.5"
-        "--min-sleep-interval"
-        "5"
-        "--max-sleep-interval"
-        "30"
-      ];
-      # Skip live/premiere content: currently-live streams, scheduled premieres,
-      # and past-live VODs (was_live/post_live). Shorts need no filter — the
-      # channel URLs target the `/videos` tab, which never lists Shorts.
-      # The `?` on each operator matters: without it a MISSING live_status makes
-      # the comparison fail, so the filter rejects the item. Twitch clips report
-      # live_status=NA, so the un-suffixed form rejected every clip that was not
-      # already archived -- ditherdown-clips looked healthy for months ("finished,
-      # 0 new") while being structurally unable to fetch anything. Verified: the
-      # old filter passes 0 of 3 clips, this passes 3 of 3, and it still rejects a
-      # genuine was_live VOD, which is the whole point of the filter.
-      liveFilterArgs = lib.optionals (!ch.includeLive) [
-        "--match-filter"
-        "live_status !=? is_live & live_status !=? is_upcoming & live_status !=? was_live & live_status !=? post_live"
-      ];
-      credArgs = lib.optionals (ch.restructure && cfg.plexTokenFile != null) [
-        "plex-token:${cfg.plexTokenFile}"
-      ];
-      ytdlpArgs = lib.concatStringsSep " " (
-        map lib.escapeShellArg (
-          [
-            "--download-archive"
-            "${ch.destination}/archive.txt"
-            "--output"
-            "${ch.destination}/%(title)s [%(id)s].%(ext)s"
-            "--no-overwrites"
-            "--continue"
-            # fetch live streams from the beginning
-            "--live-from-start"
-            # Default is --no-lazy-playlist: yt-dlp parses the ENTIRE playlist
-            # before downloading anything, so a 1000-video channel costs ~33
-            # paginated requests up front on every run. Lazy processing also
-            # makes --max-downloads actually bound discovery -- without it the
-            # cap only stops downloads, after the full walk has already
-            # happened. Disables n_entries/--playlist-random/--playlist-reverse,
-            # none of which this module uses.
-            "--lazy-playlist"
-            "--max-downloads"
-            (toString cfg.maxDownloads)
-            # yt-dlp spawns ffmpeg/ffprobe itself for merging and thumbnail
-            # conversion, resolving them off PATH -- substitution in `script`
-            # cannot reach that. Pin the location so the ffmpeg doing the
-            # muxing is the one this module depends on, not whatever PATH
-            # happens to surface first.
-            "--ffmpeg-location"
-            "${pkgs.ffmpeg}/bin"
-          ]
-          ++ errorArgs
-          ++ formatArgs
-          ++ metaArgs
-          ++ rateLimitArgs
-          ++ incrementalArgs
-          ++ liveFilterArgs
-          ++ ch.extraArgs
-          ++ [ ch.url ]
-        )
-      );
-      # /mnt/channels is an all_squash NFS export: every write (even root's) maps
-      # to the anon uid 1024:users. The parent bucket dir is group-writable to
-      # `users` and ReadWritePaths grants the sandbox that parent, so the service
-      # creates its own destination dir here — no manual NAS-side setup needed.
-      # Runs with NO `+` prefix — inside the sandbox as the DynamicUser
-      # (SupplementaryGroups=users) — so mkdir/`-w` match what yt-dlp will see.
-      # setgid on the parent propagates group `users` to the new dir.
-      preStart = pkgs.writeShellScript "channel-archive-${name}-pre" ''
-        ${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg ch.destination} 2>/dev/null || true
-        if [ ! -d ${lib.escapeShellArg ch.destination} ] || [ ! -w ${lib.escapeShellArg ch.destination} ]; then
-          echo "channel-archive: destination ${ch.destination} missing or not writable — ensure its parent bucket exists on the NAS and is group-writable to 'users'" >&2
-          exit 1
-        fi
-
-        # Discard download fragments left behind by an EARLIER run. yt-dlp's
-        # --continue will happily resume a .part from days ago, but YouTube's
-        # media URLs and encodes do not stay byte-compatible that long. On
-        # 2026-08-26 videogamedunkey resumed a 13-day-old AV1 .part, produced a
-        # byte-complete but corrupt .f399.mp4, and ffmpeg died muxing it with
-        # "Postprocessing: Conversion failed!". --abort-on-error then killed the
-        # run -- and since the corrupt fragment persisted, every later run hit
-        # the same wall, so one bad file wedged ~999 videos behind it. The 94
-        # sibling .part files in that folder were all queued to do the same.
-        #
-        # Only fragments older than the window below are removed. mtime advances
-        # while a download is in flight, so an actively-written fragment is
-        # never eligible; the window only has to exceed how long a *sibling*
-        # unit sharing this destination might stall on one file (VODs + clips
-        # deliberately share a folder). Observed runs top out around 25min.
-        # -print so the journal records what was swept rather than doing it
-        # silently.
-        ${pkgs.findutils}/bin/find ${lib.escapeShellArg ch.destination} -maxdepth 1 -regextype posix-extended \
-          \( -name '*.part' -o -name '*.ytdl' -o -name '*.temp.*' \
-             -o -regex '.*\.f[0-9]+(-[0-9]+)?\.(mp4|webm|m4a|mkv|opus|mp3)' \) \
-          -mmin +360 -print -delete 2>/dev/null || true
-      '';
-    in
-    {
-      description = "Archive channel ${name} with yt-dlp";
-      # A config change must never interrupt or restart an in-flight archive run:
-      # switch-to-configuration queues a job against the unit and then WAITS for
-      # the running one, so a long backfill blocks the whole deploy. These units
-      # embed store paths (yt-dlp/ffmpeg/python), so any nixpkgs bump changes
-      # every one of them -- it is not just edits to this module that block. The
-      # next timer fire picks up the new definition; --download-archive makes a
-      # run resumable regardless. Same opt-out as sshd@ in host-server.nix.
-      restartIfChanged = false;
-      stopIfChanged = false;
-      # Soft Wants/After on the mount unit (NOT RequiresMountsFor) — a run can
-      # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
-      # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
-      # doesn't propagate the stop; the automount transparently re-mounts on
-      # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
-      after = [
-        "network-online.target"
-        "${utils.escapeSystemdPath cfg.baseDir}.mount"
-      ];
-      wants = [
-        "network-online.target"
-        "${utils.escapeSystemdPath cfg.baseDir}.mount"
-      ];
-      path = [
+      # Discard download fragments left behind by an EARLIER run. yt-dlp's
+      # --continue will happily resume a .part from days ago, but YouTube's
+      # media URLs and encodes do not stay byte-compatible that long. On
+      # 2026-08-26 videogamedunkey resumed a 13-day-old AV1 .part, produced a
+      # byte-complete but corrupt .f399.mp4, and ffmpeg died muxing it with
+      # "Postprocessing: Conversion failed!". --abort-on-error then killed the
+      # run -- and since the corrupt fragment persisted, every later run hit
+      # the same wall, so one bad file wedged ~999 videos behind it. The 94
+      # sibling .part files in that folder were all queued to do the same.
+      #
+      # Only fragments older than the window below are removed. mtime advances
+      # while a download is in flight, so an actively-written fragment is
+      # never eligible; the window only has to exceed how long a *sibling*
+      # unit sharing this destination might stall on one file (VODs + clips
+      # deliberately share a folder). Observed runs top out around 25min.
+      # -print so the journal records what was swept rather than doing it
+      # silently.
+      ${pkgs.findutils}/bin/find ${lib.escapeShellArg ch.destination} -maxdepth 1 -regextype posix-extended \
+        \( -name '*.part' -o -name '*.ytdl' -o -name '*.temp.*' \
+           -o -regex '.*\.f[0-9]+(-[0-9]+)?\.(mp4|webm|m4a|mkv|opus|mp3)' \) \
+        -mmin +360 -print -delete 2>/dev/null || true
+    '';
+  in {
+    description = "Archive channel ${name} with yt-dlp";
+    # A config change must never interrupt or restart an in-flight archive run:
+    # switch-to-configuration queues a job against the unit and then WAITS for
+    # the running one, so a long backfill blocks the whole deploy. These units
+    # embed store paths (yt-dlp/ffmpeg/python), so any nixpkgs bump changes
+    # every one of them -- it is not just edits to this module that block. The
+    # next timer fire picks up the new definition; --download-archive makes a
+    # run resumable regardless. Same opt-out as sshd@ in host-server.nix.
+    restartIfChanged = false;
+    stopIfChanged = false;
+    # Soft Wants/After on the mount unit (NOT RequiresMountsFor) — a run can
+    # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
+    # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
+    # doesn't propagate the stop; the automount transparently re-mounts on
+    # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
+    after = [
+      "network-online.target"
+      "${utils.escapeSystemdPath cfg.baseDir}.mount"
+    ];
+    wants = [
+      "network-online.target"
+      "${utils.escapeSystemdPath cfg.baseDir}.mount"
+    ];
+    path =
+      [
         pkgs.yt-dlp
         pkgs.ffmpeg
         pkgs.python3
@@ -339,168 +342,169 @@ let
         # binaries; the font reaches the script via CAW_FONT below.
         pkgs.imagemagick
       ];
-      serviceConfig = {
-        Type = "oneshot";
-        DynamicUser = true;
-        # Grants group-write into the (pre-existing, group `users`) destination
-        # dir and append access to its group-writable archive.txt — this, not
-        # ownership, is how the DynamicUser can write under root-squash NFS.
-        SupplementaryGroups = [ "users" ];
-        # 0022 -> files land 644 (other-readable), matching the existing
-        # youtube/pinchflat tree, so Plex/Jellyfin (reading via `other`, not
-        # group) can see new downloads regardless of their own group membership.
-        UMask = "0022";
-        # No `+` prefix: must run as the DynamicUser inside the sandbox (see
-        # preStart above) so its writability check is meaningful.
-        ExecStartPre = preStart;
-        # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve
-        # out the parent bucket (NOT just the dest) so the service can create its
-        # own destination dir under it (see preStart) as well as write videos,
-        # archive.txt, and metadata. Binding the parent — which always pre-exists
-        # — instead of the dest is what lets a brand-new channel work with zero
-        # manual NAS-side dir creation. Quoted as one token in case a bucket path
-        # ever contains a space; systemd unquotes it back to the single path.
-        ReadWritePaths = [
+    serviceConfig = {
+      Type = "oneshot";
+      DynamicUser = true;
+      # Grants group-write into the (pre-existing, group `users`) destination
+      # dir and append access to its group-writable archive.txt — this, not
+      # ownership, is how the DynamicUser can write under root-squash NFS.
+      SupplementaryGroups = ["users"];
+      # 0022 -> files land 644 (other-readable), matching the existing
+      # youtube/pinchflat tree, so Plex/Jellyfin (reading via `other`, not
+      # group) can see new downloads regardless of their own group membership.
+      UMask = "0022";
+      # No `+` prefix: must run as the DynamicUser inside the sandbox (see
+      # preStart above) so its writability check is meaningful.
+      ExecStartPre = preStart;
+      # DynamicUser implies ProtectSystem=strict (so /mnt is read-only) — carve
+      # out the parent bucket (NOT just the dest) so the service can create its
+      # own destination dir under it (see preStart) as well as write videos,
+      # archive.txt, and metadata. Binding the parent — which always pre-exists
+      # — instead of the dest is what lets a brand-new channel work with zero
+      # manual NAS-side dir creation. Quoted as one token in case a bucket path
+      # ever contains a space; systemd unquotes it back to the single path.
+      ReadWritePaths =
+        [
           ''"${builtins.dirOf ch.destination}"''
         ]
         ++ lib.optionals (cfg.alertUser != null) [
           "/var/mail"
           "/var/lib/channel-archive-alerts"
         ];
-        # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
-        # DynamicUser state dir, else the read-only HOME emits cache warnings.
-        StateDirectory = "channel-archive-${name}";
-        Environment = [ "HOME=/var/lib/channel-archive-${name}" ];
-        LoadCredential = credArgs;
-      };
-      script = ''
-        set -uo pipefail
+      # Give yt-dlp a writable HOME for its cache (~/.cache/yt-dlp) under the
+      # DynamicUser state dir, else the read-only HOME emits cache warnings.
+      StateDirectory = "channel-archive-${name}";
+      Environment = ["HOME=/var/lib/channel-archive-${name}"];
+      LoadCredential = credArgs;
+    };
+    script = ''
+      set -uo pipefail
+      rc=0
+      out="$(${pkgs.coreutils}/bin/mktemp)"
+      # --abort-on-error (see ytdlpArgs) already stops the whole run at the
+      # first error, so there's no more "grind through hundreds of items"
+      # case to cut off early — a plain pipe + post-hoc grep is enough now.
+      ${pkgs.yt-dlp}/bin/yt-dlp ${ytdlpArgs} 2>&1 | ${pkgs.coreutils}/bin/tee "$out" || rc=$?
+      # yt-dlp returns 101 for any DownloadCancelled -- both MaxDownloadsReached
+      # (--max-downloads) and ExistingVideoReached (--break-on-existing) subclass
+      # it. Those are deliberate early stops at a video boundary, not failures.
+      # Without this the alert path below would mail a failure and write a
+      # notices line on every single capped run.
+      if [ "$rc" -eq 101 ]; then
+        if ${pkgs.gnugrep}/bin/grep -q 'Maximum number of downloads reached' "$out"; then
+          echo "channel-archive: hit the --max-downloads cap; more remain for the next run"
+        else
+          echo "channel-archive: stopped at the first already-archived video (--break-on-existing)"
+        fi
         rc=0
-        out="$(${pkgs.coreutils}/bin/mktemp)"
-        # --abort-on-error (see ytdlpArgs) already stops the whole run at the
-        # first error, so there's no more "grind through hundreds of items"
-        # case to cut off early — a plain pipe + post-hoc grep is enough now.
-        ${pkgs.yt-dlp}/bin/yt-dlp ${ytdlpArgs} 2>&1 | ${pkgs.coreutils}/bin/tee "$out" || rc=$?
-        # yt-dlp returns 101 for any DownloadCancelled -- both MaxDownloadsReached
-        # (--max-downloads) and ExistingVideoReached (--break-on-existing) subclass
-        # it. Those are deliberate early stops at a video boundary, not failures.
-        # Without this the alert path below would mail a failure and write a
-        # notices line on every single capped run.
-        if [ "$rc" -eq 101 ]; then
-          if ${pkgs.gnugrep}/bin/grep -q 'Maximum number of downloads reached' "$out"; then
-            echo "channel-archive: hit the --max-downloads cap; more remain for the next run"
-          else
-            echo "channel-archive: stopped at the first already-archived video (--break-on-existing)"
-          fi
+      fi
+
+      if ${pkgs.gnugrep}/bin/grep -qiE '${blockPattern}' "$out"; then
+        echo "channel-archive: >>> BLOCKED/RATE-LIMITED by ${blockSource} (rate-limit/bot-check) <<<" >&2
+        rc=75
+      fi
+      ${lib.optionalString ch.ignoreErrors ''
+        # With --ignore-errors a non-zero exit just means "some items failed and
+        # were skipped", which for this channel is the expected steady state --
+        # Twitch keeps the metadata for old clips whose media it has expired. Left
+        # as a failure it would mail an alert on every single run forever. A real
+        # block still lands as rc=75 above and is untouched here.
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
+          failed="$(${pkgs.gnugrep}/bin/grep -ace '^ERROR' "$out" || true)"
+          echo "channel-archive: $failed item(s) failed and were skipped (--ignore-errors)"
           rc=0
         fi
+      ''}
 
-        if ${pkgs.gnugrep}/bin/grep -qiE '${blockPattern}' "$out"; then
-          echo "channel-archive: >>> BLOCKED/RATE-LIMITED by ${blockSource} (rate-limit/bot-check) <<<" >&2
-          rc=75
+      if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
+        ${lib.optionalString (cfg.alertUser != null) ''
+        # Something other than the known bot-check/rate-limit case killed
+        # this run (crash, bad args, an extractor error yt-dlp didn't skip
+        # past) — flag it instead of silently retrying-and-failing on every
+        # future timer run. Local mbox mail + a note in the fish greeting
+        # for now; swap in a real notification channel (Telegram, etc.)
+        # later.
+        {
+          echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
+          echo "Date: $(${pkgs.coreutils}/bin/date -R)"
+          echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
+          echo "To: ${cfg.alertUser}@${config.networking.hostName}"
+          echo "Subject: channel-archive: ${name} failed (exit $rc)"
+          echo
+          echo "${name} exited $rc — not the known 429/403/bot-check case."
+          echo "Last output:"
+          ${pkgs.coreutils}/bin/tail -n 15 "$out"
+          echo
+        } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
+        echo "$(${pkgs.coreutils}/bin/date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
+      ''}
+      fi
+      ${lib.optionalString (cfg.alertUser != null && !ch.incremental) ''
+        # Nag while a caught-up channel is still paying for a full listing walk.
+        # Finishing the playlist on a clean exit IS caught up: every item in the
+        # listing is archived by definition. The other outcomes exclude
+        # themselves -- a --max-downloads cap exits 101, a bot-block becomes 75,
+        # and --abort-on-error makes any real error non-zero.
+        #
+        # Deliberately repeats on EVERY run rather than stamping once: the point
+        # is to keep nagging until incremental is flipped, at which point this
+        # block stops being emitted for the channel at all.
+        if [ "$rc" -eq 0 ] && ${pkgs.gnugrep}/bin/grep -q 'Finished downloading playlist' "$out"; then
+          # NixOS's `script` wrapper prepends `set -e`, so a pipeline that just
+          # finds nothing would kill the run right here. --lazy-playlist reports
+          # "item N of N/A", so the total is usually absent and this grep usually
+          # fails: it must never be load-bearing. The count is decorative.
+          listing="$(${pkgs.gnugrep}/bin/grep -oE 'Downloading item [0-9]+ of [0-9]+' "$out" \
+            | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+$' | ${pkgs.coreutils}/bin/tail -n 1 || true)"
+          {
+            echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
+            echo "Date: $(${pkgs.coreutils}/bin/date -R)"
+            echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
+            echo "To: ${cfg.alertUser}@${config.networking.hostName}"
+            echo "Subject: channel-archive: ${name} is caught up -- set incremental = true"
+            echo
+            echo "${name} finished its whole listing''${listing:+ ($listing items)} with nothing left."
+            echo "incremental is still false, so every run re-walks the entire listing."
+            echo
+            echo '  services.channelArchive.channels."${name}".incremental = true;'
+            echo
+          } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
+          echo "$(${pkgs.coreutils}/bin/date -R): ${name} is caught up''${listing:+ ($listing items)} — set incremental = true" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
         fi
-        ${lib.optionalString ch.ignoreErrors ''
-          # With --ignore-errors a non-zero exit just means "some items failed and
-          # were skipped", which for this channel is the expected steady state --
-          # Twitch keeps the metadata for old clips whose media it has expired. Left
-          # as a failure it would mail an alert on every single run forever. A real
-          # block still lands as rc=75 above and is untouched here.
-          if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
-            failed="$(${pkgs.gnugrep}/bin/grep -ace '^ERROR' "$out" || true)"
-            echo "channel-archive: $failed item(s) failed and were skipped (--ignore-errors)"
-            rc=0
-          fi
-        ''}
+      ''}
 
-        if [ "$rc" -ne 0 ] && [ "$rc" -ne 75 ]; then
-          ${lib.optionalString (cfg.alertUser != null) ''
-            # Something other than the known bot-check/rate-limit case killed
-            # this run (crash, bad args, an extractor error yt-dlp didn't skip
-            # past) — flag it instead of silently retrying-and-failing on every
-            # future timer run. Local mbox mail + a note in the fish greeting
-            # for now; swap in a real notification channel (Telegram, etc.)
-            # later.
-            {
-              echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
-              echo "Date: $(${pkgs.coreutils}/bin/date -R)"
-              echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
-              echo "To: ${cfg.alertUser}@${config.networking.hostName}"
-              echo "Subject: channel-archive: ${name} failed (exit $rc)"
-              echo
-              echo "${name} exited $rc — not the known 429/403/bot-check case."
-              echo "Last output:"
-              ${pkgs.coreutils}/bin/tail -n 15 "$out"
-              echo
-            } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
-            echo "$(${pkgs.coreutils}/bin/date -R): ${name} failed (exit $rc) — journalctl -u channel-archive-${name} -n 100" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
-          ''}
-        fi
-        ${lib.optionalString (cfg.alertUser != null && !ch.incremental) ''
-          # Nag while a caught-up channel is still paying for a full listing walk.
-          # Finishing the playlist on a clean exit IS caught up: every item in the
-          # listing is archived by definition. The other outcomes exclude
-          # themselves -- a --max-downloads cap exits 101, a bot-block becomes 75,
-          # and --abort-on-error makes any real error non-zero.
-          #
-          # Deliberately repeats on EVERY run rather than stamping once: the point
-          # is to keep nagging until incremental is flipped, at which point this
-          # block stops being emitted for the channel at all.
-          if [ "$rc" -eq 0 ] && ${pkgs.gnugrep}/bin/grep -q 'Finished downloading playlist' "$out"; then
-            # NixOS's `script` wrapper prepends `set -e`, so a pipeline that just
-            # finds nothing would kill the run right here. --lazy-playlist reports
-            # "item N of N/A", so the total is usually absent and this grep usually
-            # fails: it must never be load-bearing. The count is decorative.
-            listing="$(${pkgs.gnugrep}/bin/grep -oE 'Downloading item [0-9]+ of [0-9]+' "$out" \
-              | ${pkgs.gnugrep}/bin/grep -oE '[0-9]+$' | ${pkgs.coreutils}/bin/tail -n 1 || true)"
-            {
-              echo "From channel-archive@${config.networking.hostName}  $(${pkgs.coreutils}/bin/date)"
-              echo "Date: $(${pkgs.coreutils}/bin/date -R)"
-              echo "From: channel-archive <channel-archive@${config.networking.hostName}>"
-              echo "To: ${cfg.alertUser}@${config.networking.hostName}"
-              echo "Subject: channel-archive: ${name} is caught up -- set incremental = true"
-              echo
-              echo "${name} finished its whole listing''${listing:+ ($listing items)} with nothing left."
-              echo "incremental is still false, so every run re-walks the entire listing."
-              echo
-              echo '  services.channelArchive.channels."${name}".incremental = true;'
-              echo
-            } >> /var/mail/${cfg.alertUser} 2>/dev/null || true
-            echo "$(${pkgs.coreutils}/bin/date -R): ${name} is caught up''${listing:+ ($listing items)} — set incremental = true" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
-          fi
-        ''}
-
-        ${pkgs.coreutils}/bin/rm -f "$out"
-        ${lib.optionalString ch.writeNfo ''
-          ${pkgs.python3}/bin/python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
-        ''}
-        ${lib.optionalString ch.restructure ''
-          ${pkgs.python3}/bin/python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
-            ${
-              lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
-            } \
-            --url ${lib.escapeShellArg cfg.plexUrl} \
-            ${
-              lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
-            } \
-            || true
-          CAW_FONT=${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans-Bold.ttf \
-          ${pkgs.python3}/bin/python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
-            ${
-              lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
-            } \
-            --url ${lib.escapeShellArg cfg.plexUrl} \
-            ${
-              lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
-            } \
-            || true
-        ''}
-        exit "$rc"
-      '';
-    };
+      ${pkgs.coreutils}/bin/rm -f "$out"
+      ${lib.optionalString ch.writeNfo ''
+        ${pkgs.python3}/bin/python3 ${nfoGenerator} ${lib.escapeShellArg ch.destination} || true
+      ''}
+      ${lib.optionalString ch.restructure ''
+        ${pkgs.python3}/bin/python3 ${restructureScript} ${lib.escapeShellArg ch.destination} \
+          ${
+          lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
+        } \
+          --url ${lib.escapeShellArg cfg.plexUrl} \
+          ${
+          lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
+        } \
+          || true
+        CAW_FONT=${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans-Bold.ttf \
+        ${pkgs.python3}/bin/python3 ${channelArtworkScript} ${lib.escapeShellArg ch.destination} \
+          ${
+          lib.optionalString (cfg.plexSection != null) "--section ${lib.escapeShellArg cfg.plexSection}"
+        } \
+          --url ${lib.escapeShellArg cfg.plexUrl} \
+          ${
+          lib.optionalString (cfg.plexTokenFile != null) ''--token-file "$CREDENTIALS_DIRECTORY/plex-token"''
+        } \
+          || true
+      ''}
+      exit "$rc"
+    '';
+  };
 
   mkTimer = name: ch: {
     description = "Timer: archive channel ${name}";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = ch.schedule;
       Persistent = true;
@@ -509,8 +513,7 @@ let
       RandomizedDelaySec = "18h";
     };
   };
-in
-{
+in {
   options.services.channelArchive = {
     enable = lib.mkEnableOption "incremental yt-dlp channel archiving";
 
@@ -574,7 +577,7 @@ in
     };
     channels = lib.mkOption {
       type = lib.types.attrsOf channelModule;
-      default = { };
+      default = {};
       description = "Channels to archive, keyed by name.";
     };
     plexUrl = lib.mkOption {
@@ -618,7 +621,7 @@ in
           lib.filterAttrs (_: ch: ch.enable) cfg.channels
         );
 
-        environment.systemPackages = [ statusScript ];
+        environment.systemPackages = [statusScript];
       }
       (lib.mkIf (cfg.alertUser != null) {
         # /var/mail is 0775 root:users, NOT 1777. The obvious "1777 like /tmp so

@@ -4,8 +4,7 @@
   pkgs,
   hostName,
   ...
-}:
-let
+}: let
   # The darwin package set and Nix, for the linux-builder guest config below,
   # where `pkgs` and `config` mean the guest's.
   hostPkgs = pkgs;
@@ -15,8 +14,7 @@ let
   # the linux-builder VM over virtiofs, and age.secretsDir holds every other
   # secret on this host.
   builderNetrcDir = "/run/nix-builder";
-in
-{
+in {
   imports = [
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
@@ -50,12 +48,12 @@ in
   # Techcyte's attic cache holds what CI builds, including the unfree CUDA
   # closure no public cache can carry. It is private, so reaching it needs the
   # token in the netrc below.
-  nix.settings.extra-substituters = [ "https://attic.services.hub.techcyte.com/cache" ];
+  nix.settings.extra-substituters = ["https://attic.services.hub.techcyte.com/cache"];
   nix.settings.extra-trusted-public-keys = [
     "cache:quzasaV3ufU/Y1NACmo8/d0Eh6Ubt0swyRCjQLMee+c="
   ];
   nix.settings.netrc-file = "/Users/hawken.rives/.netrc"; # string, not path, to avoid copying into the nix store
-  nix.settings.extra-sandbox-paths = [ "/Users/hawken.rives/.netrc" ];
+  nix.settings.extra-sandbox-paths = ["/Users/hawken.rives/.netrc"];
 
   # Decrypted outside age.secretsDir so the linux-builder VM can be given this
   # directory without being given every other secret. 0444 because the guest
@@ -90,7 +88,11 @@ in
     maxJobs = 6;
     # `pkgs` here is the guest's aarch64-linux package set, which is a fresh
     # nixpkgs instance without this flake's overlays.
-    config = { pkgs, lib, ... }: {
+    config = {
+      pkgs,
+      lib,
+      ...
+    }: {
       # Same pin as the flake overlay: nixpkgs' `latest` Lix doesn't build in
       # the current snapshot.
       nix.package = pkgs.lixPackageSets.lix_2_96.lix;
@@ -98,7 +100,7 @@ in
       # The host-side launcher (run-builder) runs `nix-store --add` from the
       # host package set's `nix`, which the flake overlay leaves as cppnix.
       # Give it this host's own Nix.
-      virtualisation.host.pkgs = lib.mkForce (hostPkgs.extend (_: _: { nix = hostNix; }));
+      virtualisation.host.pkgs = lib.mkForce (hostPkgs.extend (_: _: {nix = hostNix;}));
 
       # Nix's sandbox build directory (/build inside the sandbox) is a bind
       # mount backed by `build-dir` on the host, default /nix/var/nix/b. This
@@ -160,7 +162,7 @@ in
       # private GitLab index 401 no matter what netrc-file says. fetchurl
       # declares NIX_CURL_FLAGS as an impure env var precisely for this, and
       # the sandbox needs the file itself on its allowed paths.
-      nix.settings.extra-sandbox-paths = [ "/var/lib/nix-builder/netrc" ];
+      nix.settings.extra-sandbox-paths = ["/var/lib/nix-builder/netrc"];
       systemd.services.nix-daemon.environment.NIX_CURL_FLAGS = "--netrc-file /var/lib/nix-builder/netrc";
     };
   };

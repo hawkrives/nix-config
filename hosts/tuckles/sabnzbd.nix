@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   services.sabnzbd = {
     # SABnzbd gates archive extraction on a hardcoded regex in filesystem.py:
     #
@@ -20,10 +19,12 @@
     # --replace-fail means a nixpkgs bump that reworks this line fails the build
     # loudly instead of silently dropping the fix.
     package = pkgs.sabnzbd.overrideAttrs (old: {
-      postPatch = (old.postPatch or "") + ''
-        substituteInPlace sabnzbd/filesystem.py \
-          --replace-fail 'r"\.(zip|7z)$"' 'r"\.(zip|7z|tar)$"'
-      '';
+      postPatch =
+        (old.postPatch or "")
+        + ''
+          substituteInPlace sabnzbd/filesystem.py \
+            --replace-fail 'r"\.(zip|7z)$"' 'r"\.(zip|7z|tar)$"'
+        '';
     });
 
     enable = true;
@@ -91,7 +92,7 @@
   systemd.services.sabnzbd.serviceConfig.UMask = "0007";
 
   # SAB listens on 6000 (enforced via settings.misc.port above). Open it on the LAN.
-  networking.firewall.allowedTCPPorts = [ 6000 ];
+  networking.firewall.allowedTCPPorts = [6000];
 
   # Local staging dirs, owned by SAB's new primary group so assembled files are
   # group-users before the move to NFS.

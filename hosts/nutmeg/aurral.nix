@@ -1,5 +1,4 @@
-{ ... }:
-{
+{...}: {
   # Dedicated identity. gid 100 ("users") gives NAS group-write on the media
   # tree (same model as lidarr/beets/plex); uid/gid 10012 follows the HA
   # containers (10010/10011).
@@ -7,7 +6,7 @@
   users.users.aurral = {
     uid = 10012;
     group = "aurral";
-    extraGroups = [ "users" ];
+    extraGroups = ["users"];
     home = "/var/lib/aurral";
     isNormalUser = true;
   };

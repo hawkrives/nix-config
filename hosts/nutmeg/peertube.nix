@@ -52,5 +52,4 @@ in {
     owner = cfg.user;
     group = cfg.group;
   };
-
 }

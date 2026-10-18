@@ -85,13 +85,11 @@
         };
         nixpkgs.overlays = [
           (
-            final: prev:
-            let
+            final: prev: let
               # Pinned to 2.96: nixpkgs' `latest` (2.95.4) doesn't build in the
               # current snapshot (passes a mimalloc meson flag 2.95 lacks).
               lix = prev.lixPackageSets.lix_2_96;
-            in
-            {
+            in {
               # nix-eval-jobs is built from source inside the Lix package set, so
               # naming it here is safe. Lix's own overlay takes this one attribute
               # from the set for the same reason.
@@ -102,10 +100,10 @@
               # from the final package set. Inheriting them from the set would point
               # the set back at this overlay and recurse forever, so apply the same
               # overrides the set applies, reading the base package from prev.
-              nix-direnv = prev.nix-direnv.override { nix = lix.lix; };
-              nixpkgs-review = prev.nixpkgs-review.override { nix = lix.lix; };
+              nix-direnv = prev.nix-direnv.override {nix = lix.lix;};
+              nixpkgs-review = prev.nixpkgs-review.override {nix = lix.lix;};
               # Takes cppnix by default, and runs its tests against it.
-              nil = prev.nil.override { nix = lix.lix; };
+              nil = prev.nil.override {nix = lix.lix;};
               nix-fast-build = prev.nix-fast-build.override {
                 inherit (lix) nix-eval-jobs;
               };
@@ -136,6 +134,6 @@
       packages
       ;
 
-    customOutputs = { };
+    customOutputs = {};
   };
 }

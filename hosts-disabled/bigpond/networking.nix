@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   # Wired USB-C ethernet, DHCP via systemd-networkd. Pin a DHCP reservation on the
   # router for a stable LAN IP. `en*` matches USB ethernet (enpXsYuZ) too.
   systemd.network.networks."10-lan" = {
@@ -13,7 +12,7 @@
     enable = true;
     openFirewall = true;
     authKeyFile = config.age.secrets.tailscale-authkey-bigpond.path;
-    extraUpFlags = [ "--advertise-tags=tag:bigpond" ];
+    extraUpFlags = ["--advertise-tags=tag:bigpond"];
   };
-  networking.firewall.trustedInterfaces = [ config.services.tailscale.interfaceName ];
+  networking.firewall.trustedInterfaces = [config.services.tailscale.interfaceName];
 }

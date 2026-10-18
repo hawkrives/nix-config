@@ -1,12 +1,10 @@
-{ config, ... }:
-let
+{config, ...}: let
   # vpn-confinement derives both the namespace unit and its interface names from
   # this string: the bridge is <ns>-br and its host-side port veth-<ns>-br. The
   # avahi denyInterfaces below depends on that, so keep them deriving from one
   # source rather than three literals that can drift apart.
   ns = "airvpn";
-in
-{
+in {
   # VPN namespace bound to the AirVPN WireGuard config; kill-switch is implicit
   # (only the wg interface has egress). WebUI is forwarded out to the LAN.
   vpnNamespaces.${ns} = {
@@ -52,7 +50,7 @@ in
   # to NFS save paths under /mnt/{shows,movies}. Join "users" (gid 100) so it can
   # write there with mapping off, and UMask 0007 keeps files group-accessible so
   # the *arr can import and Plex can read them.
-  users.users.qbittorrent.extraGroups = [ "users" ];
+  users.users.qbittorrent.extraGroups = ["users"];
   systemd.services.qbittorrent.serviceConfig.UMask = "0007";
 
   systemd.services.qbittorrent.vpnConfinement = {
@@ -64,7 +62,7 @@ in
   # without the unit definition changing, so systemd wouldn't restart the
   # namespace on its own. Restart it when the secret changes so the new config
   # actually loads.
-  systemd.services.${ns}.restartTriggers = [ config.age.secrets.wg-airvpn-tuckles.file ];
+  systemd.services.${ns}.restartTriggers = [config.age.secrets.wg-airvpn-tuckles.file];
 
   # qBittorrent downloads to a local TempPath (Session\TempPath in its seeded
   # config) before moving completed files to the per-category NFS save path. But
@@ -77,5 +75,5 @@ in
     "d /var/lib/qBittorrent/complete 0755 qbittorrent qbittorrent -"
   ];
 
-  networking.firewall.allowedTCPPorts = [ 6001 ];
+  networking.firewall.allowedTCPPorts = [6001];
 }

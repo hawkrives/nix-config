@@ -1,5 +1,4 @@
-{ ... }:
-{
+{...}: {
   services.channelArchive = {
     channels."okarin-games" = {
       # 1419 vids — needs cookies (heavy backfill)

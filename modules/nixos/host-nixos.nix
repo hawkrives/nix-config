@@ -74,7 +74,7 @@
     # NOT pass `--volumes` — named volumes hold real service state, and pruning
     # them because nothing is currently running would be data loss.
     autoPrune.enable = true;
-    autoPrune.flags = [ "--all" ];
+    autoPrune.flags = ["--all"];
     # Create a `docker` alias for podman, to use it as a drop-in replacement
     dockerCompat = true;
 

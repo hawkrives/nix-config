@@ -1,7 +1,6 @@
 # disko layout for the pantry cache VM (single 4 TB virtual disk, UEFI/systemd-boot).
 # Confirm the disk node at install time with `lsblk` (virtio => /dev/vda).
-{ ... }:
-{
+{...}: {
   disko.devices.disk.main = {
     device = "/dev/vda";
     type = "disk";
@@ -15,7 +14,7 @@
             type = "filesystem";
             format = "vfat";
             mountpoint = "/boot";
-            mountOptions = [ "umask=0077" ];
+            mountOptions = ["umask=0077"];
           };
         };
         root = {
