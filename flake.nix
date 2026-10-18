@@ -104,6 +104,10 @@
               # overrides the set applies, reading the base package from prev.
               nix-direnv = prev.nix-direnv.override { nix = lix.lix; };
               nixpkgs-review = prev.nixpkgs-review.override { nix = lix.lix; };
+              # Both take cppnix by default: nix-index puts it on its wrapper's
+              # PATH, and nil runs its tests against it.
+              nix-index = prev.nix-index.override { nix = lix.lix; };
+              nil = prev.nil.override { nix = lix.lix; };
               nix-fast-build = prev.nix-fast-build.override {
                 inherit (lix) nix-eval-jobs;
               };

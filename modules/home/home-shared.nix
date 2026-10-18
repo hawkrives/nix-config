@@ -297,7 +297,6 @@
     pkgs.lnav
     pkgs.lsof
     pkgs.mariadb.client
-    pkgs.nixtamal # alternative locker for flakes
     pkgs.nix-output-monitor
     pkgs.oras
     pkgs.parallel
