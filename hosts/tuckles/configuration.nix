@@ -20,6 +20,7 @@
     ./sabnzbd.nix
     ./qbittorrent.nix
     ./slskd.nix
+    ./bitmagnet.nix
     ./qui.nix
     ./tsnsrv.nix
     ./backups.nix
