@@ -6,9 +6,10 @@
   ...
 }:
 let
-  # The darwin package set, for the linux-builder guest config below, where
-  # `pkgs` means the guest's.
+  # The darwin package set and Nix, for the linux-builder guest config below,
+  # where `pkgs` and `config` mean the guest's.
   hostPkgs = pkgs;
+  hostNix = config.nix.package;
 
   # Its own directory, not age.secretsDir: this whole directory is handed to
   # the linux-builder VM over virtiofs, and age.secretsDir holds every other
@@ -96,9 +97,8 @@ in
 
       # The host-side launcher (run-builder) runs `nix-store --add` from the
       # host package set's `nix`, which the flake overlay leaves as cppnix.
-      # Give it this host's own Nix (`config` here is the darwin config, as
-      # this module doesn't bind its own).
-      virtualisation.host.pkgs = lib.mkForce (hostPkgs.extend (_: _: { nix = config.nix.package; }));
+      # Give it this host's own Nix.
+      virtualisation.host.pkgs = lib.mkForce (hostPkgs.extend (_: _: { nix = hostNix; }));
 
       # Nix's sandbox build directory (/build inside the sandbox) is a bind
       # mount backed by `build-dir` on the host, default /nix/var/nix/b. This
