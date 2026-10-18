@@ -19,7 +19,7 @@
     # qui at https://qui.vaquita-woodpecker.ts.net -> localhost:7476
     services.qui.urlParts.port = config.services.qui.settings.port;
 
-    # SABnzbd at https://sab.vaquita-woodpecker.ts.net -> 127.0.0.1:6000.
+    # SABnzbd at https://sab.vaquita-woodpecker.ts.net -> 127.0.0.1:<SAB's port>.
     # (MagicDNS lowercases the node name, so "Sab" → sab.<tailnet>.ts.net.)
     # SAB listens IPv4-only (host = 0.0.0.0), so override the default "localhost"
     # upstream host — it resolves to ::1 first and the v6 dial is refused.

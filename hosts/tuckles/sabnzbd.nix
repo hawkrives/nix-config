@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   services.sabnzbd = {
     # SABnzbd gates archive extraction on a hardcoded regex in filesystem.py:
     #
@@ -48,7 +52,9 @@
 
     settings.misc = {
       host = "0.0.0.0";
-      port = 6000;
+      # Not 6000: browsers and Node's fetch (aurral) refuse to connect to it —
+      # it's on the WHATWG fetch "bad ports" list (historically X11).
+      port = 6002;
       host_whitelist = "sabnzbd,tuckles,tuckles.local,sabnzbd.vaquita-woodpecker.ts.net,tuckles.vaquita-woodpecker.ts.net,sab.vaquita-woodpecker.ts.net";
       # SAB's daemon mode (it's started with `-d`) deliberately clobbers the
       # process umask: SABnzbd.py does `os.umask(prev and 0o77)`, forcing 0077
@@ -91,8 +97,8 @@
 
   systemd.services.sabnzbd.serviceConfig.UMask = "0007";
 
-  # SAB listens on 6000 (enforced via settings.misc.port above). Open it on the LAN.
-  networking.firewall.allowedTCPPorts = [6000];
+  # Open SAB's port (settings.misc.port above) on the LAN.
+  networking.firewall.allowedTCPPorts = [config.services.sabnzbd.settings.misc.port];
 
   # Local staging dirs, owned by SAB's new primary group so assembled files are
   # group-users before the move to NFS.
