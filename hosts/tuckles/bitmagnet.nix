@@ -1,8 +1,16 @@
 {
+  config,
   lib,
   pkgs,
   ...
-}: {
+}: let
+  cfg = config.services.bitmagnet;
+  # The index is capped at 128 GiB: past that, bitmagnet-cap pauses the crawler
+  # by creating this flag, and bitmagnet runs without its dht_crawler worker.
+  # Search, the web UI and the queue keep working; the index just stops growing.
+  capBytes = 128 * 1024 * 1024 * 1024;
+  pausedFlag = "/var/lib/bitmagnet-cap/crawl-paused";
+in {
   # bitmagnet indexes torrents seen on the public DHT (names, file lists, sizes),
   # so a stalled qBittorrent download can be matched against other torrents that
   # carry a byte-identical file. The index is rebuildable by crawling, so it isn't
@@ -47,8 +55,16 @@
       enable = true;
       vpnNamespace = "airvpn";
     };
-    # The module's RestrictNamespaces blocks joining the VPN netns.
-    serviceConfig.RestrictNamespaces = lib.mkForce false;
+    serviceConfig = {
+      # The module's RestrictNamespaces blocks joining the VPN netns.
+      RestrictNamespaces = lib.mkForce false;
+      ExecStart = lib.mkForce (pkgs.writeShellScript "bitmagnet-start" ''
+        if [ -e ${pausedFlag} ]; then
+          exec ${cfg.package}/bin/bitmagnet worker run --keys http_server --keys queue_server
+        fi
+        exec ${cfg.package}/bin/bitmagnet worker run --all
+      '');
+    };
   };
 
   # tsnsrv can't dial into the airvpn netns (see slskd-web-proxy in slskd.nix),
@@ -64,4 +80,41 @@
       RestartSec = 5;
     };
   };
+
+  # Hourly size check that pauses or resumes the crawler around capBytes.
+  # BITMAGNET_CAP_BYTES overrides the cap (for testing).
+  systemd.services.bitmagnet-cap = {
+    description = "Pause bitmagnet's DHT crawler while its database is over the size cap";
+    after = ["postgresql.service"];
+    serviceConfig.Type = "oneshot";
+    path = [
+      config.services.postgresql.package
+      config.systemd.package
+      pkgs.coreutils
+      pkgs.util-linux
+    ];
+    script = ''
+      cap=''${BITMAGNET_CAP_BYTES:-${toString capBytes}}
+      if ! size=$(runuser -u postgres -- psql -d bitmagnet -tAc "select pg_database_size('bitmagnet')") \
+        || ! [[ $size =~ ^[0-9]+$ ]]; then
+        echo "bitmagnet db size query failed; leaving the crawler as it is" >&2
+        exit 0
+      fi
+      if (( size >= cap )); then want=paused; else want=crawling; fi
+      if [ -e ${pausedFlag} ]; then have=paused; else have=crawling; fi
+      echo "bitmagnet db $(numfmt --to=iec "$size") / cap $(numfmt --to=iec "$cap") ($want)"
+      if [ "$want" != "$have" ]; then
+        if [ "$want" = paused ]; then touch ${pausedFlag}; else rm -f ${pausedFlag}; fi
+        systemctl restart bitmagnet.service
+      fi
+    '';
+  };
+  systemd.timers.bitmagnet-cap = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+    };
+  };
+  systemd.tmpfiles.rules = ["d /var/lib/bitmagnet-cap 0755 root root -"];
 }
