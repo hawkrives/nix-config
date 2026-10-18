@@ -1,4 +1,7 @@
-{ config, ... }: {
+{ ... }:
+let
+  webPort = 5380;
+in {
   # it's OK to open :53, because the router won't allow unexpected connections
   # from the internet to the machines
   networking.firewall.allowedTCPPorts = [ 53 ];
@@ -8,7 +11,7 @@
     enable = true;
     mutableSettings = true;
     openFirewall = true;
-    port = 5380;
+    settings.http.address = "0.0.0.0:${toString webPort}";
 
     settings.dns.bind_hosts = [
       "192.168.1.228"
@@ -29,5 +32,5 @@
   # to the address even if it isn't present yet.
   boot.kernel.sysctl."net.ipv6.ip_nonlocal_bind" = 1;
 
-  services.tsnsrv.services.ag.urlParts.port = config.services.adguardhome.port;
+  services.tsnsrv.services.ag.urlParts.port = webPort;
 }
