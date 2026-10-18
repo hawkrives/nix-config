@@ -114,52 +114,6 @@ in {
     };
   };
 
-  # bitmagnet-match <qB infohash> [min MiB]: look up every file of a stalled
-  # qBittorrent torrent (above the size floor, default 10 MiB) by exact byte size
-  # in the bitmagnet index, and list the other torrents that carry one, best match
-  # first, as magnets to add at the same save path.
-  environment.systemPackages = [
-    (pkgs.writeShellApplication {
-      name = "bitmagnet-match";
-      runtimeInputs = [pkgs.curl pkgs.jq config.services.postgresql.package];
-      text = ''
-        if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-          echo "usage: bitmagnet-match <qbittorrent infohash> [min MiB, default 10]" >&2
-          exit 2
-        fi
-        hash=''${1,,}
-        min=$(( ''${2:-10} * 1024 * 1024 ))
-        # qBittorrent's WebUI, reached at the airvpn netns address (see qui.nix).
-        files=$(curl -fsS "http://192.168.15.1:6001/api/v2/torrents/files?hash=$hash")
-        sizes=$(jq -r --argjson min "$min" \
-          '[.[] | select(.size >= $min) | .size] | unique | "{\(join(","))}"' <<<"$files")
-        if [ "$sizes" = "{}" ]; then
-          echo "no files of $hash are at least $(( min / 1024 / 1024 )) MiB (or qBittorrent doesn't know it)" >&2
-          exit 1
-        fi
-        total=$(jq -r --argjson min "$min" '[.[] | select(.size >= $min) | .size] | unique | length' <<<"$files")
-        jq -r --argjson min "$min" '.[] | select(.size >= $min) | "looking for \(.size)  \(.name)"' <<<"$files"
-        echo
-        sudo -u postgres psql bitmagnet -qtAF $'\t' -v sizes="$sizes" -v self="$hash" <<'SQL' |
-        with hits as (
-          select info_hash, size from torrent_files where size = any(:'sizes'::bigint[])
-          union
-          select info_hash, size from torrents
-           where files_status = 'single' and size = any(:'sizes'::bigint[])
-        )
-        select count(distinct h.size), encode(t.info_hash, 'hex'), t.name
-          from hits h join torrents t using (info_hash)
-         where t.info_hash <> decode(:'self', 'hex')
-         group by t.info_hash, t.name
-         order by 1 desc, t.name;
-        SQL
-          awk -F '\t' -v total="$total" '
-            { found = 1; printf "%s/%s files  %s\n  magnet:?xt=urn:btih:%s\n", $1, total, $3, $2 }
-            END { if (!found) print "no other torrent in the index carries these files yet" }'
-      '';
-    })
-  ];
-
   # Hourly size check that pauses or resumes the crawler around capBytes.
   # BITMAGNET_CAP_BYTES overrides the cap (for testing).
   systemd.services.bitmagnet-cap = {

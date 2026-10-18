@@ -1,4 +1,5 @@
 {
+  config,
   flake,
   hostName,
   pkgs,
@@ -14,6 +15,7 @@
     flake.nixosModules.synology-mounts
     flake.nixosModules.service-backup
     flake.nixosModules.cache-push
+    flake.nixosModules.notify-failure
     ./disk.nix
     ./networking.nix
     ./storage.nix
@@ -21,6 +23,7 @@
     ./qbittorrent.nix
     ./slskd.nix
     ./bitmagnet.nix
+    ./bitmagnet-watch.nix
     ./qui.nix
     ./tsnsrv.nix
     ./backups.nix
@@ -102,6 +105,14 @@
   age.secrets.tailscale-authkey-tuckles.file = ../../secrets/tailscale-authkey-tuckles.age;
   age.secrets.qui-session-secret.file = ../../secrets/qui-session-secret.age;
   age.secrets.tsnsrv-authkey-tuckles.file = ../../secrets/tsnsrv-authkey-tuckles.age;
+  age.secrets.telegram-notify.file = ../../secrets/telegram-notify.age;
+
+  # Telegram push for failures of the units listed in services.notifyFailure.units
+  # (bitmagnet-watch.nix), and the bot bitmagnet-watch reports matches through.
+  services.notifyFailure = {
+    enable = true;
+    tokenFile = config.age.secrets.telegram-notify.path;
+  };
 
   system.stateVersion = "26.11";
 }
