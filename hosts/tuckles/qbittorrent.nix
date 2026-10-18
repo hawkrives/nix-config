@@ -46,6 +46,19 @@ in {
     webuiPort = 6001;
   };
 
+  # Peer IP filter, in P2P format (name:first-last). qBittorrent's preferences
+  # live in its runtime config, not here: Options → Connection → IP Filtering
+  # must point at this path with filtering enabled (set once via the WebUI/API).
+  # A ban list in qBittorrent's own "banned IPs" box takes single addresses only;
+  # this file takes ranges.
+  environment.etc."qbittorrent/ipfilter.p2p".text = ''
+    # Fake 100% "seeds": one operator rotating sequential ports (31835-31838)
+    # across both ranges, all claiming Transmission 2.2.1; they arrive by PEX,
+    # never send data and hang up after a few seconds.
+    Teleport_Rus fake seeds (AS216158):31.200.249.0-31.200.249.255
+    Start2 LLC fake seeds:185.16.212.0-185.16.215.255
+  '';
+
   # Same shared-gid reasoning as sabnzbd / the *arr: qB moves completed torrents
   # to NFS save paths under /mnt/{shows,movies}. Join "users" (gid 100) so it can
   # write there with mapping off, and UMask 0007 keeps files group-accessible so
