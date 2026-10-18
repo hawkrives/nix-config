@@ -46,6 +46,7 @@
     ./restic.nix
     ./uptime-kuma.nix
     ./live-notify.nix
+    ./stream-watch.nix
     ./beszel.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
