@@ -174,6 +174,22 @@ in {
       # packages/lidarr-nightly. It migrates the database one way, so this can't
       # go back to pkgs.lidarr until nixpkgs' stable Lidarr catches up.
       package = perSystem.self.lidarr-nightly;
+      # Tubifarry is installed and configured through Lidarr's UI/API, so its
+      # settings live in lidarr.db, not here:
+      #   - Indexer + download client "slskd" → tuckles' slskd (192.168.1.66:5030).
+      #   - Connect → "Queue Cleaner", on import failure: remove, blocklist and
+      #     search again.
+      #   - Metadata → "Search Sniper": 8 random wanted albums an hour, paused
+      #     while 10 grabs are queued.
+      #   - Every artist, root folder and import list uses the quality profile
+      #     "Prefer FLAC (MP3-128 and up)": a low-quality MP3 beats a missing
+      #     track, and FLAC is the cutoff to upgrade toward.
+      # TODO: turn on Search Sniper's "Cutoff not met" search so the lossy
+      # files get upgraded from Soulseek (slskd has no RSS feed, so nothing else
+      # looks there). It shares the hourly picks with missing albums: on
+      # 2026-10-18, 2,844 albums were missing and 1,792 below the cutoff, so
+      # enabling it then would have sent ~39% of searches to upgrades. Enable it
+      # once the missing list has shrunk, or raise the picks when you do.
     };
   services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
 
