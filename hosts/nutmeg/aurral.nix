@@ -29,6 +29,11 @@
     volumes = [
       "/var/lib/aurral:/app/backend/data" # SQLite appdata/config (local)
       "/mnt/music/aurral:/app/downloads" # staging downloads (NAS)
+      # slskd (on tuckles) writes finished downloads here over NFS; mounted at
+      # the same path inside the container so slskd's paths need no mapping.
+      "/mnt/music/soulseek/complete:/mnt/music/soulseek/complete"
+      # Same for SABnzbd (also on tuckles), which moves finished jobs here.
+      "/mnt/music/usenet/completed:/mnt/music/usenet/completed"
     ];
     environment.TZ = "America/New_York";
     labels."io.containers.autoupdate" = "registry";
