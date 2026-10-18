@@ -6,8 +6,7 @@
 # `tag`, then hash `agentsview_<version>_darwin_arm64.tar.gz` from the release.
 #
 # Only aarch64-darwin: nixpkgs has dropped x86_64-darwin.
-{ pkgs, ... }:
-let
+{pkgs, ...}: let
   inherit (pkgs) lib stdenvNoCC fetchurl;
 
   # The tag must sit directly above the sha256 of the darwin_arm64 .tar.gz:
@@ -18,29 +17,29 @@ let
 
   version = lib.removePrefix "v" tag;
 in
-stdenvNoCC.mkDerivation {
-  pname = "agentsview";
-  inherit version;
+  stdenvNoCC.mkDerivation {
+    pname = "agentsview";
+    inherit version;
 
-  src = fetchurl {
-    url = "https://github.com/wesm/agentsview/releases/download/${tag}/agentsview_${version}_darwin_arm64.tar.gz";
-    inherit sha256;
-  };
+    src = fetchurl {
+      url = "https://github.com/wesm/agentsview/releases/download/${tag}/agentsview_${version}_darwin_arm64.tar.gz";
+      inherit sha256;
+    };
 
-  sourceRoot = ".";
+    sourceRoot = ".";
 
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 agentsview $out/bin/agentsview
-    runHook postInstall
-  '';
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 agentsview $out/bin/agentsview
+      runHook postInstall
+    '';
 
-  meta = {
-    description = "Browse and search AI coding agent sessions (prebuilt release binary)";
-    homepage = "https://github.com/wesm/agentsview";
-    license = lib.licenses.mit;
-    mainProgram = "agentsview";
-    platforms = [ "aarch64-darwin" ];
-    sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
-  };
-}
+    meta = {
+      description = "Browse and search AI coding agent sessions (prebuilt release binary)";
+      homepage = "https://github.com/wesm/agentsview";
+      license = lib.licenses.mit;
+      mainProgram = "agentsview";
+      platforms = ["aarch64-darwin"];
+      sourceProvenance = [lib.sourceTypes.binaryNativeCode];
+    };
+  }

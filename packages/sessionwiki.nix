@@ -6,8 +6,7 @@
 # `sessionwiki-<tag>-aarch64-apple-darwin.tar.gz.sha256`.
 #
 # Only aarch64-darwin: nixpkgs has dropped x86_64-darwin.
-{ pkgs, ... }:
-let
+{pkgs, ...}: let
   inherit (pkgs) lib stdenvNoCC fetchurl;
 
   # The tag must sit directly above the sha256 of the aarch64-apple-darwin
@@ -18,27 +17,27 @@ let
 
   version = lib.removePrefix "v" tag;
 in
-stdenvNoCC.mkDerivation {
-  pname = "sessionwiki";
-  inherit version;
+  stdenvNoCC.mkDerivation {
+    pname = "sessionwiki";
+    inherit version;
 
-  src = fetchurl {
-    url = "https://github.com/youdie006/sessionwiki/releases/download/${tag}/sessionwiki-${tag}-aarch64-apple-darwin.tar.gz";
-    inherit sha256;
-  };
+    src = fetchurl {
+      url = "https://github.com/youdie006/sessionwiki/releases/download/${tag}/sessionwiki-${tag}-aarch64-apple-darwin.tar.gz";
+      inherit sha256;
+    };
 
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 sessionwiki $out/bin/sessionwiki
-    runHook postInstall
-  '';
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 sessionwiki $out/bin/sessionwiki
+      runHook postInstall
+    '';
 
-  meta = {
-    description = "Local search over AI coding session history (prebuilt release binary)";
-    homepage = "https://github.com/youdie006/sessionwiki";
-    license = lib.licenses.mit;
-    mainProgram = "sessionwiki";
-    platforms = [ "aarch64-darwin" ];
-    sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
-  };
-}
+    meta = {
+      description = "Local search over AI coding session history (prebuilt release binary)";
+      homepage = "https://github.com/youdie006/sessionwiki";
+      license = lib.licenses.mit;
+      mainProgram = "sessionwiki";
+      platforms = ["aarch64-darwin"];
+      sourceProvenance = [lib.sourceTypes.binaryNativeCode];
+    };
+  }

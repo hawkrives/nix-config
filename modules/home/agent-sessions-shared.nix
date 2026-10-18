@@ -7,8 +7,11 @@
 # agentsview runs as a launchd agent. config.toml is left unmanaged because
 # agentsview writes to it (it generates an auth token and migrates old formats),
 # so a read-only store symlink would break it.
-{ perSystem, ... }:
 {
+  config,
+  perSystem,
+  ...
+}: {
   home.packages = [
     perSystem.self.sessionwiki
     perSystem.self.agentsview
@@ -24,6 +27,7 @@
         "--no-update-check"
       ];
       RunAtLoad = true;
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/agentsview.log";
       # `serve` exits 0 when a server already runs (e.g. one a CLI command
       # started); restart only after a crash.
       KeepAlive.SuccessfulExit = false;
