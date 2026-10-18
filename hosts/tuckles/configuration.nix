@@ -24,6 +24,7 @@
     ./slskd.nix
     ./bitmagnet.nix
     ./bitmagnet-watch.nix
+    ./fake-seed-watch.nix
     ./qui.nix
     ./tsnsrv.nix
     ./backups.nix
