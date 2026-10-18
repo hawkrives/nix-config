@@ -25,6 +25,14 @@ in {
         from = 5030;
         to = 5030;
       }
+      {
+        # bitmagnet web UI (bitmagnet.nix). The mapping is what opens 3333 on the
+        # netns side of the veth, so the localhost forwarder for tsnsrv can reach
+        # it. Its DNAT'd traffic is forwarded rather than delivered locally, so the
+        # host firewall doesn't gate it: the UI is reachable on the LAN too.
+        from = 3333;
+        to = 3333;
+      }
     ];
   };
 

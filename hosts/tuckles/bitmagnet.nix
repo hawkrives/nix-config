@@ -50,4 +50,18 @@
     # The module's RestrictNamespaces blocks joining the VPN netns.
     serviceConfig.RestrictNamespaces = lib.mkForce false;
   };
+
+  # tsnsrv can't dial into the airvpn netns (see slskd-web-proxy in slskd.nix),
+  # so the bitmagnet tsnsrv node goes through this plain localhost forwarder.
+  systemd.services.bitmagnet-web-proxy = {
+    description = "localhost:3335 -> bitmagnet web UI in the airvpn netns (for tsnsrv)";
+    after = ["bitmagnet.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat TCP4-LISTEN:3335,bind=127.0.0.1,fork,reuseaddr TCP4:192.168.15.1:3333";
+      DynamicUser = true;
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
 }

@@ -36,5 +36,12 @@
       host = "127.0.0.1";
       port = 5031;
     };
+
+    # bitmagnet at https://bitmagnet.vaquita-woodpecker.ts.net. Like slsk, it lives in
+    # the airvpn netns, so go through the localhost:3335 forwarder in bitmagnet.nix.
+    services.bitmagnet.urlParts = {
+      host = "127.0.0.1";
+      port = 3335;
+    };
   };
 }
