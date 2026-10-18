@@ -22,6 +22,14 @@ in {
     # which network namespaces don't affect.
     settings = {
       http_server.local_address = ":3333";
+      # Log to stdout only, as JSON, so journald holds the structured logs.
+      log = {
+        json = true;
+        file_rotator.enabled = false;
+      };
+      processor.concurrency = 3;
+      # Matching relies on names and file sizes, not TMDB metadata.
+      tmdb.enabled = false;
       dht_crawler = {
         # Upstream default is 10. tuckles' disk lives on the Synology's volume1,
         # whose saturation freezes this VM, so crawl gently.
