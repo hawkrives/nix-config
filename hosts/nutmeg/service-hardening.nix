@@ -7,7 +7,7 @@
   # missing here because its nixpkgs module now ships an equivalent set.
   #
   # UMask and Restart are deliberately absent: servarr.nix owns those per
-  # service, and the soularr/seerr modules set their own.
+  # service, and the seerr module sets its own.
   hardening = {
     CapabilityBoundingSet = "";
     NoNewPrivileges = true;
@@ -53,10 +53,6 @@ in {
 
   # Python.
   systemd.services.tautulli.serviceConfig = hardening;
-
-  # Python oneshot driven by soularr.timer; its NAS write access comes from
-  # ReadWritePaths + SupplementaryGroups in soulseek.nix.
-  systemd.services.soularr.serviceConfig = hardening;
 
   # Node enumerates interfaces over netlink (os.networkInterfaces).
   systemd.services.seerr.serviceConfig =

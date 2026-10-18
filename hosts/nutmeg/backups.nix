@@ -28,7 +28,6 @@ in {
         # Everything timer-driven and unattended on this host.
         "arr-backup-pin.service"
         "beets-sync.service"
-        "soularr.service"
         "lidarr-beets-pin.service"
         "recyclarr.service"
         "adf-autoscan.service"
@@ -130,13 +129,6 @@ in {
         root = "/var/lib/slime-chat";
         sqlite = ["villager-chat.db"];
         excludes = ["playlists"];
-      };
-
-      soularr = {
-        root = "/var/lib/soularr";
-        # config.ini is rendered from nix; the failed-import denylist is the only
-        # real runtime state. Whole dir minus the stale lock.
-        excludes = ["*.lock"];
       };
 
       # Beszel monitoring hub (PocketBase). The metric history and the admin

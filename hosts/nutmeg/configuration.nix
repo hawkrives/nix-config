@@ -33,7 +33,6 @@
     ./channel-archive.nix
     ./channel-archive-backlog.nix
     ./recyclarr.nix
-    ./soulseek.nix
     ./tailscale.nix
     ./paperless.nix
     ./scanner.nix

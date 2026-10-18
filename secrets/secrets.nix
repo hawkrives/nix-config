@@ -55,7 +55,8 @@ in {
   # Soulseek account credentials for slskd (tuckles only).
   "slskd-env.age".publicKeys = users ++ [tuckles];
 
-  # slskd web API key — shared by slskd (tuckles) and Soularr (nutmeg).
+  # slskd web API key — slskd (tuckles), and entered by hand into Lidarr's
+  # Tubifarry slskd indexer/download client on nutmeg.
   "slskd-api-key.age".publicKeys = users ++ [nutmeg tuckles];
 
   # AirVPN WireGuard config (full wg-quick file) for the VPN namespace (tuckles).

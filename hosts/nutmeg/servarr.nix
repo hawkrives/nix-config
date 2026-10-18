@@ -23,7 +23,7 @@
   #
   # allowedhosts is the Host-header allowlist. The apps always add localhost,
   # 127.0.0.1, [::1] and the machine hostname, which covers every on-box client
-  # (seerr, bazarr, recyclarr, soularr, beets, aurral, arr-backup-pin, and the
+  # (seerr, bazarr, recyclarr, beets, aurral, arr-backup-pin, and the
   # apps talking to each other). The tailnet name is what tsnsrv passes through
   # for remote clients like the iPhone app. Radarr refuses host-config PUTs
   # while this is empty and authentication isn't fully enabled; versions that

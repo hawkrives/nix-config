@@ -250,7 +250,7 @@ in {
   systemd.services.beets-sync = {
     description = "Write MB-canonical tags (incl. sort-names) via beets mbsync";
     # Wants/After, NOT Requires: the NFS share idle-unmounts after 5m and a hard
-    # mount dep would SIGTERM a long run — same lesson as soularr. beets reads
+    # mount dep would SIGTERM a long run — same lesson as channel-archive. beets reads
     # /mnt continuously so it won't actually idle out, but stay safe.
     after = [
       "network-online.target"

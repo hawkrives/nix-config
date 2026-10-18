@@ -102,7 +102,7 @@
       "/var/lib/private/AdGuardHome"
 
       # The service-backup output for the whole fleet. This is the cheap way to
-      # get every *arr, Plex, Tautulli, beszel, soularr and the tuckles download
+      # get every *arr, Plex, Tautulli, beszel and the tuckles download
       # clients off site: service-backup has already done the hard part, taking
       # transactionally-consistent `sqlite3 .backup` snapshots of live databases,
       # so restic only has to copy the results. Backing up the LIVE dirs instead
@@ -358,7 +358,7 @@ in {
   #
   # Wants/After on the mount, NOT RequiresMountsFor: the share idle-unmounts
   # after 5m, and a hard requirement makes systemd stop a long-running backup
-  # the moment that fires. Same lesson as soularr and channel-archive.
+  # the moment that fires. Same lesson as channel-archive.
   # In practice restic reads the tree continuously, so it keeps the mount busy.
   #
   # Merged into one `systemd.services` definition rather than several, since a

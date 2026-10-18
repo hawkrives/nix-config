@@ -51,15 +51,15 @@ in {
         "/mnt/music/data" # read-only library share
         "/mnt/music/tunes"
       ];
-      # API-key auth for Soularr + the web UI. The key is a placeholder here
+      # API-key auth for Lidarr's Tubifarry plugin (on nutmeg) + the web UI. The key is a placeholder here
       # (this ends up in the store); the real value is injected at start.
       web.authentication.api_keys.soularr = {
         key = "@SLSKD_API_KEY@";
         role = "readwrite";
         cidr = "0.0.0.0/0,::/0";
       };
-      # slskd keeps searches and finished transfers forever by default; Soularr's
-      # ~200 searches/day had grown search.db past 4 GB. Values are minutes.
+      # slskd keeps searches and finished transfers forever by default; ~200
+      # automated album searches a day had grown search.db past 4 GB. Values are minutes.
       # Pruning deletes rows but never VACUUMs, so the file stays at its peak size
       # and reuses the freed pages.
       retention = let

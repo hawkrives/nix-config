@@ -5,16 +5,18 @@
 #
 # Idle whenever OBS is closed or the Mac is asleep: it retries the websocket
 # every 30s and only probes Twitch while OBS reports an active stream.
-{ config, pkgs, ... }:
-let
-  python = pkgs.python3.withPackages (p: [ p.websockets ]);
-in
 {
+  config,
+  pkgs,
+  ...
+}: let
+  python = pkgs.python3.withPackages (p: [p.websockets]);
+in {
   systemd.services.stream-watch = {
     description = "Attribute vids_by_melon's Twitch frame drops (OBS / network / Twitch)";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
+    wantedBy = ["multi-user.target"];
+    wants = ["network-online.target"];
+    after = ["network-online.target"];
     path = [
       pkgs.streamlink
       pkgs.ffmpeg-headless
@@ -57,5 +59,5 @@ in
     };
   };
 
-  services.notifyFailure.units = [ "stream-watch.service" ];
+  services.notifyFailure.units = ["stream-watch.service"];
 }

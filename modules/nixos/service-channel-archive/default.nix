@@ -319,7 +319,7 @@
     # outlast the autofs NFS's 5m idle-unmount, and a hard Requires would make
     # systemd SIGTERM the service when the mount idle-unmounts mid-run. Wants
     # doesn't propagate the stop; the automount transparently re-mounts on
-    # access. Same rationale as soularr (hosts/nutmeg/soulseek.nix).
+    # access.
     after = [
       "network-online.target"
       "${utils.escapeSystemdPath cfg.baseDir}.mount"

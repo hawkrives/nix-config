@@ -104,10 +104,6 @@
           interval = 21600;
         } # every 4h + 10m jitter
         {
-          unit = "soularr.service";
-          interval = 7200;
-        } # hourly + 5m jitter
-        {
           unit = "avahi-name-check.service";
           interval = 1800;
         } # every 5m
