@@ -4,6 +4,7 @@
   ...
 }: {
   imports = [
+    flake.homeModules.agent-sessions-shared
     flake.homeModules.home-shared
     flake.homeModules.git-shared
     flake.homeModules.jj-shared
