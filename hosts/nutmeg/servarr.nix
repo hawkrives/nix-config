@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  perSystem,
   synologyMount,
   ...
 }: let
@@ -169,6 +170,10 @@ in {
     arrApp "lidarr"
     // {
       enable = true;
+      # A pre-release build for plugin support (the Tubifarry slskd plugin); see
+      # packages/lidarr-nightly. It migrates the database one way, so this can't
+      # go back to pkgs.lidarr until nixpkgs' stable Lidarr catches up.
+      package = perSystem.self.lidarr-nightly;
     };
   services.tsnsrv.services.lidarr.urlParts.port = config.services.lidarr.settings.server.port;
 
