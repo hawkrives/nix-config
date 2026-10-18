@@ -34,6 +34,8 @@
   # disko sets boot.loader.grub.devices from disk.nix's `device`; setting it
   # here too would duplicate /dev/vda in mirroredBoots and fail an assertion.
   boot.loader.grub.enable = true;
+  # Extend the root partition to fill /dev/vda at boot (see disk.nix).
+  boot.growPartition = true;
   boot.initrd.availableKernelModules = [
     "ahci"
     "sd_mod"

@@ -22,4 +22,9 @@
       };
     };
   };
+
+  # Root is the last partition on /dev/vda, so a bigger virtual disk from Synology
+  # VMM grows into it: growPartition (configuration.nix) extends the partition at
+  # boot and autoResize runs resize2fs before mounting.
+  fileSystems."/".autoResize = true;
 }
