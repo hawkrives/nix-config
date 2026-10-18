@@ -8,13 +8,13 @@
   },
   "customManagers": [
     {
-      // packages/mise-bin.nix, sessionwiki.nix and agentsview.nix pin a
-      // prebuilt macOS binary by release tag and tarball sha256. The
+      // packages/mise-bin.nix and agentsview.nix pin a prebuilt
+      // macOS binary by release tag and tarball sha256. The
       // github-release-attachments datasource finds the current sha256 in the
       // release's SHASUMS256.txt and reads the matching line from the new
       // release's, so tag and hash move together.
       "customType": "regex",
-      "managerFilePatterns": ["/^packages/(mise-bin|sessionwiki|agentsview)\\.nix$/"],
+      "managerFilePatterns": ["/^packages/(mise-bin|agentsview)\\.nix$/"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*tag = \"(?<currentValue>[^\"]+)\";\\n\\s*sha256 = \"(?<currentDigest>[0-9a-f]{64})\";",
       ],

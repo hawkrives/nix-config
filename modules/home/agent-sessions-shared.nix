@@ -1,19 +1,18 @@
-# Tools for browsing and searching AI coding agent session history.
+# agentsview: browse and search AI coding agent session history.
 #
-# sessionwiki needs no service: `sessionwiki mcp` runs over stdio, so Claude
-# Code starts it per session. Register it once with
-# `claude mcp add sessionwiki -- sessionwiki mcp`.
-#
-# agentsview runs as a launchd agent. config.toml is left unmanaged because
+# It runs as a launchd agent. config.toml is left unmanaged because
 # agentsview writes to it (it generates an auth token and migrates old formats),
 # so a read-only store symlink would break it.
+#
+# `agentsview mcp` runs over stdio and reads through this daemon, so Claude Code
+# starts it per session. Register it once with
+# `claude mcp add agentsview -- agentsview mcp`.
 {
   config,
   perSystem,
   ...
 }: {
   home.packages = [
-    perSystem.self.sessionwiki
     perSystem.self.agentsview
   ];
 
