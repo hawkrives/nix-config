@@ -155,9 +155,6 @@
   manual.manpages.enable = false;
   programs.man.generateCaches = false;
 
-  # provides command-not-found suggestions for missing packages:
-  programs.nix-index.enable = true;
-
   # only available on linux, disabled on macos
   services.ssh-agent.enable = pkgs.stdenv.hostPlatform.isLinux;
 
