@@ -11,6 +11,9 @@
   # Search, the web UI and the queue keep working; the index just stops growing.
   capBytes = 128 * 1024 * 1024 * 1024;
   pausedFlag = "/var/lib/bitmagnet-cap/crawl-paused";
+  # The web UI leaves the airvpn netns through this Unix socket, which (like the
+  # postgres socket) is on the shared filesystem rather than the network.
+  webSocket = "/run/bitmagnet-web/http.sock";
 in {
   # bitmagnet indexes torrents seen on the public DHT (names, file lists, sizes),
   # so a stalled qBittorrent download can be matched against other torrents that
@@ -22,7 +25,9 @@ in {
     # postgresql. bitmagnet reaches it over the /run/postgresql Unix socket,
     # which network namespaces don't affect.
     settings = {
-      http_server.local_address = ":3333";
+      # Loopback inside the netns only: the web UI and GraphQL API have no auth, and
+      # the only way in is the Unix-socket bridge below (tsnsrv on the tailnet).
+      http_server.local_address = "127.0.0.1:3333";
       # Log to stdout only, as JSON, so journald holds the structured logs.
       log = {
         json = true;
@@ -77,14 +82,32 @@ in {
     };
   };
 
-  # tsnsrv can't dial into the airvpn netns (see slskd-web-proxy in slskd.nix),
-  # so the bitmagnet tsnsrv node goes through this plain localhost forwarder.
-  systemd.services.bitmagnet-web-proxy = {
-    description = "localhost:3335 -> bitmagnet web UI in the airvpn netns (for tsnsrv)";
+  # Inside the netns: expose bitmagnet's loopback-only HTTP port as a Unix socket.
+  systemd.services.bitmagnet-web-socket = {
+    description = "bitmagnet web UI (netns 127.0.0.1:3333) -> ${webSocket}";
     after = ["bitmagnet.service"];
     wantedBy = ["multi-user.target"];
+    vpnConfinement = {
+      enable = true;
+      vpnNamespace = "airvpn";
+    };
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat TCP4-LISTEN:3335,bind=127.0.0.1,fork,reuseaddr TCP4:192.168.15.1:3333";
+      ExecStart = "${pkgs.socat}/bin/socat UNIX-LISTEN:${webSocket},fork,unlink-early,mode=0666 TCP4:127.0.0.1:3333";
+      DynamicUser = true;
+      RuntimeDirectory = "bitmagnet-web";
+      RuntimeDirectoryMode = "0755";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
+
+  # On the host: tsnsrv dials this localhost port, which feeds the socket above.
+  systemd.services.bitmagnet-web-proxy = {
+    description = "localhost:3335 -> bitmagnet web UI socket (for tsnsrv)";
+    after = ["bitmagnet-web-socket.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat TCP4-LISTEN:3335,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:${webSocket}";
       DynamicUser = true;
       Restart = "on-failure";
       RestartSec = 5;
