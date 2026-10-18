@@ -25,6 +25,8 @@
         "serve"
         "--no-browser"
         "--no-update-check"
+        "--port"
+        "4398"
       ];
       RunAtLoad = true;
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/agentsview.log";
