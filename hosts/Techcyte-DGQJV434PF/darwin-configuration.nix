@@ -74,7 +74,13 @@ in {
     # Performance/tuning settings
     ephemeral = true;
     maxJobs = 6;
-    config = {
+    # `pkgs` here is the guest's aarch64-linux package set, which is a fresh
+    # nixpkgs instance without this flake's overlays.
+    config = { pkgs, ... }: {
+      # Same pin as the flake overlay: nixpkgs' `latest` Lix doesn't build in
+      # the current snapshot.
+      nix.package = pkgs.lixPackageSets.lix_2_96.lix;
+
       # Nix's sandbox build directory (/build inside the sandbox) is a bind
       # mount backed by `build-dir` on the host, default /nix/var/nix/b. This
       # VM's "/" is deliberately tmpfs (vz-vm.nix, for fast ephemeral boot), so
