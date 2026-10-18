@@ -1,6 +1,5 @@
 {
   pkgs,
-  config,
   perSystem,
   ...
 }:
@@ -259,16 +258,6 @@
     };
   };
 
-  programs.neovim = {
-    enable = true;
-    package = pkgs.neovim-unwrapped;
-    withRuby = false; # don't need any ruby neovim plugins
-    withNodeJs = false;
-    withPython3 = false;
-    vimAlias = true;
-    viAlias = true;
-  };
-
   # programs.visidata = {
   #   enable = true; # installs X and Wayland on Linux thanks to Xclip...
   #   package = pkgs.visidata.override {
@@ -352,7 +341,6 @@
   # you can also look at the current user's config (`config`) or the system
   # config (`osConfig`), but note that osConfig is null if the homeManager
   # config is evaluated separately as in `nh home switch .#`.
-  ++ (pkgs.lib.optionals ((config.programs.vim.enable || config.programs.neovim.enable) && pkgs.stdenv.hostPlatform.isDarwin) [ ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [ pkgs.cocoapods ])
   ++ (pkgs.lib.optionals (pkgs.stdenv.hostPlatform.isLinux) [ ]);
 

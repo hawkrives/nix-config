@@ -71,8 +71,6 @@
     ];
   };
 
-  programs.neovim.enable = false;
-
   # tuckles runs no containers.
   virtualisation.podman.enable = false;
 

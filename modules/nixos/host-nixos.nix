@@ -1,5 +1,4 @@
 {
-  pkgs,
   lib,
   inputs,
   ...
@@ -8,17 +7,6 @@
   imports = [
     inputs.agenix.nixosModules.default
   ];
-
-  # mkDefault so hosts that don't want an editor (pantry, tuckles) can turn it off.
-  programs.neovim = {
-    enable = lib.mkDefault true;
-    package = pkgs.neovim-unwrapped;
-    withRuby = false;
-    withNodeJs = false;
-    withPython3 = false;
-    vimAlias = true;
-    viAlias = true;
-  };
 
   # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
   # <https://schmiggolas.dev/posts/2024/nh/>
