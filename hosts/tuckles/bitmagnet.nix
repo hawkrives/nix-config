@@ -5,7 +5,8 @@
   ...
 }: let
   cfg = config.services.bitmagnet;
-  # The index is capped at 128 GiB: past that, bitmagnet-cap pauses the crawler
+  # The database is capped at 128 GiB (pg_database_size; WAL, up to max_wal_size,
+  # sits on top): past that, bitmagnet-cap pauses the crawler
   # by creating this flag, and bitmagnet runs without its dht_crawler worker.
   # Search, the web UI and the queue keep working; the index just stops growing.
   capBytes = 128 * 1024 * 1024 * 1024;
@@ -45,6 +46,7 @@ in {
   };
 
   services.postgresql = {
+    # Pinned so a nixpkgs default bump never demands a pg_upgrade of the index.
     package = pkgs.postgresql_17;
     settings = {
       # Losing the last moments of crawl data on a crash is harmless (it's
@@ -93,7 +95,8 @@ in {
   # BITMAGNET_CAP_BYTES overrides the cap (for testing).
   systemd.services.bitmagnet-cap = {
     description = "Pause bitmagnet's DHT crawler while its database is over the size cap";
-    after = ["postgresql.service"];
+    # postgresql.target includes postgresql-setup, which creates the bitmagnet db.
+    after = ["postgresql.target"];
     serviceConfig.Type = "oneshot";
     path = [
       config.services.postgresql.package
@@ -106,14 +109,16 @@ in {
       if ! size=$(runuser -u postgres -- psql -d bitmagnet -tAc "select pg_database_size('bitmagnet')") \
         || ! [[ $size =~ ^[0-9]+$ ]]; then
         echo "bitmagnet db size query failed; leaving the crawler as it is" >&2
-        exit 0
+        exit 1 # fail the unit so a broken check shows in systemctl --failed
       fi
       if (( size >= cap )); then want=paused; else want=crawling; fi
       if [ -e ${pausedFlag} ]; then have=paused; else have=crawling; fi
       echo "bitmagnet db $(numfmt --to=iec "$size") / cap $(numfmt --to=iec "$cap") ($want)"
       if [ "$want" != "$have" ]; then
         if [ "$want" = paused ]; then touch ${pausedFlag}; else rm -f ${pausedFlag}; fi
-        systemctl restart bitmagnet.service
+        # try-restart leaves a deliberately stopped bitmagnet stopped; its next
+        # start reads the flag anyway.
+        systemctl try-restart bitmagnet.service
       fi
     '';
   };
