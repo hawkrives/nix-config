@@ -35,10 +35,54 @@
     rev = "a3af601f8e127c027edc387c1e4d64927c9f25fc";
     sha256 = "BgwLzvzV4+jWePgZPOkbY2jnO4qwL8cgaTBl4R4uMRA=";
   };
+
+  plexData = "${config.services.plex.dataDir}/Plex Media Server";
+
+  # Preferences.xml attributes forced on every start (Plex reads the file at
+  # startup and only rewrites it when a pref changes):
+  #   DlnaEnabled=0 -- nothing here uses DLNA, so its listener (:32469 plus
+  #                    SSDP) is just attack surface.
+  #   logDebug=1    -- debug level is what logs each request with its source
+  #                    address ("Request: [ip:port] GET /path"); with
+  #                    PLEX_MEDIA_SERVER_USE_SYSLOG those go to the journal.
+  plexPrefs = {
+    DlnaEnabled = "0";
+    logDebug = "1";
+  };
+
+  # Plex's FHS wrapper gives bubblewrap a fresh tmpfs for /, /etc and
+  # /tmp/.X11-unix, owned by plex and exec-capable -- writable spots the
+  # unit's NoExecPaths can't reach, since bwrap creates those mounts itself.
+  # / and /tmp/.X11-unix are remounted read-only once everything is bound.
+  # The run script's only write to the root is its /db symlink, so bwrap
+  # creates that instead and the script skips it. /etc has to stay writable:
+  # the FHS container-init writes /etc/ld.so.conf and ldconfig rename()s a
+  # fresh /etc/ld.so.cache into place on every start.
+  plexPackage = pkgs.plex.override {
+    buildFHSEnv = args:
+      pkgs.buildFHSEnv (args
+        // {
+          runScript = pkgs.runCommand "plex-run-script" {} ''
+            substitute ${args.runScript} $out \
+              --replace-fail 'ln -s "$db" /db' 'test -L /db || ln -s "$db" /db'
+            chmod +x $out
+          '';
+          extraBwrapArgs = [
+            "--symlink"
+            "${config.services.plex.dataDir}/.skeleton/com.plexapp.plugins.library.db"
+            "/db"
+            "--remount-ro"
+            "/"
+            "--remount-ro"
+            "/tmp/.X11-unix"
+          ];
+        });
+  };
 in {
   services.plex = {
     enable = true;
     openFirewall = true;
+    package = plexPackage;
 
     extraPlugins = [
       hama
@@ -117,6 +161,39 @@ in {
     # nothing — turning that pref on would need /mnt added here.
     ProtectSystem = lib.mkForce "strict";
     ReadWritePaths = ["/var/lib/plex"];
+    # Nothing writable is executable, so a payload dropped into /tmp, /dev/shm
+    # or the data dir can't be run. Plex downloads its codecs and VAAPI driver
+    # as shared objects into Codecs/ and Drivers/, so those two stay
+    # executable (and writable, for the downloads on a Plex version bump).
+    # The writable paths are their own mounts (ReadWritePaths, PrivateTmp,
+    # /dev/shm) and don't inherit noexec from /, so each is listed.
+    NoExecPaths = [
+      "/"
+      "/var/lib/plex"
+      "/tmp"
+      "/var/tmp"
+      "/dev/shm"
+    ];
+    ExecPaths = [
+      "/nix/store"
+      # Quoted: systemd splits ExecPaths= on whitespace.
+      ''"${plexData}/Codecs"''
+      ''"${plexData}/Drivers"''
+    ];
+
+    ExecStartPre = lib.mkAfter [
+      "+${pkgs.writeShellScript "plex-enforce-prefs" ''
+        prefs="${plexData}/Preferences.xml"
+        [ -f "$prefs" ] || exit 0
+        ${lib.concatStrings (lib.mapAttrsToList (name: value: ''
+            ${pkgs.xmlstarlet}/bin/xml ed -L \
+              -u '/Preferences/@${name}' -v '${value}' \
+              -i '/Preferences[not(@${name})]' -t attr -n '${name}' -v '${value}' \
+              "$prefs"
+          '')
+          plexPrefs)}
+      ''}"
+    ];
   };
 
   services.tautulli = {
