@@ -79,6 +79,8 @@
         });
   };
 in {
+  imports = [./plex-codec-watch.nix];
+
   services.plex = {
     enable = true;
     openFirewall = true;
