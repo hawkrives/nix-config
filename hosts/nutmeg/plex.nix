@@ -194,6 +194,94 @@ in {
           plexPrefs)}
       ''}"
     ];
+
+    # Puts this unit's cgroup into the plex-egress table's set (below).
+    NFTSet = "cgroup:inet:plex-egress:plex_cgroup";
+  };
+
+  # Outbound containment for Plex, aimed at the SSRF class of bug Plex2Shell
+  # opened with: new connections Plex starts may not reach other services on
+  # this host or the LAN. Plex reaching Plex is fine -- the server proxies to
+  # its plug-in hosts on random loopback ports -- so loopback connections are
+  # judged by the socket they land on rather than by port. Internet traffic
+  # is only counted (per protocol . port in @plex_ports) and logged when it
+  # isn't DNS/HTTP(S), to decide later whether a port allowlist is viable.
+  #
+  # plex_cgroup is filled by the unit's NFTSet= and starts empty, so with
+  # Plex down or the set lost every rule here simply stops matching.
+  networking.nftables.tables.plex-egress = {
+    family = "inet";
+    content = ''
+      set plex_cgroup {
+        type cgroupsv2
+      }
+
+      set plex_ports {
+        type inet_proto . inet_service
+        size 1024
+        flags dynamic
+        counter
+      }
+
+      chain output {
+        type filter hook output priority filter; policy accept;
+        ct state new socket cgroupv2 level 2 @plex_cgroup jump plex_new
+      }
+
+      chain plex_new {
+        # Local destinations, including this host's LAN and tailnet
+        # addresses, all go out lo; mark them for the check in plex_lo.
+        oif "lo" ct mark set ct mark or 0x100 accept
+
+        # GDM/SSDP/mDNS discovery.
+        ip daddr { 224.0.0.0/4, 255.255.255.255, 192.168.1.255 } accept
+        ip6 daddr ff00::/8 accept
+        # Remote Access maps its port through the router with NAT-PMP.
+        ip daddr 192.168.1.1 udp dport 5351 accept
+        # Other Plex servers on the LAN (connection tests, shared libraries).
+        ip daddr 192.168.1.0/24 tcp dport 32400 accept
+
+        ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16 } jump plex_reject
+        ip6 daddr { fc00::/7, fe80::/10 } jump plex_reject
+
+        meta l4proto { tcp, udp } update @plex_ports { meta l4proto . th dport }
+        meta l4proto { tcp, udp } th dport != { 53, 80, 443 } limit rate 30/minute log prefix "plex-egress: " level info
+      }
+
+      chain input {
+        type filter hook input priority filter; policy accept;
+        iif "lo" ct state new ct mark and 0x100 == 0x100 jump plex_lo
+      }
+
+      chain plex_lo {
+        socket cgroupv2 level 2 @plex_cgroup accept
+        meta l4proto { tcp, udp } th dport 53 accept
+        jump plex_reject
+      }
+
+      chain plex_reject {
+        limit rate 30/minute log prefix "plex-egress-reject: " level warn
+        counter reject
+      }
+    '';
+  };
+
+  # The build-time `nft -c` runs in the builder's sandbox, which can't resolve
+  # socket cgroupv2 matches; check the rest with a stand-in match.
+  networking.nftables.preCheckRuleset = ''
+    sed -i 's/socket cgroupv2 level 2 @plex_cgroup/meta mark 0x0/' ruleset.conf
+  '';
+
+  # nftables (re)loads delete and recreate every table, emptying plex_cgroup
+  # until Plex next starts; put a running Plex back in.
+  systemd.services.nftables.serviceConfig = let
+    readdPlex = pkgs.writeShellScript "nftables-readd-plex" ''
+      ${config.systemd.package}/bin/systemctl -q is-active plex.service || exit 0
+      ${pkgs.nftables}/bin/nft add element inet plex-egress plex_cgroup '{ "system.slice/plex.service" }'
+    '';
+  in {
+    ExecStartPost = lib.mkAfter ["${readdPlex}"];
+    ExecReload = lib.mkAfter ["${readdPlex}"];
   };
 
   services.tautulli = {
