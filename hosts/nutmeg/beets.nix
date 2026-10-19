@@ -72,6 +72,11 @@
                 info.artist_sort = sorts[idx]
   '';
 
+  # Overrides for where the library disagrees with MusicBrainz, read from
+  # beets-overrides.yaml files that live beside the music on the NAS (untracked,
+  # editable without a rebuild). Format and precedence are in the module docstring.
+  localOverrides = pkgs.writeTextDir "localoverrides.py" (builtins.readFile ./beets-localoverrides.py);
+
   # Config lives in the store (immutable, in git), generated from a Nix attrset so
   # there's no YAML quoting/indent footgun. Surfaced at $BEETSDIR/config.yaml via a
   # tmpfiles symlink (below) so `beet` finds it natively for manual fix-up runs.
@@ -100,7 +105,10 @@
     # beets extends the `beetsplug` namespace package with each pluginpath entry,
     # so the module is imported as `beetsplug.primaryalbumartist` — the .py sits
     # directly in the directory, not under a nested beetsplug/.
-    pluginpath = ["${primaryAlbumArtist}"];
+    pluginpath = [
+      "${primaryAlbumArtist}"
+      "${localOverrides}"
+    ];
 
     # `musicbrainz` (default-enabled, but listing `plugins` overrides the default
     # so it must be named) is the MB lookup that `mbsync` uses to pull canonical
@@ -109,6 +117,7 @@
       "musicbrainz"
       "mbsync"
       "primaryalbumartist"
+      "localoverrides"
     ];
   };
 
@@ -154,6 +163,20 @@
     # default when they're inside the library `directory` (= /mnt/music/data),
     # which would destroy Lidarr's layout. We only ever rewrite tags in place.
     "$beet" mbsync --nomove 'artist_sort::^$'
+
+    # mbsync applies overrides to what it rewrites; this catches already-synced
+    # albums whose beets-overrides.yaml was added or edited since the last run.
+    # The new stamp is taken before the scan so an edit made mid-run is picked
+    # up next time rather than missed.
+    stamp=/var/lib/beets/overrides.stamp
+    touch "$stamp.next"
+    newer=()
+    [ -e "$stamp" ] && newer=(-newer "$stamp")
+    find /mnt/music/data -name beets-overrides.yaml "''${newer[@]}" -print0 \
+      | while IFS= read -r -d "" sidecar; do
+          "$beet" applyoverrides "path:''${sidecar%/*}"
+        done
+    mv "$stamp.next" "$stamp"
   '';
 
   # Lidarr's "On Import"/"On Upgrade" custom script. It does NOT run beet itself —
