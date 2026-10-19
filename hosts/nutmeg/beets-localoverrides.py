@@ -15,9 +15,10 @@ the same thing, the one nearer the track wins. Sections:
 
 Precedence on a single track: artists < fields < releases < tracks.
 
-An artist rename applies only where that artist is credited alone: the
-artist/albumartist display name, the plural list, and both credit fields are
-replaced. A joint credit ("Nobuo Uematsu & Masayoshi Soken") is left as
+An artist rename applies only where that artist is credited alone (one
+artist ID, at most one name, and a display name that is empty or contains
+that artist's name): the artist/albumartist display name, the plural list,
+and both credit fields are replaced. A joint credit ("Nobuo Uematsu & Masayoshi Soken") is left as
 MusicBrainz has it. The one exception is an album artist collapsed to its
 primary artist by primaryalbumartist: that value names one artist, so it is
 renamed, while the joint list and credit fields are not.
@@ -207,13 +208,21 @@ class LocalOverridesPlugin(BeetsPlugin):
                 return {single: new}
             return {}
 
-        old = names[0] if names else None
+        # One ID is not proof of a solo credit: tags from other taggers can
+        # carry a joint name list or display string with only the first
+        # artist's ID. Rename only when the names agree it is one artist.
+        if len(names) > 1:
+            return {}
         credits = list(item.get(plural + "_credit") or [])
-        old_credit = credits[0] if credits else old
+        known = [n for n in names[:1] + credits[:1] if n]
+        display = item.get(single)
+        if display and display != new and not any(k in display for k in known):
+            return {}
+
         return {
-            single: _swap(item.get(single), old, new),
+            single: _swap(display, known, new),
             plural: [new],
-            single + "_credit": _swap(item.get(single + "_credit"), old_credit, new),
+            single + "_credit": _swap(item.get(single + "_credit"), known, new),
             plural + "_credit": [new],
         }
 
@@ -260,12 +269,13 @@ class LocalOverridesPlugin(BeetsPlugin):
         self._log.info("applied overrides to {} item(s)", changed)
 
 
-def _swap(current, old, new):
-    """Replace one artist's name inside a display string.
+def _swap(current, known, new):
+    """Replace a sole artist's name inside a display string.
 
-    Keeps a join phrase MusicBrainz attached to a sole artist ("Eric Clapton &
-    Friends"); falls back to the bare new name when the old one is absent.
+    Keeps a join phrase MusicBrainz attached to the artist ("Eric Clapton &
+    Friends"); falls back to the bare new name when no known name appears.
     """
-    if current and old and old in current:
-        return current.replace(old, new)
+    for old in known:
+        if current and old in current:
+            return current.replace(old, new)
     return new
