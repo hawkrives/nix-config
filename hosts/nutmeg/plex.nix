@@ -197,8 +197,9 @@ in {
       ''}"
     ];
 
-    # Puts this unit's cgroup into the plex-egress table's set (below).
-    NFTSet = "cgroup:inet:plex-egress:plex_cgroup";
+    # Puts this unit's cgroup into the plex_egress table's set (below).
+    # systemd ignores NFTSet= table names with anything but [A-Za-z0-9_].
+    NFTSet = "cgroup:inet:plex_egress:plex_cgroup";
   };
 
   # Outbound containment for Plex, aimed at the SSRF class of bug Plex2Shell
@@ -211,7 +212,7 @@ in {
   #
   # plex_cgroup is filled by the unit's NFTSet= and starts empty, so with
   # Plex down or the set lost every rule here simply stops matching.
-  networking.nftables.tables.plex-egress = {
+  networking.nftables.tables.plex_egress = {
     family = "inet";
     content = ''
       set plex_cgroup {
@@ -279,7 +280,7 @@ in {
   systemd.services.nftables.serviceConfig = let
     readdPlex = pkgs.writeShellScript "nftables-readd-plex" ''
       ${config.systemd.package}/bin/systemctl -q is-active plex.service || exit 0
-      ${pkgs.nftables}/bin/nft add element inet plex-egress plex_cgroup '{ "system.slice/plex.service" }'
+      ${pkgs.nftables}/bin/nft add element inet plex_egress plex_cgroup '{ "system.slice/plex.service" }'
     '';
   in {
     ExecStartPost = lib.mkAfter ["${readdPlex}"];
