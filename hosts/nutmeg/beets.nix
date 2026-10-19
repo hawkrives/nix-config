@@ -172,9 +172,14 @@
     touch "$stamp.next"
     newer=()
     [ -e "$stamp" ] && newer=(-newer "$stamp")
+    # beets stores paths relative to the library root, so `path:` naming the
+    # root itself matches nothing; a root sidecar covers every item instead.
     find /mnt/music/data -name beets-overrides.yaml "''${newer[@]}" -print0 \
       | while IFS= read -r -d "" sidecar; do
-          "$beet" applyoverrides "path:''${sidecar%/*}"
+          dir=''${sidecar%/*}
+          query=()
+          [ "$dir" != /mnt/music/data ] && query=("path:$dir")
+          "$beet" applyoverrides "''${query[@]}"
         done
     mv "$stamp.next" "$stamp"
   '';
