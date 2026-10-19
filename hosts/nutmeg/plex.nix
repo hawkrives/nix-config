@@ -79,7 +79,7 @@
         });
   };
 in {
-  imports = [./plex-codec-watch.nix];
+  imports = [./plex-codec-watch.nix ./plex-egress-review.nix];
 
   services.plex = {
     enable = true;
