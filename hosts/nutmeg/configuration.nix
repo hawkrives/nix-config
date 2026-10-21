@@ -26,6 +26,7 @@
     ./aurral.nix
     ./home-assistant.nix
     ./home-assistant-matter.nix
+    ./trawl.nix
     ./plex.nix
     ./servarr.nix
     ./service-hardening.nix

@@ -20,5 +20,16 @@
       ],
       "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}\n  tag = \"{{{newValue}}}\";\n  sha256 = \"{{{newDigest}}}\";",
     },
+    {
+      // hosts/nutmeg/trawl.nix pins the TRAWL container image by tag and
+      // digest. The docker datasource finds the new digest for the same tag
+      // (or a newer baseline tag), and the replacement rewrites both.
+      "customType": "regex",
+      "managerFilePatterns": ["/^hosts/nutmeg/trawl\\.nix$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)\\n\\s*image = \"[^\"]+:(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[0-9a-f]{64})\";",
+      ],
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}} versioning={{{versioning}}}\n    image = \"{{{depName}}}:{{{newValue}}}@{{{newDigest}}}\";",
+    },
   ],
 }
