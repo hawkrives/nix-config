@@ -178,10 +178,13 @@
     # a block. Counting it as one made ditherdown-clips report RATE-LIMITED for
     # a problem that had nothing to do with rate limits.
     isYouTube = lib.hasInfix "youtube.com" ch.url || lib.hasInfix "youtu.be" ch.url;
+    # Not the bare "Sign in to confirm": YouTube's age gate says "Sign in to
+    # confirm your age", and counting that as a bot-block turned one
+    # age-restricted video into a permanent TEMPFAIL. The bot-check wording
+    # ("Sign in to confirm you're not a bot") is caught by "not a bot".
     blockPattern = lib.concatStringsSep "|" (
       [
         "HTTP Error 429"
-        "Sign in to confirm"
         "not a bot"
       ]
       ++ lib.optional isYouTube "HTTP Error 403"
@@ -337,9 +340,12 @@
         pkgs.gnugrep
       ]
       ++ lib.optionals ch.restructure [
-        # channel-artwork.py shells out to bare `magick` via bash -c, so this
-        # must stay on PATH. dejavu_fonts does NOT belong here -- it ships no
-        # binaries; the font reaches the script via CAW_FONT below.
+        # channel-artwork.py shells out to bare `magick` via `bash -c`, so both
+        # must be on PATH; systemd's default PATH has neither. Without bash
+        # every season poster silently fails to generate. dejavu_fonts does NOT
+        # belong here -- it ships no binaries; the font reaches the script via
+        # CAW_FONT below.
+        pkgs.bash
         pkgs.imagemagick
       ];
     serviceConfig = {
@@ -397,6 +403,29 @@
           echo "channel-archive: stopped at the first already-archived video (--break-on-existing)"
         fi
         rc=0
+      fi
+
+      # An age-restricted video cannot be fetched without cookies, which this
+      # module does not supply, so it fails identically on every run and
+      # --abort-on-error stops the listing there -- everything older than it is
+      # never reached. Record it in archive.txt so the next run steps past it,
+      # and in age-restricted.txt so what was skipped stays discoverable.
+      # Delete its archive.txt line to retry it once cookies exist.
+      if [ "$rc" -ne 0 ]; then
+        ${pkgs.gnugrep}/bin/grep -oP '^ERROR: \[youtube\] \K[A-Za-z0-9_-]{11}(?=: Sign in to confirm your age)' "$out" \
+          | ${pkgs.coreutils}/bin/sort -u > "$out.age" || true
+        if [ -s "$out.age" ]; then
+          while read -r id; do
+            echo "channel-archive: $id is age-restricted (needs cookies); recording it in archive.txt so later runs skip it"
+            echo "youtube $id" >> ${lib.escapeShellArg "${ch.destination}/archive.txt"}
+            echo "$id" >> ${lib.escapeShellArg "${ch.destination}/age-restricted.txt"}
+            ${lib.optionalString (cfg.alertUser != null) ''
+        echo "$(${pkgs.coreutils}/bin/date -R): ${name} skipped age-restricted $id (needs cookies)" >> /var/lib/channel-archive-alerts/notices 2>/dev/null || true
+      ''}
+          done < "$out.age"
+          rc=0
+        fi
+        ${pkgs.coreutils}/bin/rm -f "$out.age"
       fi
 
       if ${pkgs.gnugrep}/bin/grep -qiE '${blockPattern}' "$out"; then
