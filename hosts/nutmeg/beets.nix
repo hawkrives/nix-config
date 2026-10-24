@@ -244,6 +244,24 @@
     fi
   '';
 in {
+  # requests-ratelimiter (a beets dependency) has a timing-sensitive test:
+  # test_custom_bucket expects the 6th request through a shared SQLite bucket
+  # to sleep, but on a loaded builder the 1s window elapses first and it never
+  # does. Not a real failure, and it blocks the whole system build.
+  nixpkgs.overlays = [
+    (_: prev: {
+      pythonPackagesExtensions =
+        prev.pythonPackagesExtensions
+        ++ [
+          (_: pyPrev: {
+            requests-ratelimiter = pyPrev.requests-ratelimiter.overridePythonAttrs (old: {
+              disabledTests = (old.disabledTests or []) ++ ["test_custom_bucket"];
+            });
+          })
+        ];
+    })
+  ];
+
   users.groups.beets = {};
   users.users.beets = {
     isSystemUser = true;

@@ -216,6 +216,7 @@
     less.enable = true;
     jq.enable = true;
     nushell.enable = true;
+    nushell.loadSessionVariables = true;
     nushell.plugins = [
       pkgs.nushellPlugins.query
       pkgs.nushellPlugins.formats

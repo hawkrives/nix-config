@@ -1,7 +1,7 @@
 {config, ...}: let
   # vpn-confinement derives both the namespace unit and its interface names from
   # this string: the bridge is <ns>-br and its host-side port veth-<ns>-br. The
-  # avahi denyInterfaces below depends on that, so keep them deriving from one
+  # avahi deny-interfaces below depends on that, so keep them deriving from one
   # source rather than three literals that can drift apart.
   ns = "airvpn";
 in {
@@ -36,7 +36,7 @@ in {
   # mDNS (qBittorrent/slskd are reached by IP at 192.168.15.1), so this is free.
   # NOTE: this is a blocklist -- a future netns or podman bridge would need
   # adding here too. slskd.nix also names this namespace literally.
-  services.avahi.denyInterfaces = [
+  services.avahi.settings.server.deny-interfaces = [
     "${ns}-br"
     "veth-${ns}-br"
   ];

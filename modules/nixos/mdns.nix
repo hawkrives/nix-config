@@ -8,11 +8,12 @@
 }: let
   avahiCfg = config.services.avahi;
 
-  # avahi publishes services.avahi.hostName when it's set and falls back to the
-  # system hostname otherwise. Bake the static name in if there is one, so the
-  # check compares against what avahi will actually claim rather than a guess.
-  staticName = avahiCfg.hostName;
-  domain = avahiCfg.domainName;
+  # avahi publishes settings.server.host-name when it's set (nixpkgs defaults it
+  # to networking.hostName) and falls back to the system hostname otherwise.
+  # Bake the static name in if there is one, so the check compares against what
+  # avahi will actually claim rather than a guess.
+  staticName = toString avahiCfg.settings.server.host-name;
+  domain = avahiCfg.settings.server.domain-name;
 
   nameCheck = pkgs.writeShellApplication {
     name = "avahi-name-check";
@@ -132,13 +133,16 @@ in {
     enable = true;
     nssmdns4 = true; # resolve *.local A (IPv4) records via getaddrinfo/NSS
     nssmdns6 = true; # also resolve *.local AAAA (IPv6) records via NSS
-    publish = {
-      enable = true;
-      addresses = true; # advertise this host's A record (<hostname>.local)
+    # nixpkgs only writes this when services.avahi.wideArea is true, and avahi's
+    # own default is "yes" -- which is the CVE-2024-52615 surface. Pin it off.
+    settings.wide-area.enable-wide-area = false;
+    settings.publish = {
+      disable-publishing = false;
+      publish-addresses = true; # advertise this host's A record (<hostname>.local)
       # register a mDNS HINFO record which contains information about the local operating system and CPU
-      hinfo = true;
+      publish-hinfo = true;
       # Needed to allow samba to automatically register mDNS records, without the need for an `extraServiceFile`
-      userServices = true;
+      disable-user-service-publishing = false;
     };
     openFirewall = true; # mDNS UDP 5353
   };
