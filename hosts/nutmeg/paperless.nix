@@ -1,10 +1,21 @@
-{config, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   # Superuser password is decrypted to /run/agenix/paperless-admin-pass and read
   # by systemd LoadCredential (as root) when starting the paperless service.
   age.secrets.paperless-admin-pass.file = ../../secrets/paperless-admin-pass.age;
 
   services.paperless = {
     enable = true;
+    # test_ignores_event_for_already_queued_file gives the file watcher only 2s
+    # to queue a copied file; on a loaded builder it misses that window and the
+    # whole system build fails. Same shape as the watcher test nixpkgs already
+    # skips as flaky.
+    package = pkgs.paperless-ngx.overrideAttrs (old: {
+      disabledTests = (old.disabledTests or []) ++ ["test_ignores_event_for_already_queued_file"];
+    });
     passwordFile = config.age.secrets.paperless-admin-pass.path;
 
     domain = "paperless.vaquita-woodpecker.ts.net";
