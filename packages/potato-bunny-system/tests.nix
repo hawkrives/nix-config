@@ -192,6 +192,14 @@
         d="$ROOT/sched"
         mkdir -p "$d"
         id=$($jq -r '.id // empty' <<<"$obj")
+        # Like DSM, v4 create/set refuse a schedule without monthly_week.
+        case "$method" in create | set)
+          if ! $jq -e '.schedule | has("monthly_week")' <<<"$obj" >/dev/null; then
+            echo "synowebapi $api $method refused" >> "$ROOT/calls"
+            echo '{"error":{"code":4800,"errors":{"msg":"monthly_week expected for v4"}},"success":false}'
+            exit 0
+          fi ;;
+        esac
         case "$method" in
           list)
             echo "synowebapi $api list" >> "$ROOT/calls"

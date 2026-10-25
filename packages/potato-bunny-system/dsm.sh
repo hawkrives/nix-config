@@ -308,7 +308,8 @@ dsm_scheduled_tasks() {
       owner='"root"'
       enable="$(jq -c .enable <<<"$want")"
       extra="$(jq -c .extra <<<"$want")"
-      schedule="$(jq -c --arg d "$today" '.schedule + {repeat_date: 1001, date: $d}' <<<"$want")"
+      # DSM's v4 set/create require monthly_week, empty for weekly schedules.
+      schedule="$(jq -c --arg d "$today" '.schedule + {repeat_date: 1001, date: $d, monthly_week: []}' <<<"$want")"
     )
     if [ -z "$id" ]; then
       dsm_change "create scheduled task \"$task\"" \
