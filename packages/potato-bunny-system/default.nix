@@ -15,6 +15,12 @@
 {pkgs, ...}: let
   inherit (pkgs) lib;
 
+  activateScript = pkgs.writeShellApplication {
+    name = "potato-bunny-activate";
+    runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils];
+    text = builtins.readFile ./activate.sh;
+  };
+
   mkGeneration = modules: let
     evaluated = lib.evalModules {modules = [./options.nix] ++ modules;};
     cfg = evaluated.config;
@@ -58,11 +64,6 @@
           name = "potato-bunny-default-profile";
           paths = [checked.nix.package] ++ checked.profileExtra;
         };
-
-    activate = pkgs.writeShellScript "activate" ''
-      echo "activate: not implemented" >&2
-      exit 1
-    '';
   in
     pkgs.runCommand "potato-bunny-system" {passthru.config = checked;} ''
       mkdir -p $out/etc $out/units $out/wants $out/bin
@@ -82,7 +83,11 @@
       cp ${usersJson} $out/users.json
       printf '%s\n' ${lib.escapeShellArgs restartExempt} | sed '/^$/d' > $out/restart-exempt
       ${lib.optionalString (defaultProfile != null) "ln -s ${defaultProfile} $out/default-profile"}
-      ln -s ${activate} $out/bin/activate
+      cat > $out/bin/activate <<EOF
+      #!${pkgs.runtimeShell}
+      exec ${lib.getExe activateScript} --generation $out "\$@"
+      EOF
+      chmod +x $out/bin/activate
     '';
 
   tests = import ./tests.nix {inherit pkgs mkGeneration;};
