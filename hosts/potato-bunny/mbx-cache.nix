@@ -152,6 +152,7 @@ in {
     [Unit]
     Description=Publish mbx-cache on the tailnet (:8443)
     OnFailure=notify-failure@%n.service
+    Wants=nix-tailscaled.service
     After=mbx-cache.service nix-tailscaled.service network-online.target
 
     [Service]

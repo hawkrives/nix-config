@@ -1327,6 +1327,8 @@ in {
     jq -e '."tailscale update".enable == false and ."tailscale tunnel".enable == false' $g/dsm-tasks.json >/dev/null || fail "package tasks still enabled"
     serve=$(sed -n 's/^ExecStart=//p' $g/units/mbx-cache-serve.service)
     ! grep -q '/var/packages/Tailscale' $serve || fail "serve still uses the Synology CLI"
+    # activate starts units one at a time, so After= alone doesn't hold at boot.
+    grep -qx 'Wants=nix-tailscaled.service' $g/units/mbx-cache-serve.service || fail "serve doesn't pull in nix-tailscaled"
     [ -x $g/default-profile/bin/tailscale ] || fail "no tailscale CLI on root's PATH"
   '';
 
