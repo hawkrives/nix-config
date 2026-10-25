@@ -11,7 +11,7 @@
 # "no DSM changes", and changes nothing at all.
 #
 # --root prefixes every filesystem path (the tests use a scratch root). DSM's
-# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI, SYNOPKG and
+# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI, SYNOPKG, ID, CHOWN and
 # NIX_ENV, and the daemon health probe from DAEMON_PROBE, so the tests can
 # stub them.
 #
@@ -49,6 +49,8 @@ SYSTEMCTL=${SYSTEMCTL:-/usr/bin/systemctl}
 SYNOUSER=${SYNOUSER:-/usr/syno/sbin/synouser}
 SYNOGROUP=${SYNOGROUP:-/usr/syno/sbin/synogroup}
 SYNOWEBAPI=${SYNOWEBAPI:-/usr/syno/bin/synowebapi}
+ID=${ID:-id}
+CHOWN=${CHOWN:-chown}
 SYNOPKG=${SYNOPKG:-/usr/syno/bin/synopkg}
 NIX_ENV=${NIX_ENV:-nix-env}
 DAEMON_PROBE=${DAEMON_PROBE:-}
@@ -328,6 +330,29 @@ while IFS= read -r user; do
     [ -n "$group" ] && add_member "$group" "$user"
   done < <(jq -r --arg u "$user" '.users[$u].extraGroups[]' "$GEN/users.json")
 done < <(jq -r '.users | keys[]' "$GEN/users.json")
+
+# authorized_keys for accounts that declare them: exactly the declared lines,
+# rewritten only when they differ. DSM keeps homes under /var/services/homes.
+while IFS= read -r user; do
+  [ -n "$user" ] || continue
+  if ! uid=$("$ID" -u "$user" 2>/dev/null) || [ -z "$uid" ]; then
+    log "warning: no uid for $user; not writing its authorized_keys"
+    continue
+  fi
+  home=$ROOT/var/services/homes/$user
+  keys=$home/.ssh/authorized_keys
+  mkdir -p "$home/.ssh"
+  chmod 0700 "$home/.ssh"
+  want=$(jq -r --arg u "$user" '.users[$u].authorizedKeys[]' "$GEN/users.json")
+  if [ "$(cat "$keys" 2>/dev/null)" != "$want" ]; then
+    log "writing $user's authorized_keys"
+    tmp=$(mktemp "$keys.XXXXXX")
+    printf '%s\n' "$want" >"$tmp"
+    chmod 0600 "$tmp"
+    mv -f "$tmp" "$keys"
+  fi
+  "$CHOWN" "$uid:100" "$home" "$home/.ssh" "$keys"
+done < <(jq -r '.users | to_entries[] | select((.value.authorizedKeys // []) | length > 0) | .key' "$GEN/users.json")
 
 # ---------------------------------------------------------------- DSM tasks
 

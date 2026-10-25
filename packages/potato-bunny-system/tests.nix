@@ -246,6 +246,15 @@
     esac
   '';
 
+  # Accounts all have uid 1234; chown only logs (the sandbox can't chown).
+  idStub = pkgs.writeShellScript "id" ''
+    [ "$1" = -u ] || exit 2
+    grep -qx "$2" "$ROOT/known-users" && echo 1234
+  '';
+  chownStub = pkgs.writeShellScript "chown" ''
+    echo "chown $*" >> "$ROOT/calls"
+  '';
+
   # A scenario: fresh scratch root with DSM-owned fixtures, then `script`,
   # which calls `run <generation>` one or more times.
   scenario = name: script:
@@ -264,7 +273,7 @@
       printf '[Service]\nExecStart=/usr/lib/systemd/systemd --user\n' > "$ROOT/usr/lib/systemd/system/user@.service"
 
       export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub} SYNOWEBAPI=${synowebapiStub} SYNOPKG=${synopkgStub}
-      export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1
+      export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1 ID=${idStub} CHOWN=${chownStub}
       run() { : > $ROOT/calls; "$1/bin/activate" --root "$ROOT"; }
       called() { grep -qx -- "$1" $ROOT/calls; }
       called_matching() { grep -q -- "$1" $ROOT/calls; }
@@ -514,6 +523,17 @@
         };
       }
     ];
+  genKeys = keys:
+    mkGeneration [
+      {
+        users.users.svc-cache = {
+          description = "cache";
+          authorizedKeys = keys;
+        };
+      }
+    ];
+  keyA = "restrict,command=\"/x --stdio\" ssh-ed25519 AAAAA host-a";
+  keyB = "restrict,command=\"/x --stdio\" ssh-ed25519 BBBBB host-b";
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -993,6 +1013,32 @@ in {
     ${genShare 500000}/bin/activate --root "$ROOT" --dry-run > out
     grep -qx 'would: create share mbx-cache on /volume2' out || fail "share not shown: $(cat out)"
     [ ! -e $ROOT/shares/mbx-cache.json ] || fail "dry run created the share"
+  '';
+
+  authorized-keys-written = scenario "authorized-keys-written" ''
+    run ${genKeys [keyA keyB]}
+    f=$ROOT/var/services/homes/svc-cache/.ssh/authorized_keys
+    printf '%s\n' ${pkgs.lib.escapeShellArg keyA} ${pkgs.lib.escapeShellArg keyB} > want
+    cmp -s want $f || fail "content: $(cat $f)"
+    [ "$(stat -c %a $f)" = 600 ] || fail "file mode $(stat -c %a $f)"
+    [ "$(stat -c %a $(dirname $f))" = 700 ] || fail "dir mode"
+    called_matching "^chown 1234:100 .*/svc-cache .*/.ssh $f\$" || fail "not chowned to the account: $(cat $ROOT/calls)"
+  '';
+
+  authorized-keys-idempotent = scenario "authorized-keys-idempotent" ''
+    run ${genKeys [keyA]}
+    f=$ROOT/var/services/homes/svc-cache/.ssh/authorized_keys
+    touch -d '2001-01-01' $f
+    run ${genKeys [keyA]}
+    [ "$(stat -c %Y $f)" = "$(date -d 2001-01-01 +%s)" ] || fail "unchanged file rewritten"
+  '';
+
+  authorized-keys-replaced = scenario "authorized-keys-replaced" ''
+    run ${genKeys [keyA keyB]}
+    run ${genKeys [keyB]}
+    f=$ROOT/var/services/homes/svc-cache/.ssh/authorized_keys
+    ! grep -q AAAAA $f || fail "removed key still present"
+    grep -q BBBBB $f || fail "kept key missing"
   '';
 
   generation-layout = check "generation-layout" ''

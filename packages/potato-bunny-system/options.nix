@@ -158,6 +158,15 @@ in {
             type = types.listOf types.str;
             default = [];
           };
+          authorizedKeys = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = ''
+              The account's ~/.ssh/authorized_keys, exactly. DSM only gives
+              members of `administrators` a login shell, which a forced command
+              still needs.
+            '';
+          };
         };
       });
       default = {};
