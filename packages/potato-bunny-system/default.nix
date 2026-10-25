@@ -12,7 +12,11 @@
 # Built with lib.evalModules over ./options.nix rather than NixOS or
 # system-manager: DSM owns the rest of the machine, so the layer only
 # describes the handful of things it manages.
-{pkgs, ...}: let
+{
+  pkgs,
+  perSystem,
+  ...
+}: let
   inherit (pkgs) lib;
 
   activateScript = pkgs.writeShellApplication {
@@ -22,7 +26,10 @@
   };
 
   mkGeneration = modules: let
-    evaluated = lib.evalModules {modules = [./options.nix] ++ modules;};
+    evaluated = lib.evalModules {
+      modules = [./options.nix] ++ modules;
+      specialArgs = {inherit pkgs perSystem;};
+    };
     cfg = evaluated.config;
 
     failed = lib.filter (a: !a.assertion) cfg.assertions;
@@ -95,9 +102,11 @@
       chmod +x $out/bin/activate
     '';
 
-  tests = import ./tests.nix {inherit pkgs mkGeneration;};
+  hostGeneration = mkGeneration [../../hosts/potato-bunny/system.nix];
+
+  tests = import ./tests.nix {inherit pkgs mkGeneration hostGeneration;};
 in
-  pkgs.emptyDirectory.overrideAttrs {
-    passthru = {inherit tests mkGeneration;};
+  hostGeneration.overrideAttrs (old: {
+    passthru = old.passthru // {inherit tests mkGeneration;};
     meta.platforms = ["x86_64-linux"];
-  }
+  })

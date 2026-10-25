@@ -7,6 +7,7 @@
 {
   pkgs,
   mkGeneration,
+  hostGeneration,
 }: let
   check = name: script:
     pkgs.runCommand "potato-bunny-system-${name}" {nativeBuildInputs = [pkgs.jq];} ''
@@ -173,6 +174,24 @@
   installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
   installerSocket = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.socket";
 in {
+  host-config = check "host-config" ''
+    g=${hostGeneration}
+    grep -qx 'trusted-users = root hawken' $g/etc/nix/nix.conf || fail "trusted-users"
+    grep -qx 'build-users-group = nixbld' $g/etc/nix/nix.conf || fail "build-users-group"
+    grep -qx 'sandbox = true' $g/etc/nix/nix.conf || fail "sandbox"
+    ! grep -q filter-syscalls $g/etc/nix/nix.conf || fail "filter-syscalls is unknown to Lix"
+    grep -q 'lix-2.96.0/bin/nix-daemon --daemon' $g/units/nix-daemon.service || fail "daemon ExecStart"
+    [ -L $g/default-profile ] && [ -x $g/default-profile/bin/nix-env ] || fail "default profile lacks nix-env"
+    [ -e $g/default-profile/etc/ssl/certs/ca-bundle.crt ] || fail "default profile lacks cacert"
+    [ -f $g/units/user-runtime-dir-1027.service ] || fail "runtime dir unit"
+    grep -q '/run/user/1027' $g/units/user-runtime-dir-1027.service || fail "runtime dir path"
+    grep -q 'XDG_RUNTIME_DIR=/run/user/1027' "$g/units/user@1027.service.d/nix-system.conf" || fail "user@1027 drop-in"
+    grep -q 'Requires=user-runtime-dir-1027.service' "$g/units/user@1027.service.d/nix-system.conf" || fail "user@1027 requires runtime dir"
+    [ -e "$g/wants/multi-user.target/user@1027.service" ] || fail "user@1027 not wanted at boot"
+    jq -e '.groups.nixbld | length == 32' $g/users.json >/dev/null || fail "nixbld members"
+    grep -q "$g/default-profile/bin/nix-env" $g/bin/activate || fail "activate does not default to its own nix-env"
+  '';
+
   assertions-reject = assert rejects [{environment.etc."passwd".text = "";}];
   assert rejects [{environment.etc."nix/../shadow".text = "";}];
   assert rejects [{environment.etc."nix//x".text = "";}];

@@ -5,6 +5,7 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }: let
   inherit (lib) mkOption types;
@@ -127,4 +128,32 @@ in {
       message = "systemd.units.\"${name}\": must be a unit name or one drop-in (\"foo.service.d/bar.conf\").";
     })
     config.systemd.units;
+
+  # A systemd user manager per home user, running from boot. DSM's PAM stack has
+  # no pam_systemd, so nothing creates /run/user/<uid> or sets
+  # XDG_RUNTIME_DIR; without both, user@<uid>.service exits immediately.
+  config.systemd.units = lib.mkMerge (lib.mapAttrsToList (name: u: let
+      uid = toString u.uid;
+    in {
+      "user-runtime-dir-${uid}.service".text = ''
+        [Unit]
+        Description=Runtime directory for ${name}
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=${pkgs.coreutils}/bin/install -d -m 0700 -o ${uid} -g 100 /run/user/${uid}
+      '';
+      "user@${uid}.service.d/nix-system.conf".text = ''
+        [Unit]
+        Requires=user-runtime-dir-${uid}.service
+        After=user-runtime-dir-${uid}.service
+
+        [Service]
+        Environment=XDG_RUNTIME_DIR=/run/user/${uid}
+      '';
+    })
+    config.homeUsers);
+  config.systemd.extraWants."multi-user.target" =
+    lib.mapAttrsToList (_: u: "user@${toString u.uid}.service") config.homeUsers;
 }
