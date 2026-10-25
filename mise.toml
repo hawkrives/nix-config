@@ -17,9 +17,6 @@ env.ACTION = "switch"
 [tasks."Techcyte-DGQJV434PF"]
 run = 'nh darwin ${ACTION} --hostname "$MISE_TASK_NAME" .'
 
-[tasks."potato-bunny"]
-run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
-
 [tasks."nutmeg"]
 run = 'nh os ${ACTION} --hostname "$MISE_TASK_NAME" .'
 
@@ -53,3 +50,13 @@ if [ "$(hostname)" = nutmeg ]; then
 fi
 exec ssh nutmeg channel-archive-status "$@"
 '''
+
+# potato-bunny is a Synology, not NixOS: these deploy its system layer
+# (hosts/potato-bunny/system.nix) and hawken's home-manager. Same :ask / :yes
+# split as above, for the same reason.
+
+[tasks."potato-bunny:ask"]
+run = 'scripts/deploy-potato-bunny.sh --ask'
+
+[tasks."potato-bunny:yes"]
+run = 'scripts/deploy-potato-bunny.sh'
