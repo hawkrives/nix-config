@@ -25,11 +25,10 @@
 #   back (unit link and /etc/nix) if it doesn't answer. Never removed.
 # - Accounts: only through synouser/synogroup; users and members are only ever
 #   added. passwd, group and shadow are never opened.
-# - DSM boot-up/shutdown tasks: created and updated through DSM's own
-#   EventScheduler API (what its UI uses); never deleted.
-# - DSM packages, feeds, settings and scheduled tasks (dsm.sh): only what is
-#   declared; nothing is ever uninstalled or deleted. A failure there is
-#   reported and the rest still applies; activate then exits non-zero.
+# - DSM tasks, packages, feeds and settings (dsm.sh): only what is declared,
+#   through DSM's own tools and APIs; nothing is ever uninstalled or
+#   deleted. A failure there is reported and the rest (units included) still
+#   applies; activate then exits non-zero.
 
 GEN=""
 ROOT=""

@@ -114,7 +114,8 @@
   # DSM's web APIs, by api:
   # - SYNO.Core.EventScheduler (boot-up/shutdown tasks): tasks live in
   #   $ROOT/tasks/<name>.json as the "data" object get returns; a missing task
-  #   gets success with no data. Logged as "synowebapi <method> <name>".
+  #   gets success with no data; fails while $ROOT/event-fail exists. Logged
+  #   as "synowebapi <method> <name>".
   # - SYNO.Core.Package.Feed: $ROOT/feeds.json, an array of {name, feed}.
   # - SYNO.Core.TaskScheduler(.Root): scheduled tasks (see below).
   # - Any other api: a settings object (see below).
@@ -136,6 +137,7 @@
     done
     case "$api" in
       SYNO.Core.EventScheduler)
+        [ ! -e "$ROOT/event-fail" ] || exit 1
         echo "synowebapi $method $name" >> "$ROOT/calls"
         f="$ROOT/tasks/$name.json"
         case "$method" in
@@ -448,6 +450,29 @@
       };
     }
   ];
+  genSchedDays = mkGeneration [
+    {
+      dsm.tasks.t = {
+        event = "schedule";
+        script = "x";
+        schedule = {
+          weekDays = [1 0];
+          hour = 0;
+          minute = 0;
+        };
+      };
+    }
+  ];
+  genSmbTypo = mkGeneration [{dsm.services.smb.settings.smb_max_protcol = 3;}];
+  genTaskAndA = mkGeneration [
+    {
+      systemd.units."a.service" = unit "[Service]\nExecStart=/bin/a\n";
+      dsm.tasks."HDD db" = {
+        event = "bootup";
+        script = "x";
+      };
+    }
+  ];
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -579,6 +604,8 @@ in {
   assert !(rejects [{users.users.svc-plex = {};}]);
   assert rejects [{dsm.services.ssh.enable = false;}];
   assert rejects [{dsm.services.ssh.settings.enable_ssh = false;}];
+  assert rejects [{dsm.services.x.enable = true;}];
+  assert !(rejects [{dsm.services.smb.enable = true;}]);
   assert !(rejects [{dsm.services.ssh.enable = true;}]);
   # DSM's get returns these as [{name, in_use, ...}] but set takes plain name
   # lists, so a declared value could never compare equal.
@@ -739,6 +766,7 @@ in {
   '';
 
   settings-idempotent = scenario "settings-idempotent" ''
+    mkdir -p $ROOT/settings && echo '{"smb_max_protocol": 2, "workgroup": "W"}' > $ROOT/settings/SYNO.Core.FileServ.SMB.json
     run ${genSmb}
     run ${genSmb}
     ! called "synowebapi SYNO.Core.FileServ.SMB set" || fail "unchanged settings set again"
@@ -754,6 +782,7 @@ in {
 
   # Values compare as JSON, so lists and objects don't look changed every run.
   settings-list-values = scenario "settings-list-values" ''
+    mkdir -p $ROOT/settings && echo '{"items": []}' > $ROOT/settings/SYNO.Test.List.json
     run ${genListSetting}
     called "synowebapi SYNO.Test.List set" || fail "not set"
     run ${genListSetting}
@@ -860,6 +889,29 @@ in {
     boot=$(grep -n 'sudo bash -s' calls | cut -d: -f1)
     act=$(grep -n '/nix/store/sys/bin/activate' calls | cut -d: -f1)
     [ -n "$boot" ] && [ "$boot" -lt "$act" ] || fail "boot task not synced before activate: $(cat calls)"
+  '';
+
+  # DSM keeps week days sorted; declared order doesn't matter.
+  sched-weekdays-order = scenario "sched-weekdays-order" ''
+    run ${genSchedDays}
+    jq -e '.schedule.week_day == "0,1"' $ROOT/sched/*.json >/dev/null || fail "week_day: $(cat $ROOT/sched/*.json)"
+    run ${genSchedDays}
+    ! called_matching 'TaskScheduler.* set' || fail "re-set every run"
+  '';
+
+  # A declared key DSM doesn't have is a mistake to report, not to send forever.
+  settings-unknown-key = scenario "settings-unknown-key" ''
+    mkdir -p $ROOT/settings
+    echo '{"smb_max_protocol": 3}' > $ROOT/settings/SYNO.Core.FileServ.SMB.json
+    if run ${genSmbTypo}; then fail "unknown key accepted"; fi
+    ! called "synowebapi SYNO.Core.FileServ.SMB set" || fail "unknown key sent"
+  '';
+
+  # DSM's API failing for a boot-up task doesn't keep the units down.
+  tasks-get-failure = scenario "tasks-get-failure" ''
+    touch $ROOT/event-fail
+    if run ${genTaskAndA}; then fail "activate succeeded although DSM failed"; fi
+    called "systemctl start a.service" || fail "a.service not started: $(cat $ROOT/calls)"
   '';
 
   generation-layout = check "generation-layout" ''

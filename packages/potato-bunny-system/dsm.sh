@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=SC2016 # jq filters reference $vars passed with --arg
 # DSM reconcile steps for activate.sh, which this file is concatenated ahead
 # of: function definitions only. They read activate's globals (GEN,
-# DRY_RUN, SYNOWEBAPI, SYNOPKG) and its log/die helpers.
+# DRY_RUN, SYNOWEBAPI, SYNOPKG) and its log helper.
 #
 # Every change goes through dsm_change, so a dry run prints exactly what a
 # real run would do and changes nothing. Nothing here uninstalls a package or
@@ -43,7 +43,8 @@ webapi_ok() {
 # ---------------------------------------------------------------- boot-up/shutdown tasks
 
 # DSM Task Scheduler boot-up/shutdown tasks, through the EventScheduler API
-# (what DSM's UI uses). Scheduled tasks are dsm_scheduled_tasks'.
+# (what DSM's UI uses). Scheduled tasks are dsm_scheduled_tasks'. These run
+# before units start, at boot too, so a failure is recorded, not fatal.
 dsm_event_tasks() {
   local task want name_json have method args key
   while IFS= read -r task; do
@@ -55,8 +56,11 @@ dsm_event_tasks() {
         depend_on_task: (if .dependsOn == null then "" else "[" + .dependsOn + "]" end)
       }' "$GEN/dsm-tasks.json")
     name_json=$(jq -n --arg t "$task" '$t')
-    have=$(webapi SYNO.Core.EventScheduler 1 get task_name="$name_json" |
-      jq -c '.data // empty | {event, operation, enable, notify_enable, notify_if_error, notify_mail, owner, depend_on_task}')
+    if ! have=$(webapi SYNO.Core.EventScheduler 1 get task_name="$name_json") || ! jq -e .success <<<"$have" >/dev/null; then
+      dsm_fail "reading DSM task \"$task\""
+      continue
+    fi
+    have=$(jq -c '.data // empty | {event, operation, enable, notify_enable, notify_if_error, notify_mail, owner, depend_on_task}' <<<"$have")
     [ "$have" = "$want" ] && continue
     if [ -z "$have" ]; then method="create"; else method="set"; fi
     args=(task_name="$name_json" operation_type='"script"')
@@ -66,7 +70,7 @@ dsm_event_tasks() {
       args+=("$key=$(jq -c --arg k "$key" '.[$k]' <<<"$want")")
     done < <(jq -r 'keys[]' <<<"$want")
     dsm_change "$method DSM task \"$task\"" webapi_ok SYNO.Core.EventScheduler 1 "$method" "${args[@]}" ||
-      die "DSM refused to $method task \"$task\""
+      dsm_fail "DSM refused to $method task \"$task\""
   done < <(jq -r 'to_entries[] | select(.value.event != "schedule") | .key' "$GEN/dsm-tasks.json")
 }
 
@@ -144,10 +148,17 @@ dsm_run_state() {
 # (compared as JSON), send one set with every declared key. Keys not declared
 # are never sent.
 dsm_settings() {
-  local name api version have changes line key args
+  local name api version have unknown changes line key args
   while IFS=$'\t' read -r name api version; do
     if ! have=$(webapi "$api" "$version" get) || ! jq -e .success <<<"$have" >/dev/null; then
       dsm_fail "reading $name settings ($api)"
+      continue
+    fi
+    # A declared key DSM doesn't return is most likely a typo; sending it would
+    # repeat on every deploy without changing anything.
+    unknown=$(jq -r --arg n "$name" --argjson have "$have" '[.[$n].settings | keys[] | select(. as $k | $have.data | has($k) | not)] | join(", ")' "$GEN/dsm-services.json")
+    if [ -n "$unknown" ]; then
+      dsm_fail "$name settings: $api has no $unknown"
       continue
     fi
     changes=$(jq -r --arg n "$name" --argjson have "$have" '.[$n].settings | to_entries[]
@@ -188,7 +199,7 @@ dsm_scheduled_tasks() {
         enable, owner: "root",
         extra: {script: .script, notify_enable: .notifyOnError, notify_if_error: .notifyOnError, notify_mail: .notifyMail},
         schedule: {
-          date_type: 0, week_day: ($s.weekDays | map(tostring) | join(",")),
+          date_type: 0, week_day: ($s.weekDays | unique | map(tostring) | join(",")),
           hour: $s.hour, minute: $s.minute,
           repeat_hour: ($s.repeatHours // 0), repeat_min: ($s.repeatMinutes // 0),
           last_work_hour: (if $s.repeatHours == null and $s.repeatMinutes == null then $s.hour else $s.lastHour end)

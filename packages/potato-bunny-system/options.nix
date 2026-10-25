@@ -283,6 +283,11 @@ in {
       message = "dsm.services.${name}: settings need a settingsApi to send them to.";
     })
     config.dsm.services
+    ++ lib.mapAttrsToList (name: s: {
+      assertion = s.enable == null || s.package != null || enableSetting ? ${name};
+      message = "dsm.services.${name}: enable needs a package to install and run (or a built-in on/off setting).";
+    })
+    config.dsm.services
     # Deploys run over ssh.
     ++ lib.optional (config.dsm.services ? ssh) {
       assertion = config.dsm.services.ssh.enable != false && (config.dsm.services.ssh.settings.enable_ssh or true) != false;
