@@ -20,6 +20,7 @@
     # configuration
     ./hardware.nix
     ./crash-diagnostics.nix
+    ./ssd-writes.nix
 
     # modules
     ./adguard.nix
