@@ -349,11 +349,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1785828668,
-        "narHash": "sha256-VFlH/0nM6kkWQox9IaTqx2eCT3pmkr8bB7iVZ1bkaLs=",
-        "rev": "e72e4f299401a3689d4b3d5fc6496b11db7064eb",
+        "lastModified": 1792502884,
+        "narHash": "sha256-ij8QUxzTOHovLrNOxVRx+RAhGQFOMsJbji0veiatH5k=",
+        "rev": "02c087f3fe673c9e317f206a627cb6b910336dbe",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.11pre1047536.e72e4f299401/nixexprs.tar.xz?lastModified=1785828668&rev=e72e4f299401a3689d4b3d5fc6496b11db7064eb"
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.11pre1097682.02c087f3fe67/nixexprs.tar.xz?lastModified=1792502884&rev=02c087f3fe673c9e317f206a627cb6b910336dbe"
       },
       "original": {
         "type": "tarball",
@@ -399,11 +399,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1792814517,
-        "narHash": "sha256-pKDCuYsdUqlDLJq0SOxB8RP6oYXm3q0Nm19faNxtva4=",
+        "lastModified": 1792894203,
+        "narHash": "sha256-0KOv1M/Oj7cbf80ipsVSVY15U4WJpqyvwC5WrQILToo=",
         "ref": "refs/heads/main",
-        "rev": "db56f4257d657e732c74102fa92a5554bf7174d8",
-        "revCount": 386,
+        "rev": "f4494cd9b94c9898d26d53b03ffff7c179162a03",
+        "revCount": 413,
         "type": "git",
         "url": "https://github.com/hawkrives/slime2-twitch-chat"
       },
