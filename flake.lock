@@ -261,6 +261,27 @@
         "type": "github"
       }
     },
+    "mr-boxington": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792751030,
+        "narHash": "sha256-GJA/+e5UX3M+d91hb15mW4euuUdtHudJaE59iMs1I1g=",
+        "owner": "jdx",
+        "repo": "mr-boxington",
+        "rev": "5a50200abf386580642b87eca2995156316b56a7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jdx",
+        "ref": "v1.27.0",
+        "repo": "mr-boxington",
+        "type": "github"
+      }
+    },
     "nix-darwin": {
       "inputs": {
         "nixpkgs": [
@@ -371,6 +392,7 @@
         "hardware": "hardware",
         "home-manager": "home-manager",
         "micasa": "micasa",
+        "mr-boxington": "mr-boxington",
         "nix-darwin": "nix-darwin",
         "nix-minecraft": "nix-minecraft",
         "nixpkgs": "nixpkgs_2",

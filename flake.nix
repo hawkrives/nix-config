@@ -62,6 +62,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    mr-boxington = {
+      # mbx, the Rust build cache (modules/home/mbx-shared.nix). Pinned to a tag
+      # so it moves together with the cache server on pantry
+      # (packages/mbx-cache.nix): both sides of the protocol are experimental.
+      url = "github:jdx/mr-boxington/v1.27.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     t2fanrd = {
       # Fan-control daemon for T2 Macs (bigpond). Staged but NOT yet imported —
       # deferred until a nixpkgs update fixes its crates.io cargo-vendor fetch

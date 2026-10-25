@@ -13,9 +13,13 @@
   config,
   lib,
   pkgs,
+  perSystem,
   ...
 }: let
   cfg = config.mbx;
+
+  # Pinned to the same release as the cache server; see flake.nix.
+  mbx = perSystem.mr-boxington.mbx;
 
   configText = (pkgs.formats.toml {}).generate "mbx-config.toml" {
     remote = {
@@ -49,18 +53,15 @@ in {
 
   config = lib.mkMerge [
     {
-      # mise routes cargo through mbx via the rust tool's mr_boxington option, so
-      # plain `cargo build` keeps working. mise's rust backend drives rustup
-      # (home-shared) for the toolchain itself.
-      programs.mise.globalConfig.tools = {
-        # Pinned so it moves together with the server (packages/mbx-cache.nix):
-        # both sides of the cache protocol are experimental.
-        mr-boxington = "1.27.0";
-        rust = {
-          version = "stable";
-          mr_boxington = true;
-        };
-      };
+      # mbx from Nix rather than mise: mise only installs mbx's prebuilt glibc
+      # binary, which NixOS can't run without nix-ld.
+      home.packages = [mbx];
+
+      # Plain `cargo build` goes through mbx: libexec/mbx/cargo is upstream's
+      # shim, which finds the real cargo (rustup's, from home-shared) further
+      # down PATH and runs it under mbx. mkBefore keeps it ahead of everything
+      # else this config adds to PATH.
+      home.sessionPath = lib.mkBefore ["${mbx}/libexec/mbx"];
     }
     # mbx reads its global config from the platform config dir, which on macOS
     # is not XDG.
