@@ -16,6 +16,11 @@
 # drop this import, deploy.
 {pkgs, ...}: let
   ts = pkgs.tailscale;
+  # On a Synology the CLI looks for the package's socket by default, so every
+  # caller (root's PATH included) goes through this.
+  cli = pkgs.writeShellScriptBin "tailscale" ''
+    exec ${ts}/bin/tailscale --socket=/run/tailscale/tailscaled.sock "$@"
+  '';
   stateDir = "/volume2/@appdata/nix-tailscale";
 
   preStart = pkgs.writeShellScript "nix-tailscaled-pre-start" ''
@@ -33,14 +38,14 @@
   postStart = pkgs.writeShellScript "nix-tailscaled-post-start" ''
     set -euo pipefail
     for _ in $(${pkgs.coreutils}/bin/seq 60); do
-      ${ts}/bin/tailscale status >/dev/null 2>&1 && break
+      ${cli}/bin/tailscale status >/dev/null 2>&1 && break
       ${pkgs.coreutils}/bin/sleep 0.5
     done
-    ${ts}/bin/tailscale set --accept-dns=false
+    ${cli}/bin/tailscale set --accept-dns=false
   '';
 in {
   dsm.services.tailscale.enable = false;
-  profileExtra = [ts];
+  profileExtra = [cli];
 
   systemd.units."nix-tailscaled.service".text = ''
     [Unit]

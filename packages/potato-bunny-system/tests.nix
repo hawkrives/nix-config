@@ -1304,6 +1304,16 @@ in {
     grep -q -- '--port=41641' $u || fail "port"
     grep -q 'TS_DEBUG_FIREWALL_MODE=iptables' $u || fail "firewall mode"
     grep -q 'accept-dns=false' $(sed -n 's/^ExecStartPost=//p' $u) || fail "MagicDNS would rewrite DSM's resolv.conf"
+    # On a Synology the CLI looks for the package's socket unless told otherwise.
+    for s in $(sed -n 's/^ExecStartPost=//p' $u) $(sed -n 's/^ExecStart=//p' $g/units/mbx-cache-serve.service) $g/default-profile/bin/tailscale; do
+      # Each tailscale it calls either gets --socket on that line or is a
+      # wrapper that passes it.
+      for t in $(grep -o '/nix/store/[^/ ]*/bin/tailscale' $s | sort -u); do
+        grep -qF -- "$t --socket=/run/tailscale/tailscaled.sock" $s ||
+          grep -q -- '--socket=/run/tailscale/tailscaled.sock' "$t" ||
+          fail "$s calls $t without the socket"
+      done
+    done
     grep -q 'tailscale-migrate' $(sed -n 's/^ExecStartPre=//p' $u | head -1) || fail "no state migration"
     jq -e '.tailscale.enable == false' $g/dsm-services.json >/dev/null || fail "Synology package not stopped"
     jq -e '."tailscale update".enable == false and ."tailscale tunnel".enable == false' $g/dsm-tasks.json >/dev/null || fail "package tasks still enabled"

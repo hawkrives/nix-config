@@ -80,7 +80,7 @@
   # Never touches another port.
   serve = pkgs.writeShellScript "mbx-cache-serve" ''
     set -euo pipefail
-    ts() { ${pkgs.tailscale}/bin/tailscale "$@"; }
+    ts() { ${pkgs.tailscale}/bin/tailscale --socket=/run/tailscale/tailscaled.sock "$@"; }
     if ts serve status --json | ${pkgs.jq}/bin/jq -e '
         [(.Web // {}) | to_entries[] | select(.key | endswith(":8443")) | .value.Handlers["/"].Proxy]
         | index("http://127.0.0.1:8080") != null' >/dev/null; then
