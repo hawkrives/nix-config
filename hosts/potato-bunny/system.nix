@@ -11,7 +11,7 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
-  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix];
+  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix ./adguard.nix];
 
   nix.package = lix;
   profileExtra = [pkgs.cacert];

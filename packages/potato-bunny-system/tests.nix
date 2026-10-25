@@ -1243,14 +1243,22 @@ in {
     done
   '';
 
+  # A unit body indented by a stray line in its Nix string still loads, but
+  # every check that greps for a whole line misses it.
+  units-not-indented = check "units-not-indented" ''
+    for u in ${hostGeneration}/units/*; do
+      ! grep -q '^[[:space:]]\+[^[:space:]]' $u || fail "$u has indented lines"
+    done
+  '';
+
   nas-units-guarded = check "nas-units-guarded" ''
     u=${hostGeneration}/units
-    for n in nix-postgresql mbx-cache mbx-cache-evict beszel-hub uptime-kuma appdata-backup nix-tsnsrv-beszel nix-tsnsrv-status; do
+    for n in nix-postgresql mbx-cache mbx-cache-evict beszel-hub uptime-kuma appdata-backup adguardhome nix-tsnsrv-beszel nix-tsnsrv-status nix-tsnsrv-ag2; do
       grep -qx 'ConditionPathIsMountPoint=/volume2' $u/$n.service || fail "$n runs without /volume2 mounted"
     done
     pre=$(sed -n 's/^ExecStartPre=//p' $u/nix-postgresql.service)
     ! grep -q 'install -d' $pre || grep -q '/volume2/@appdata ]' $pre || fail "pre-start creates the data dir's parents unchecked"
-    for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg beszel-hub uptime-kuma appdata-backup nix-tsnsrv-beszel nix-tsnsrv-status; do
+    for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg beszel-hub uptime-kuma appdata-backup adguardhome nix-tsnsrv-beszel nix-tsnsrv-status nix-tsnsrv-ag2; do
       grep -qx 'OnFailure=notify-failure@%n.service' $u/$n.service || fail "$n has no failure alert"
     done
   '';
