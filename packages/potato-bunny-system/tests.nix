@@ -1052,12 +1052,16 @@ in {
   '';
 
   authorized-keys-written = scenario "authorized-keys-written" ''
+    # DSM gives new homes an inherited ACL, which its sshd rejects for key
+    # login ("bad ACL permission"); plain 0755, like hawken's, is accepted.
+    mkdir -p $ROOT/var/services/homes/svc-cache && chmod 0711 $ROOT/var/services/homes/svc-cache
     run ${genKeys [keyA keyB]}
     f=$ROOT/var/services/homes/svc-cache/.ssh/authorized_keys
     printf '%s\n' ${pkgs.lib.escapeShellArg keyA} ${pkgs.lib.escapeShellArg keyB} > want
     cmp -s want $f || fail "content: $(cat $f)"
     [ "$(stat -c %a $f)" = 600 ] || fail "file mode $(stat -c %a $f)"
     [ "$(stat -c %a $(dirname $f))" = 700 ] || fail "dir mode"
+    [ "$(stat -c %a $ROOT/var/services/homes/svc-cache)" = 755 ] || fail "home mode $(stat -c %a $ROOT/var/services/homes/svc-cache)"
     called_matching "^chown 1234:100 .*/svc-cache .*/.ssh $f\$" || fail "not chowned to the account: $(cat $ROOT/calls)"
   '';
 

@@ -345,6 +345,9 @@ while IFS= read -r user; do
   home=$ROOT/var/services/homes/$user
   keys=$home/.ssh/authorized_keys
   mkdir -p "$home/.ssh"
+  # DSM creates homes with an inherited ACL, which its sshd refuses for key
+  # login ("bad ACL permission"); chmod replaces it with plain 0755.
+  chmod 0755 "$home"
   chmod 0700 "$home/.ssh"
   want=$(jq -r --arg u "$user" '.users[$u].authorizedKeys[]' "$GEN/users.json")
   if [ "$(cat "$keys" 2>/dev/null)" != "$want" ]; then
