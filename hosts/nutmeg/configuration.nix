@@ -60,6 +60,17 @@
   networking.hostName = hostName; # hostName is detected by Blueprint; defaults to the containing folder's name
 
   services.mbpfan.enable = true; # enable Mac fan control daemon
+
+  # The quad-core i7 in this mini can't shed a sustained all-thread load: the
+  # fan pins at max and the package throttles against its 105 °C TjMax. Cap
+  # builds at ~4 busy threads (2 derivations x 2 cores). Cargo inside Nix
+  # builds follows `cores` via NIX_BUILD_CORES; CARGO_BUILD_JOBS covers cargo
+  # run outside the sandbox.
+  nix.settings = {
+    max-jobs = 2;
+    cores = 2;
+  };
+  environment.variables.CARGO_BUILD_JOBS = "2";
   systemd.coredump.enable = false; # disable core dumps
 
   # ragenix example secret; decrypted to /run/agenix/example at activation via
