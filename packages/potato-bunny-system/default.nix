@@ -26,7 +26,7 @@
   activateScript = pkgs.writeShellApplication {
     name = "potato-bunny-activate";
     runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils pkgs.util-linux];
-    text = builtins.readFile ./activate.sh;
+    text = builtins.readFile ./dsm.sh + builtins.readFile ./activate.sh;
   };
 
   mkGeneration = modules: let

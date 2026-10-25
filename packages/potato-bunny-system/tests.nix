@@ -135,6 +135,22 @@
     esac
   '';
 
+  # Package Center: packages are $ROOT/pkgs/<id>, holding "on" or "off". Any
+  # command on an id with $ROOT/pkg-fail/<id> present fails.
+  synopkgStub = pkgs.writeShellScript "synopkg" ''
+    echo "synopkg $*" >> "$ROOT/calls"
+    id=''${2:-}
+    [ -z "$id" ] || [ ! -e "$ROOT/pkg-fail/$id" ] || exit 1
+    case "$1" in
+      list) [ "$2" = --name ] || exit 2; ls "$ROOT/pkgs" 2>/dev/null || true ;;
+      is_onoff) [ "$(cat "$ROOT/pkgs/$id" 2>/dev/null)" = on ] ;;
+      install_from_server) mkdir -p "$ROOT/pkgs"; echo off > "$ROOT/pkgs/$id" ;;
+      start) [ -e "$ROOT/pkgs/$id" ] && echo on > "$ROOT/pkgs/$id" ;;
+      stop) [ -e "$ROOT/pkgs/$id" ] && echo off > "$ROOT/pkgs/$id" ;;
+      *) echo "synopkg stub: unexpected $*" >&2; exit 2 ;;
+    esac
+  '';
+
   # A scenario: fresh scratch root with DSM-owned fixtures, then `script`,
   # which calls `run <generation>` one or more times.
   scenario = name: script:
@@ -152,7 +168,7 @@
       mkdir -p $ROOT/usr/lib/systemd/system
       printf '[Service]\nExecStart=/usr/lib/systemd/systemd --user\n' > "$ROOT/usr/lib/systemd/system/user@.service"
 
-      export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub} SYNOWEBAPI=${synowebapiStub}
+      export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub} SYNOWEBAPI=${synowebapiStub} SYNOPKG=${synopkgStub}
       export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1
       run() { : > $ROOT/calls; "$1/bin/activate" --root "$ROOT"; }
       called() { grep -qx -- "$1" $ROOT/calls; }
@@ -272,6 +288,26 @@
         enable = false;
       };
       dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";
+    }
+  ];
+  genFoo = mkGeneration [
+    {
+      dsm.services.foo = {
+        package = "Foo";
+        enable = true;
+      };
+    }
+  ];
+  genFooAndTask = mkGeneration [
+    {
+      dsm.services.foo = {
+        package = "Foo";
+        enable = true;
+      };
+      dsm.tasks."HDD db" = {
+        event = "bootup";
+        script = "bash /x.sh";
+      };
     }
   ];
   genSchedule = mkGeneration [
@@ -496,6 +532,36 @@ in {
   dsm-schedule-json = check "dsm-schedule-json" ''
     t=${genSchedule}/dsm-tasks.json
     jq -e '.t.schedule == {"weekDays": [0,1,2,3,4,5,6], "hour": 0, "minute": 0, "repeatMinutes": null, "repeatHours": null, "lastHour": 23}' $t >/dev/null || fail "schedule: $(cat $t)"
+  '';
+
+  # At boot, DSM is still starting its own packages: leave them to it.
+  boot-skips-dsm = scenario "boot-skips-dsm" ''
+    : > $ROOT/calls
+    ${genFoo}/bin/activate --root "$ROOT" --boot
+    ! called_matching '^synopkg' || fail "package step ran at boot: $(cat $ROOT/calls)"
+  '';
+
+  dry-run-read-only = scenario "dry-run-read-only" ''
+    : > $ROOT/calls
+    ${genFooAndTask}/bin/activate --root "$ROOT" --dry-run > out || fail "dry run failed"
+    grep -q '^would: create DSM task "HDD db"' out || fail "task change not shown: $(cat out)"
+    [ ! -e $ROOT/volume1/@appdata/nix-system/state.json ] || fail "state written"
+    [ ! -e $ROOT/nix/var/nix/gcroots/potato-bunny-pending ] || fail "gc root created"
+    ! called_matching '^synowebapi \(create\|set\)' || fail "DSM changed: $(cat $ROOT/calls)"
+    ! called_matching '^synopkg \(install_from_server\|start\|stop\)' || fail "package changed: $(cat $ROOT/calls)"
+    ! called_matching '^systemctl \(start\|restart\|stop\|daemon-reload\)' || fail "units touched: $(cat $ROOT/calls)"
+    ! called_matching '^nix-env' || fail "profile switched"
+    [ ! -e $ROOT/etc/systemd/system/multi-user.target.wants ] || fail "wants linked"
+  '';
+
+  dry-run-clean = scenario "dry-run-clean" ''
+    run ${genTasks "bash /x.sh"}
+    ${genTasks "bash /x.sh"}/bin/activate --root "$ROOT" --dry-run > out || fail "dry run failed"
+    grep -qx 'no DSM changes' out || fail "expected no changes: $(cat out)"
+  '';
+
+  boot-task-flag = check "boot-task-flag" ''
+    grep -q 'activate --boot ' ${../../hosts/potato-bunny/boot-task.sh} || fail "boot task does not pass --boot"
   '';
 
   generation-layout = check "generation-layout" ''

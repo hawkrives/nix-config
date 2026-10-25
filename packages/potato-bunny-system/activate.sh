@@ -4,11 +4,16 @@
 # idempotent: a second run with nothing changed starts, restarts and creates
 # nothing.
 #
-# Usage: activate --generation <store path> [--root <dir>]
+# Usage: activate --generation <store path> [--root <dir>] [--boot] [--dry-run]
+#
+# --boot (from the boot task) skips the DSM package and settings steps.
+# --dry-run prints the DSM changes a real run would make ("would: ..."), or
+# "no DSM changes", and changes nothing at all.
 #
 # --root prefixes every filesystem path (the tests use a scratch root). DSM's
-# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI and NIX_ENV, and the daemon
-# health probe from DAEMON_PROBE, so the tests can stub them.
+# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI, SYNOPKG and
+# NIX_ENV, and the daemon health probe from DAEMON_PROBE, so the tests can
+# stub them.
 #
 # Ownership rules:
 # - /etc: only declared files under /etc/nix are written or removed.
@@ -22,13 +27,20 @@
 #   added. passwd, group and shadow are never opened.
 # - DSM boot-up/shutdown tasks: created and updated through DSM's own
 #   EventScheduler API (what its UI uses); never deleted.
+# - DSM packages, feeds, settings and scheduled tasks (dsm.sh): only what is
+#   declared; nothing is ever uninstalled or deleted. A failure there is
+#   reported and the rest still applies; activate then exits non-zero.
 
 GEN=""
 ROOT=""
+BOOT=false
+DRY_RUN=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --generation) GEN=$2; shift 2 ;;
     --root) ROOT=$2; shift 2 ;;
+    --boot) BOOT=true; shift ;;
+    --dry-run) DRY_RUN=true; shift ;;
     *) echo "activate: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -38,6 +50,7 @@ SYSTEMCTL=${SYSTEMCTL:-/usr/bin/systemctl}
 SYNOUSER=${SYNOUSER:-/usr/syno/sbin/synouser}
 SYNOGROUP=${SYNOGROUP:-/usr/syno/sbin/synogroup}
 SYNOWEBAPI=${SYNOWEBAPI:-/usr/syno/bin/synowebapi}
+SYNOPKG=${SYNOPKG:-/usr/syno/bin/synopkg}
 NIX_ENV=${NIX_ENV:-nix-env}
 DAEMON_PROBE=${DAEMON_PROBE:-}
 DAEMON_TIMEOUT=${ACTIVATE_DAEMON_TIMEOUT:-10}
@@ -57,6 +70,16 @@ die() { log "$*"; exit 1; }
 mkdir -p "$STATE_DIR"
 exec 9>"$STATE_DIR/lock"
 flock 9
+
+# A dry run prints the DSM changes a real run would make, and changes nothing.
+if $DRY_RUN; then
+  DSM_PLANNED=false
+  dsm_event_tasks
+  dsm_apply
+  $DSM_PLANNED || echo "no DSM changes"
+  if [ ${#DSM_FAILURES[@]} -gt 0 ]; then exit 1; fi
+  exit 0
+fi
 
 # ---------------------------------------------------------------- state
 
@@ -309,35 +332,7 @@ done < <(jq -r '.users | keys[]' "$GEN/users.json")
 
 # ---------------------------------------------------------------- DSM tasks
 
-# event_api <method> key=<json>...: one EventScheduler call, its JSON on stdout.
-event_api() {
-  "$SYNOWEBAPI" --exec api=SYNO.Core.EventScheduler version=1 method="$1" "${@:2}" 2>/dev/null
-}
-
-while IFS= read -r task; do
-  [ -n "$task" ] || continue
-  want=$(jq -c --arg t "$task" '.[$t] | {
-      event, operation: .script, enable,
-      notify_enable: .notifyOnError, notify_if_error: .notifyOnError, notify_mail: .notifyMail,
-      owner: {"0": "root"},
-      depend_on_task: (if .dependsOn == null then "" else "[" + .dependsOn + "]" end)
-    }' "$GEN/dsm-tasks.json")
-  name_json=$(jq -n --arg t "$task" '$t')
-  have=$(event_api get task_name="$name_json" |
-    jq -c '.data // empty | {event, operation, enable, notify_enable, notify_if_error, notify_mail, owner, depend_on_task}')
-  if [ "$have" = "$want" ]; then
-    continue
-  fi
-  if [ -z "$have" ]; then method="create"; else method="set"; fi
-  log "$method DSM task \"$task\""
-  args=(task_name="$name_json" operation_type='"script"')
-  # One key=<json> argument per field. (Not via @tsv: it escapes newlines and
-  # backslashes, which then reach DSM literally.)
-  while IFS= read -r key; do
-    args+=("$key=$(jq -c --arg k "$key" '.[$k]' <<<"$want")")
-  done < <(jq -r 'keys[]' <<<"$want")
-  event_api "$method" "${args[@]}" | jq -e .success >/dev/null || die "DSM refused to $method task \"$task\""
-done < <(jq -r 'keys[]' "$GEN/dsm-tasks.json")
+dsm_event_tasks
 
 # ---------------------------------------------------------------- nix-daemon
 
@@ -437,6 +432,12 @@ for w in "${declared_wants[@]}"; do
   fi
 done
 
+# ---------------------------------------------------------------- DSM packages and settings
+
+# At deploy only: DSM keeps all of this across reboots itself, and at boot it
+# is still starting its own packages, so synopkg would race it.
+$BOOT || dsm_apply
+
 # ---------------------------------------------------------------- profiles
 
 $daemon_failed && die "nix-daemon is not healthy; profiles and state not advanced"
@@ -463,4 +464,7 @@ units_json=$(
 )
 write_state "$(jq -n --arg gen "$GEN" --argjson e "$new_lists" --argjson w "$new_wants" --argjson u "$units_json" \
   '{generation: $gen, etc: $e, units: $u, wants: $w}')"
+if [ ${#DSM_FAILURES[@]} -gt 0 ]; then
+  die "done, except: $(printf "%s; " "${DSM_FAILURES[@]}")"
+fi
 log "done"
