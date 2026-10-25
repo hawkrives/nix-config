@@ -22,7 +22,7 @@ CAP_DAC_OVERRIDE`, with nixpkgs' smartmontools on its `PATH`. Its environment:
 | --- | --- | --- |
 | `HUB_URL` | `http://[::1]:8091` | the hub runs on this NAS — see above |
 | `KEY` | the hub's public key | same value as `modules/nixos/beszel-agent.nix` |
-| `TOKEN` | from `/volume1/@appdata/nix-system/secrets/beszel-agent.env` | see below |
+| `TOKEN` | from `/run/nix-secrets/beszel-token` | see below |
 | `DATA_DIR` | `/volume1/docker/beszel-agent/data` | holds `fingerprint`, the agent's identity in the hub |
 | `EXTRA_FILESYSTEMS` | `/volume1` | report the data volume's usage |
 | `SYS_SENSORS` | `/volume1/docker/beszel-agent/sensors` | see "Board temperature sensors" |
@@ -34,21 +34,11 @@ delete or move it without its contents: a new fingerprint means a new system in
 the hub, and the old one's history stays behind.
 
 `TOKEN` is the hub's **universal** registration token (Hub UI → Settings →
-Tokens), shared with every NixOS agent, where it lives in
-`secrets/beszel-token.age`. agenix doesn't run on DSM, so on the NAS it sits in
-a root-only (`0400`, in a `0700` directory) file, written once by hand:
-
-```bash
-sudo install -d -m 0700 /volume1/@appdata/nix-system/secrets
-read -rs TOKEN    # paste the token; it isn't echoed, logged or put on a command line
-printf 'TOKEN=%s\n' "$TOKEN" |
-  sudo sh -c 'umask 277; cat > /volume1/@appdata/nix-system/secrets/beszel-agent.env'
-unset TOKEN
-```
-
-`/volume1/@appdata` is not an SMB share, unlike `/volume1/nix`. The unit has no
-`-` on `EnvironmentFile`, so without this file the agent refuses to start
-rather than run unregistered.
+Tokens), shared with every NixOS agent: `secrets/beszel-token.age`, which is
+also encrypted to the NAS's SSH host key. `activate` decrypts it to
+`/run/nix-secrets/beszel-token` (tmpfs) on every deploy and boot. The unit has
+no `-` on `EnvironmentFile`, so without it the agent refuses to start rather
+than run unregistered.
 
 ## Per-drive SMART
 

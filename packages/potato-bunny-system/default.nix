@@ -9,6 +9,7 @@
 #   dsm-services.json       DSM packages and feature settings (dsm.services)
 #   dsm-feeds.json          extra Package Center feeds, name -> URL
 #   dsm-shares.json         DSM shared folders (dsm.shares)
+#   age-secrets.json        age.secrets: the .age files and where they go
 #   restart-exempt          units not restarted when they change
 #   default-profile         the root default profile (Lix + extras), if nix.package is set
 #   bin/activate            applies all of the above; see activate.sh
@@ -26,7 +27,7 @@
 
   activateScript = pkgs.writeShellApplication {
     name = "potato-bunny-activate";
-    runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils pkgs.util-linux];
+    runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils pkgs.util-linux pkgs.rage];
     text = builtins.readFile ./dsm.sh + builtins.readFile ./activate.sh;
   };
 
@@ -70,6 +71,10 @@
     dsmServicesJson = pkgs.writeText "dsm-services.json" (builtins.toJSON checked.dsm.services);
     dsmFeedsJson = pkgs.writeText "dsm-feeds.json" (builtins.toJSON checked.dsm.packageSources);
     dsmSharesJson = pkgs.writeText "dsm-shares.json" (builtins.toJSON checked.dsm.shares);
+    ageSecretsJson = pkgs.writeText "age-secrets.json" (builtins.toJSON {
+      inherit (checked.age) identity;
+      secrets = lib.mapAttrs (_: s: {inherit (s) file owner mode;}) checked.age.secrets;
+    });
 
     restartExempt = lib.attrNames (lib.filterAttrs (_: u: !u.restartIfChanged) checked.systemd.units);
 
@@ -102,6 +107,7 @@
       cp ${dsmServicesJson} $out/dsm-services.json
       cp ${dsmFeedsJson} $out/dsm-feeds.json
       cp ${dsmSharesJson} $out/dsm-shares.json
+      cp ${ageSecretsJson} $out/age-secrets.json
       printf '%s\n' ${lib.escapeShellArgs restartExempt} | sed '/^$/d' > $out/restart-exempt
       ${lib.optionalString (defaultProfile != null) "ln -s ${defaultProfile} $out/default-profile"}
       # The generation's own nix-env, since neither sudo's secure_path nor the

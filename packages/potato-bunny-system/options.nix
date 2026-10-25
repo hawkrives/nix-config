@@ -312,6 +312,44 @@ in {
       default = [];
       description = "Extra packages in the root default profile alongside nix.package.";
     };
+
+    age.identity = mkOption {
+      type = types.str;
+      default = "/etc/ssh/ssh_host_ed25519_key";
+      description = "Private key activate decrypts age.secrets with: the NAS's SSH host key.";
+    };
+
+    age.secrets = mkOption {
+      default = {};
+      description = ''
+        Secrets encrypted to the host key (secrets/secrets.nix), decrypted by
+        activate into /run/nix-secrets/<name>, a tmpfs, on every deploy and
+        boot. Units read them from there; a changed secret doesn't restart
+        anything.
+      '';
+      type = types.attrsOf (types.submodule ({name, ...}: {
+        options = {
+          file = mkOption {
+            type = types.path;
+            description = "The .age file.";
+          };
+          path = mkOption {
+            type = types.str;
+            readOnly = true;
+            default = "/run/nix-secrets/${name}";
+            description = "Where the decrypted secret lands.";
+          };
+          owner = mkOption {
+            type = types.str;
+            default = "root";
+          };
+          mode = mkOption {
+            type = types.strMatching "0[0-7]{3}";
+            default = "0400";
+          };
+        };
+      }));
+    };
   };
 
   config.assertions =

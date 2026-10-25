@@ -4,10 +4,13 @@
 # behaviour as modules/nixos/host-watch.nix + notify-failure.nix, as plain
 # systemd-219 units.
 #
-# Secret, placed by hand (root, 0400):
-#   /volume1/@appdata/nix-system/secrets/telegram-notify.env
-#     TELEGRAM_BOT_TOKEN=… / TELEGRAM_CHAT_ID=… — secrets/telegram-notify.age
-{pkgs, ...}: let
+# Telegram credentials: secrets/telegram-notify.age (TELEGRAM_BOT_TOKEN=… /
+# TELEGRAM_CHAT_ID=…), decrypted by activate.
+{
+  config,
+  pkgs,
+  ...
+}: let
   # nutmeg's tailnet IP, not a name: DNS failing would make this alert about
   # the wrong thing. sshd answers whenever the host is genuinely usable.
   host = "100.70.139.99";
@@ -75,6 +78,8 @@
     exit 1
   '';
 in {
+  age.secrets.telegram-notify.file = ../../secrets/telegram-notify.age;
+
   systemd.units."notify-failure@.service" = {
     wantedBy = [];
     text = ''
@@ -83,7 +88,7 @@ in {
 
       [Service]
       Type=oneshot
-      EnvironmentFile=-/volume1/@appdata/nix-system/secrets/telegram-notify.env
+      EnvironmentFile=-${config.age.secrets.telegram-notify.path}
       Environment=SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
       ExecStart=${notify} %i
     '';

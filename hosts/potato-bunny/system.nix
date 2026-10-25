@@ -4,6 +4,7 @@
 # `mise run potato-bunny:ask` and at every boot (DSM Task Scheduler task
 # "Mount nix and start daemon"). Everything else on the machine is DSM's.
 {
+  config,
   lib,
   pkgs,
   perSystem,
@@ -11,7 +12,7 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
-  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix ./adguard.nix];
+  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix ./adguard.nix ./paperless.nix ./restic.nix ./scanner.nix];
 
   nix.package = lix;
   profileExtra = [pkgs.cacert];
@@ -160,8 +161,9 @@ in {
   # Runs as root, bounded to the capabilities SMART and the sensors need.
   # DATA_DIR is the Docker agent's old data dir: its `fingerprint` is the
   # agent's identity in the hub, so reusing it keeps the same system and its
-  # history. TOKEN (the hub's universal registration token) lives in a
-  # root-only file outside the store; see docs/beszel-synology.md.
+  # history. TOKEN (the hub's universal registration token) is
+  # secrets/beszel-token.age, shared with every NixOS agent.
+  age.secrets.beszel-token.file = ../../secrets/beszel-token.age;
   systemd.units."beszel-agent.service".text = ''
     [Unit]
     Description=Beszel agent
@@ -171,7 +173,7 @@ in {
 
     [Service]
     ExecStart=${pkgs.beszel}/bin/beszel-agent
-    EnvironmentFile=/volume1/@appdata/nix-system/secrets/beszel-agent.env
+    EnvironmentFile=${config.age.secrets.beszel-token.path}
     Environment=PATH=${pkgs.smartmontools}/bin:/usr/bin:/bin
     Environment="HUB_URL=http://[::1]:8091"
     Environment="KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds"

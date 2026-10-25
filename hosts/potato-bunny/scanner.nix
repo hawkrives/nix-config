@@ -1,11 +1,69 @@
 {
   lib,
   pkgs,
+  flake,
   ...
 }: let
+  # Found through DSM's Avahi (see scannerAddress below), not a DHCP lease.
   scannerHost = "EPSON86794C.local";
-  consumeDir = "/var/lib/paperless/consume";
-  stagingDir = "/var/lib/adf-autoscan";
+  paperlessData = "/volume2/@appdata/paperless";
+  consumeDir = "${paperlessData}/consume";
+  # Same filesystem as consumeDir, so the final move is an atomic rename and
+  # paperless never sees a partial PDF.
+  stagingDir = "${paperlessData}/scan-staging";
+  scanservjsData = "/volume2/@appdata/scanservjs";
+
+  # SANE and scanservjs as the NixOS modules would set them up, with these
+  # settings; the units below take their config from here.
+  nixos = flake.inputs.nixpkgs.lib.nixosSystem {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    modules = [
+      {
+        # Epson ET-3958, reached over eSCL/AirScan. sane-airscan speaks eSCL
+        # over HTTPS, so no USB, no udev rules, and no proprietary Epson
+        # driver is needed.
+        hardware.sane = {
+          enable = true;
+          extraBackends = [pkgs.sane-airscan];
+          # nixpkgs ships two eSCL backends. sane-backends' own `escl`
+          # backend returns only the FRONT of each sheet in ADF Duplex mode on
+          # this device, silently losing the back of every double-sided page.
+          # sane-airscan handles the same scanner correctly, so remove `escl`
+          # to make it impossible to select the broken one by accident. This
+          # also stops `scanimage -L` dumping the printer's HTML landing page
+          # to stderr, which `escl` probes on port 80.
+          disabledDefaultBackends = ["escl"];
+        };
+        # Web UI for everything the feeder cannot do: books, passports,
+        # receipts, and any scan needing non-default settings. Writes finished
+        # files straight into the paperless consumption directory.
+        services.scanservjs = {
+          enable = true;
+          settings = {
+            host = "127.0.0.1";
+            port = 8090;
+            outputDirectory = consumeDir;
+            ocrLanguage = "eng";
+          };
+        };
+        boot.loader.grub.enable = false;
+        fileSystems."/" = {
+          device = "none";
+          fsType = "tmpfs";
+        };
+        system.stateVersion = "25.11";
+      }
+    ];
+  };
+  etcSource = name: nixos.config.environment.etc.${name}.source;
+  saneConfig = etcSource "sane-config";
+  saneLibs = etcSource "sane-libs";
+  scanservjsEnv =
+    nixos.config.systemd.services.scanservjs.environment
+    // {
+      SANE_CONFIG_DIR = "${saneConfig}";
+      LD_LIBRARY_PATH = "${saneLibs}";
+    };
 
   # Pages whose greyscale standard deviation falls below this are treated as
   # blank and dropped. Measured on this scanner at 300dpi colour:
@@ -47,7 +105,7 @@
       # exported process-wide: /etc/sane-libs on the search path would also
       # apply to magick and img2pdf below, which have no business loading SANE
       # backends. Scope them to scanimage via this wrapper instead.
-      sane_env() { env SANE_CONFIG_DIR=/etc/sane-config LD_LIBRARY_PATH=/etc/sane-libs "$@"; }
+      sane_env() { env SANE_CONFIG_DIR=${saneConfig} LD_LIBRARY_PATH=${saneLibs} "$@"; }
 
       # No --device-name: `escl` is disabled so exactly one SANE device exists,
       # and scanimage auto-selects it. This is deliberate, not an oversight.
@@ -94,7 +152,7 @@
       staged="$work/scan-$ts.pdf"
       img2pdf --output "$staged" "''${kept[@]}"
 
-      # $work is under /var/lib, same filesystem as the consume dir, so this
+      # $work is under stagingDir, same filesystem as the consume dir, so this
       # rename is atomic and paperless can never observe a partial PDF.
       mv "$staged" "${consumeDir}/scan-$ts.pdf"
       echo "adf-scan-once: deposited scan-$ts.pdf (''${#kept[@]}/''${#pages[@]} pages kept)"
@@ -105,6 +163,7 @@
     name = "adf-autoscan";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.avahi
       pkgs.curl
       pkgs.gnugrep
       adf-scan-once
@@ -115,7 +174,13 @@
       # full grace period. The grace exists so that a copy job started at the
       # panel wins the race for the paper.
 
-      status_url="https://${scannerHost}/eSCL/ScannerStatus"
+      # DSM's resolver doesn't do mDNS, so each poll asks its Avahi (over
+      # D-Bus) for the scanner's address; a scanner that moves keeps working.
+      scanner_status_url() {
+        local ip
+        ip="$(avahi-resolve -4 -n ${scannerHost} 2>/dev/null | cut -f2 || true)"
+        [ -n "$ip" ] && echo "https://$ip/eSCL/ScannerStatus"
+      }
 
       idle_poll=20
       idle_grace=20
@@ -129,8 +194,9 @@
 
       # Echoes "<pwg:State> <scan:AdfState>", or "ERR ERR" if unreachable.
       read_status() {
-        local xml state adf
-        if ! xml="$(curl -sk --max-time 10 "$status_url" 2>/dev/null)"; then
+        local xml state adf url
+        if ! url="$(scanner_status_url)" ||
+          ! xml="$(curl -sk --max-time 10 "$url" 2>/dev/null)"; then
           echo "ERR ERR"
           return 0
         fi
@@ -175,7 +241,7 @@
         done
       }
 
-      echo "adf-autoscan: watching $status_url"
+      echo "adf-autoscan: watching ${scannerHost}"
 
       while true; do
         now="$(date +%s)"
@@ -235,78 +301,46 @@
     '';
   };
 in {
-  # Epson ET-3958, reached over eSCL/AirScan. sane-airscan speaks eSCL over
-  # HTTPS, so no USB, no udev rules, and no proprietary Epson driver is needed.
-  # The device is addressed by its mDNS name rather than a DHCP lease.
-  hardware.sane = {
-    enable = true;
-    extraBackends = [pkgs.sane-airscan];
+  profileExtra = [adf-scan-once];
 
-    # nixpkgs ships two eSCL backends. sane-backends' own `escl` backend
-    # returns only the FRONT of each sheet in ADF Duplex mode on this device,
-    # silently losing the back of every double-sided page. sane-airscan handles
-    # the same scanner correctly, so remove `escl` to make it impossible to
-    # select the broken one by accident. This also stops `scanimage -L` dumping
-    # the printer's HTML landing page to stderr, which `escl` probes on port 80.
-    disabledDefaultBackends = ["escl"];
-  };
+  tsnsrv.services.scan.upstream = "http://127.0.0.1:8090";
 
-  environment.systemPackages = [adf-scan-once];
+  # Both run as paperless's account, so what they deposit in its consume
+  # folder is already its own. They reach the scanner over the LAN.
+  systemd.units."adf-autoscan.service".text = ''
+    [Unit]
+    Description=Auto-scan the Epson ADF into paperless
+    ConditionPathIsMountPoint=/volume2
+    OnFailure=notify-failure@%n.service
+    Wants=paperless-consumer.service network-online.target
+    After=paperless-consumer.service network-online.target
 
-  # Web UI for everything the feeder cannot do: books, passports, receipts, and
-  # any scan needing non-default settings. Writes finished files straight into
-  # the paperless consumption directory.
-  services.scanservjs = {
-    enable = true;
-    settings = {
-      host = "127.0.0.1";
-      port = 8090;
-      outputDirectory = consumeDir;
-      ocrLanguage = "eng";
-    };
-  };
+    [Service]
+    User=svc-paperless
+    UMask=0022
+    PermissionsStartOnly=true
+    ExecStartPre=${pkgs.coreutils}/bin/install -d -o svc-paperless -m 0750 ${stagingDir}
+    ExecStart=${lib.getExe adf-autoscan}
+    Restart=always
+    RestartSec=10
+  '';
 
-  # scanservjs runs as its own user; the consume dir is mode 777 so it can
-  # write, and paperless can unlink what it did not create (no sticky bit).
-  # Expose on the tailnet: https://scan.<tailnet>.ts.net -> 127.0.0.1:8090.
-  # 127.0.0.1 rather than "localhost" avoids resolving to ::1 first.
-  services.tsnsrv.services.scan.urlParts = {
-    host = "127.0.0.1";
-    port = 8090;
-  };
+  systemd.units."scanservjs.service".text = ''
+    [Unit]
+    Description=scanservjs (scanning web UI)
+    ConditionPathIsMountPoint=/volume2
+    OnFailure=notify-failure@%n.service
+    Wants=paperless-consumer.service network-online.target
+    After=paperless-consumer.service network-online.target
 
-  # Staging lives on the same filesystem as the consume dir so the final move
-  # is an atomic rename rather than a copy.
-  systemd.tmpfiles.rules = [
-    "d ${stagingDir} 0750 paperless paperless - -"
-  ];
-
-  systemd.services.adf-autoscan = {
-    description = "Auto-scan the Epson ADF into paperless";
-    after = [
-      "network-online.target"
-      "paperless-consumer.service"
-    ];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-
-    # No SANE environment here: adf-scan-once scopes SANE_CONFIG_DIR and
-    # LD_LIBRARY_PATH to its own scanimage call, so this unit does not need
-    # them and must not leak them to the whole process tree.
-
-    serviceConfig = {
-      ExecStart = lib.getExe adf-autoscan;
-      Restart = "always";
-      RestartSec = 10;
-      User = "paperless";
-      Group = "paperless";
-      UMask = "0022";
-      StateDirectory = "adf-autoscan";
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
-      ReadWritePaths = [consumeDir];
-    };
-  };
+    [Service]
+    User=svc-paperless
+    PermissionsStartOnly=true
+    ExecStartPre=${pkgs.coreutils}/bin/install -d -o svc-paperless -m 0750 ${scanservjsData}
+    ${lib.concatStrings (lib.mapAttrsToList (k: v: "Environment=\"${k}=${toString v}\"\n") scanservjsEnv)}
+    # It keeps its data under the working directory.
+    ExecStart=/bin/sh -c "cd ${scanservjsData} && exec ${lib.getExe pkgs.scanservjs}"
+    Restart=on-failure
+    RestartSec=10
+  '';
 }

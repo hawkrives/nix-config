@@ -72,22 +72,10 @@
   password = config.age.secrets.restic-password-nutmeg.path;
 
   # Shared by both repos. See the note in secrets/secrets.nix on why one key.
+  # paperless runs on potato-bunny, which backs its export up into the same two
+  # repos itself (hosts/potato-bunny/restic.nix).
   paths =
     [
-      # Paperless: the EXPORT, not /var/lib/paperless.
-      #
-      # This host runs paperless against PostgreSQL (PAPERLESS_DBENGINE=postgresql,
-      # database.createLocally = true), so the document *metadata* — tags,
-      # correspondents, dates, the lot — lives in postgres, not under the data dir.
-      # Backing up /var/lib/paperless gets a pile of PDFs with no index, which
-      # looks like a working backup and is not. Note the db.sqlite3 in that
-      # directory is inert and not the live database, so it is no substitute.
-      #
-      # document_exporter writes a self-contained, restorable tree: originals plus
-      # a manifest carrying everything from the DB. It also stops the paperless
-      # services while it runs, so the export is consistent rather than a hot copy.
-      config.services.paperless.exporter.directory
-
       # Home Assistant, minus the two things that dominate its size (see excludes).
       config.users.users.homeassistant.home
 
@@ -238,19 +226,6 @@ in {
     "/mnt/syncthing" = synologyMount "/volume2/syncthing" {readOnly = true;};
   };
 
-  # Turn on paperless's own exporter so there is something correct to back up.
-  # Runs at 01:30; both restic jobs run after it (see timerConfig below), so a
-  # snapshot always contains that morning's export rather than yesterday's.
-  #
-  # `delete = true` + `compare-checksums = true` make the export an incremental
-  # mirror rather than an ever-growing pile. Cost is ~55MB (media is only 54MB
-  # here); the 96MB classification_model.pickle in the data dir is regenerable
-  # and the exporter does not include it.
-  services.paperless.exporter = {
-    enable = true;
-    onCalendar = "01:30:00";
-  };
-
   # Host aliases rather than stuffing an `ssh -i …` invocation into restic's
   # `-o sftp.command`, which would have to survive both Nix string escaping and
   # systemd's ExecStart quoting. This way the repository URL stays trivial.
@@ -351,10 +326,8 @@ in {
   #   * If a repo grows enough for this to bite, escalate to
   #     --read-data-subset=25%, not to structural-only. A quarter of the data
   #     verified each week still finds rot; structure-only never will.
-  # Paperless's exporter stops the paperless services while it runs, and the
-  # restic jobs must not start until the export they read has finished. They
-  # also now read the service-backup mirror on the NAS, so they need that
-  # automount up.
+  # The restic jobs read the service-backup mirror on the NAS, so they need
+  # that automount up.
   #
   # Wants/After on the mount, NOT RequiresMountsFor: the share idle-unmounts
   # after 5m, and a hard requirement makes systemd stop a long-running backup
@@ -366,13 +339,13 @@ in {
   systemd.services =
     {
       restic-backups-nas = {
-        after = ["paperless-exporter.service" servarrMount] ++ lib.optional syncthingBackup syncthingMount;
+        after = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
         wants = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
       };
     }
     // lib.optionalAttrs enableOffsite {
       restic-backups-offsite = {
-        after = ["paperless-exporter.service" servarrMount] ++ lib.optional syncthingBackup syncthingMount;
+        after = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
         wants = [servarrMount] ++ lib.optional syncthingBackup syncthingMount;
         # Pushes over the WAN; keep it from starving interactive use.
         serviceConfig = {
@@ -416,12 +389,11 @@ in {
     )
     checkedRepos;
 
-  # Both restic jobs and the exporter they depend on. A silent backup failure is
-  # the worst kind, since you find out when you need the backup.
+  # Both restic jobs. A silent backup failure is the worst kind, since you find
+  # out when you need the backup.
   services.notifyFailure.units =
     [
       "restic-backups-nas.service"
-      "paperless-exporter.service"
     ]
     # Only watch the offsite unit when it actually exists; naming a non-existent
     # unit here would quietly define an empty stub (see notify-failure.nix).
@@ -443,13 +415,4 @@ in {
   #   restic-nas snapshots
   #   restic-nas restore latest --target /tmp/restore
   environment.systemPackages = [pkgs.restic];
-
-  # Assert the exporter directory is actually inside what we back up, so a
-  # future change to either can't silently decouple them.
-  assertions = [
-    {
-      assertion = lib.elem config.services.paperless.exporter.directory paths;
-      message = "restic.nix: paperless export dir is not in the restic paths";
-    }
-  ];
 }

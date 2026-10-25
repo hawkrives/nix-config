@@ -16,6 +16,9 @@ let
   techcyte = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO";
   tuckles = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaiGtVceXg9xJh0+jIIhFKZtnlNdPaWCZqSp0KNsb6r";
   bigpond = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICwYnYwie4qge41DnWPPn+sL3n/97y8883FanBwhkSTj";
+  # potato-bunny (the Synology): DSM's sshd host key. Its secrets are decrypted
+  # by the NAS system layer's activate (packages/potato-bunny-system).
+  potato-bunny = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILs4U5pSxhPtHJbYtqf306kgXYAYjri8CI+O9YtR1xzV";
   systems = [
     nutmeg
     techcyte
@@ -79,10 +82,8 @@ in {
   "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [nutmeg];
 
   # Same, for potato-bunny: a separate OAuth client, since a client mints keys
-  # carrying exactly its own tag set. potato-bunny has no age identity, so
-  # this is the record copy; the NAS's is placed by hand, root 0400 (see
-  # hosts/potato-bunny/tsnsrv.nix).
-  "tsnsrv-authkey-potato-bunny.age".publicKeys = users;
+  # carrying exactly its own tag set.
+  "tsnsrv-authkey-potato-bunny.age".publicKeys = users ++ [potato-bunny];
 
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
   # injected via environmentFile (nutmeg).
@@ -97,29 +98,32 @@ in {
   "plex-token.age".publicKeys = users ++ [nutmeg];
 
   # Beszel universal registration token (env-file: TOKEN=…). Every agent uses
-  # the same token to self-register with the hub on nutmeg, so every host that
-  # runs an agent is a recipient.
+  # the same token to self-register with the hub on potato-bunny, so every host
+  # that runs an agent is a recipient.
   "beszel-token.age".publicKeys =
     users
     ++ [
       nutmeg
       tuckles
       bigpond
+      potato-bunny
     ];
 
-  # restic repository password (nutmeg). ONE password for both the NAS and the
-  # rsync.net repo: the two hold identical data and the same host writes both,
-  # so splitting them buys nothing. Losing this file means the backups are
-  # unrecoverable — it belongs in a password manager as well as here. Read it
-  # back with: cd secrets && EDITOR=cat ragenix -e restic-password-nutmeg.age
-  "restic-password-nutmeg.age".publicKeys = users ++ [nutmeg];
+  # restic repository password. ONE password for both the NAS and the rsync.net
+  # repo: the two hold identical data, written by the same hosts (nutmeg, and
+  # potato-bunny for the paperless export), so splitting them buys nothing.
+  # Losing this file means the backups are unrecoverable — it belongs in a
+  # password manager as well as here. Read it back with:
+  #   cd secrets && EDITOR=cat ragenix -e restic-password-nutmeg.age
+  "restic-password-nutmeg.age".publicKeys = users ++ [nutmeg potato-bunny];
 
   # SSH private key restic uses to reach both SFTP destinations (the Synology
-  # and rsync.net). Deliberately NOT reusing /etc/ssh/ssh_host_ed25519_key the
-  # way cache-push does: that key is nutmeg's identity to the rest of the
+  # and rsync.net); potato-bunny uses it for rsync.net, its own repo being
+  # local. Deliberately NOT reusing /etc/ssh/ssh_host_ed25519_key the way
+  # cache-push does: that key is nutmeg's identity to the rest of the
   # fleet, and handing a copy of its authority to a third-party provider's
   # authorized_keys is a wider blast radius than a purpose-made key.
-  "restic-ssh-key-nutmeg.age".publicKeys = users ++ [nutmeg];
+  "restic-ssh-key-nutmeg.age".publicKeys = users ++ [nutmeg potato-bunny];
 
   # Uptime Kuma admin account (env file: UPTIME_KUMA_USER / _PASSWORD). Logs
   # into the web UI, and lets packages/provision-uptime-kuma.nix drive Kuma's
@@ -135,6 +139,7 @@ in {
     ++ [
       nutmeg
       tuckles
+      potato-bunny
     ];
 
   # Binary-cache signing keys, one per host, named for networking.hostName so
@@ -206,15 +211,14 @@ in {
   # Shared into the guest over virtiofs; see the host's darwin-configuration.
   "builder-netrc.age".publicKeys = users ++ [techcyte];
 
-  # mbx remote build cache (hosts/potato-bunny/mbx-cache.nix). Each client host has its
-  # own bearer token, granted read+write on its own namespace only: nutmeg ->
-  # `home`, the Mac -> `techcyte`, so work artifacts and personal ones never mix.
-  # The server's env file (MBX_CACHE_TOKENS_JSON='[...]') holds both tokens and
-  # their grants; each client file holds just its bare token, so rotating one
-  # means editing it in both places.
-  # potato-bunny has no age identity: the server copy is placed on the NAS by
-  # hand (see hosts/potato-bunny/mbx-cache.nix), as is telegram-notify's.
-  "mbx-cache-tokens.age".publicKeys = users;
+  # mbx remote build cache (hosts/potato-bunny/mbx-cache.nix). Each client host
+  # has its own bearer token, granted read+write on its own namespace only:
+  # nutmeg -> `home`, the Mac -> `techcyte`, so work artifacts and personal ones
+  # never mix.
+  # This file holds the server's token list (the JSON for MBX_CACHE_TOKENS_JSON):
+  # both tokens and their grants; each client file holds just its bare token,
+  # so rotating one means editing it in both places.
+  "mbx-cache-tokens.age".publicKeys = users ++ [potato-bunny];
   "mbx-token-nutmeg.age".publicKeys = users ++ [nutmeg];
   "mbx-token-techcyte.age".publicKeys = users ++ [techcyte];
 }

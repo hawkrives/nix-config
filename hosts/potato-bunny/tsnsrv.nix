@@ -7,12 +7,10 @@
 # Ephemeral nodes: one that stops for long enough is removed from the tailnet,
 # and comes back under the same name on its next start.
 #
-# Secret, placed by hand (root, 0400):
-#   /volume1/@appdata/nix-system/secrets/tsnsrv-authkey
-#     the "tsnsrv potato-bunny" OAuth client's secret, bare —
-#     secrets/tsnsrv-authkey-potato-bunny.age. A client mints keys carrying
-#     exactly its own tag set, so this one has only tag:tsnsrv-potato-bunny
-#     and nutmeg's has only tag:tsnsrv-nutmeg.
+# The auth key is secrets/tsnsrv-authkey-potato-bunny.age, decrypted by
+# activate: the "tsnsrv potato-bunny" OAuth client's secret, bare. A client
+# mints keys carrying exactly its own tag set, so this one has only
+# tag:tsnsrv-potato-bunny and nutmeg's has only tag:tsnsrv-nutmeg.
 {
   config,
   lib,
@@ -22,7 +20,7 @@
   inherit (lib) mkOption types;
   tsnsrv = perSystem.tsnsrv.default;
   stateRoot = "/volume2/@appdata/tsnsrv";
-  authKey = "/volume1/@appdata/nix-system/secrets/tsnsrv-authkey";
+  authKey = config.age.secrets.tsnsrv-authkey.path;
 in {
   options.tsnsrv.services = mkOption {
     default = {};
@@ -35,6 +33,8 @@ in {
       };
     });
   };
+
+  config.age.secrets.tsnsrv-authkey.file = ../../secrets/tsnsrv-authkey-potato-bunny.age;
 
   config.systemd.units = lib.mapAttrs' (name: svc:
     lib.nameValuePair "nix-tsnsrv-${name}.service" {

@@ -13,10 +13,10 @@
 # which DSM manages for its own databases): own account, data dir, socket dir
 # and port, socket only.
 #
-# Secret, placed by hand (root, 0400):
-#   /volume1/@appdata/nix-system/secrets/mbx-cache.env
-#     MBX_CACHE_TOKENS_JSON='[...]' — the contents of secrets/mbx-cache-tokens.age
+# Tokens: secrets/mbx-cache-tokens.age (MBX_CACHE_TOKENS_JSON='[...]'),
+# decrypted by activate.
 {
+  config,
   pkgs,
   perSystem,
   ...
@@ -28,7 +28,6 @@
   pgPort = "5433";
   psqlArgs = "-h ${pgSocket} -p ${pgPort}";
   blobs = "/volume2/mbx-cache";
-  envFile = "/volume1/@appdata/nix-system/secrets/mbx-cache.env";
   gib = n: n * 1024 * 1024 * 1024;
 
   mbxEnv = ''
@@ -38,7 +37,7 @@
     Environment="MBX_CACHE_DATABASE_URL=postgres://svc-mbx-cache@localhost/mbx-cache?host=${pgSocket}&port=${pgPort}"
     Environment=MBX_CACHE_DATABASE_MAX_CONNECTIONS=8
     Environment=RUST_LOG=info
-    EnvironmentFile=${envFile}
+    EnvironmentFile=${config.age.secrets.mbx-cache-tokens.path}
   '';
 
   # As root (PermissionsStartOnly): the data dir, and initdb exactly once.
@@ -89,6 +88,8 @@
     ts serve --bg --https=8443 http://127.0.0.1:8080
   '';
 in {
+  age.secrets.mbx-cache-tokens.file = ../../secrets/mbx-cache-tokens.age;
+
   users.users.svc-postgres.description = "PostgreSQL for mbx-cache";
   users.users.svc-mbx-cache.description = "mbx-cache";
 

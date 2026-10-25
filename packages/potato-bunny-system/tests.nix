@@ -256,6 +256,16 @@
     esac
   '';
 
+  # rage -d -i <identity> -o <out> <file>: the test ".age" files hold their
+  # plaintext, so decrypting copies them; a file whose content is FAIL fails.
+  rageStub = pkgs.writeShellScript "rage" ''
+    echo "rage $*" >> "$ROOT/calls"
+    [ "$1" = -d ] && [ "$2" = -i ] && [ "$4" = -o ] || { echo "rage stub: unexpected $*" >&2; exit 2; }
+    [ -r "$3" ] || { echo "rage stub: no identity $3" >&2; exit 1; }
+    [ "$(cat "$6")" != FAIL ] || exit 1
+    cat "$6" > "$5"
+  '';
+
   # Accounts all have uid 1234; chown only logs (the sandbox can't chown).
   idStub = pkgs.writeShellScript "id" ''
     [ "$1" = -u ] || exit 2
@@ -283,7 +293,8 @@
       printf '[Service]\nExecStart=/usr/lib/systemd/systemd --user\n' > "$ROOT/usr/lib/systemd/system/user@.service"
 
       export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub} SYNOWEBAPI=${synowebapiStub} SYNOPKG=${synopkgStub}
-      export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1 ID=${idStub} CHOWN=${chownStub}
+      export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1 ID=${idStub} CHOWN=${chownStub} RAGE=${rageStub}
+      mkdir -p $ROOT/etc/ssh && echo host-key > $ROOT/etc/ssh/ssh_host_ed25519_key
       run() { : > $ROOT/calls; "$1/bin/activate" --root "$ROOT"; }
       called() { grep -qx -- "$1" $ROOT/calls; }
       called_matching() { grep -q -- "$1" $ROOT/calls; }
@@ -533,6 +544,23 @@
         };
       }
     ];
+  genSecrets = secrets:
+    mkGeneration [
+      {
+        age.secrets = secrets;
+        systemd.units."a.service" = unit "[Service]\nExecStart=/bin/a\n";
+      }
+    ];
+  ageFile = name: text: pkgs.writeText "${name}.age" text;
+  genFooBar = genSecrets {
+    foo = {
+      file = ageFile "foo" "s3cret";
+      owner = "svc-foo";
+      mode = "0440";
+    };
+    bar.file = ageFile "bar" "other";
+  };
+
   genKeys = keys:
     mkGeneration [
       {
@@ -694,7 +722,7 @@ in {
       'PRIMARY_SENSOR=k10temp' \
       'EXTRA_FILESYSTEMS=/volume1' \
       'SMART_DEVICES=/dev/sata1:sat,/dev/sata2:sat,/dev/sata3:sat,/dev/sata4:sat,/dev/sata5:sat,/dev/sata6:sat,/dev/sata7:sat,/dev/sata8:sat' \
-      'EnvironmentFile=/volume1/@appdata/nix-system/secrets/beszel-agent.env' \
+      'EnvironmentFile=/run/nix-secrets/beszel-token' \
       'CAP_SYS_ADMIN' 'CAP_SYS_RAWIO' 'smartmontools' 'bin/beszel-agent'; do
       grep -qF "$want" $u || fail "missing: $want"
     done
@@ -1084,6 +1112,53 @@ in {
     [ ! -e $ROOT/shares/mbx-cache.json ] || fail "dry run created the share"
   '';
 
+  # Decrypted with the host key into /run/nix-secrets, owned and moded as declared.
+  secrets-written = scenario "secrets-written" ''
+    run ${genFooBar}
+    f=$ROOT/run/nix-secrets/foo
+    [ "$(cat $f)" = s3cret ] || fail "content: $(cat $f 2>&1)"
+    [ "$(stat -c %a $f)" = 440 ] || fail "mode $(stat -c %a $f)"
+    [ "$(stat -c %a $ROOT/run/nix-secrets/bar)" = 400 ] || fail "default mode $(stat -c %a $ROOT/run/nix-secrets/bar)"
+    called_matching "^rage -d -i $ROOT/etc/ssh/ssh_host_ed25519_key " || fail "not decrypted with the host key: $(cat $ROOT/calls)"
+    called_matching "^chown svc-foo $ROOT/run/nix-secrets/\.foo\." || fail "not chowned before it lands: $(cat $ROOT/calls)"
+    called_matching "^chown root $ROOT/run/nix-secrets/\.bar\." || fail "default owner: $(cat $ROOT/calls)"
+    [ -z "$(find $ROOT/run/nix-secrets -name '.*' -type f)" ] || fail "temporary files left behind"
+  '';
+
+  # An unchanged secret is left in place, not rewritten.
+  secrets-idempotent = scenario "secrets-idempotent" ''
+    run ${genFooBar}
+    before=$(stat -c %i $ROOT/run/nix-secrets/foo)
+    run ${genFooBar}
+    [ "$(stat -c %i $ROOT/run/nix-secrets/foo)" = "$before" ] || fail "rewritten on an unchanged run"
+  '';
+
+  # A secret no longer declared is removed.
+  secrets-pruned = scenario "secrets-pruned" ''
+    run ${genFooBar}
+    run ${genSecrets {foo.file = ageFile "foo" "s3cret";}}
+    [ -e $ROOT/run/nix-secrets/foo ] || fail "declared secret removed"
+    [ ! -e $ROOT/run/nix-secrets/bar ] || fail "undeclared secret kept"
+  '';
+
+  # One secret failing to decrypt fails the run, but the others and the units
+  # still apply.
+  secrets-failure = scenario "secrets-failure" ''
+    if run ${genSecrets {
+      foo.file = ageFile "foo" "s3cret";
+      bad.file = ageFile "bad" "FAIL";
+    }}; then fail "activate succeeded with an undecryptable secret"; fi
+    [ "$(cat $ROOT/run/nix-secrets/foo)" = s3cret ] || fail "the good secret was not written"
+    [ ! -e $ROOT/run/nix-secrets/bad ] || fail "a failed secret left a file"
+    [ -e $ROOT/active/a.service ] || fail "units not started"
+  '';
+
+  # A dry run decrypts nothing.
+  secrets-dry-run = scenario "secrets-dry-run" ''
+    "${genFooBar}/bin/activate" --root "$ROOT" --dry-run >/dev/null
+    [ ! -e $ROOT/run/nix-secrets ] || fail "dry run wrote secrets"
+  '';
+
   authorized-keys-written = scenario "authorized-keys-written" ''
     # DSM gives new homes an inherited ACL, which its sshd rejects for key
     # login ("bad ACL permission"); plain 0755, like hawken's, is accepted.
@@ -1179,7 +1254,7 @@ in {
     grep -q '100.70.139.99' $probe && grep -q ' 22 ' $probe || fail "probe target: $(cat $probe)"
     notify=$(sed -n 's/^ExecStart=//p' "$g/units/notify-failure@.service" | cut -d' ' -f1)
     grep -q '/usr/bin/journalctl' $notify && grep -q 'potato-bunny' $notify || fail "notify script: $(cat $notify)"
-    grep -q 'telegram-notify.env' "$g/units/notify-failure@.service" || fail "token file"
+    grep -qx 'EnvironmentFile=-/run/nix-secrets/telegram-notify' "$g/units/notify-failure@.service" || fail "token file"
   '';
 
   # DSM's synogroup can report failure for an add that worked: the membership

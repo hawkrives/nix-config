@@ -40,10 +40,6 @@
           interval = 90000;
         } # daily + 30m jitter
         {
-          unit = "paperless-exporter.service";
-          interval = 90000;
-        } # daily 01:30, no jitter
-        {
           unit = "arr-backup-pin.service";
           interval = 90000;
         } # daily + 20m jitter

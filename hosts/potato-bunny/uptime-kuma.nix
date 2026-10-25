@@ -139,28 +139,28 @@ in {
     appdataBackup.jobs.uptime-kuma.sqlite = ["kuma.db"];
 
     systemd.units."uptime-kuma.service".text = ''
-        [Unit]
-        Description=Uptime Kuma
-        ConditionPathIsMountPoint=/volume2
-        OnFailure=notify-failure@%n.service
-        After=network-online.target
-        Wants=network-online.target
+      [Unit]
+      Description=Uptime Kuma
+      ConditionPathIsMountPoint=/volume2
+      OnFailure=notify-failure@%n.service
+      After=network-online.target
+      Wants=network-online.target
 
-        [Service]
-        User=svc-uptime-kuma
-        PermissionsStartOnly=true
-        ExecStartPre=${pkgs.coreutils}/bin/install -d -o svc-uptime-kuma -m 0750 ${data}
-        # Owns everything in its data dir, as StateDirectory= would.
-        ExecStartPre=${pkgs.coreutils}/bin/chown -R svc-uptime-kuma ${data}
-        ExecStartPre=${sync}
-        Environment=DATA_DIR=${data}/
-        Environment=HOST=::
-        Environment=PORT=3010
-        Environment=NODE_ENV=production
-        Environment=UPTIME_KUMA_DB_TYPE=sqlite
-        ExecStart=${pkgs.uptime-kuma}/bin/uptime-kuma-server
-        Restart=on-failure
-        RestartSec=5
+      [Service]
+      User=svc-uptime-kuma
+      PermissionsStartOnly=true
+      ExecStartPre=${pkgs.coreutils}/bin/install -d -o svc-uptime-kuma -m 0750 ${data}
+      # Owns everything in its data dir, as StateDirectory= would.
+      ExecStartPre=${pkgs.coreutils}/bin/chown -R svc-uptime-kuma ${data}
+      ExecStartPre=${sync}
+      Environment=DATA_DIR=${data}/
+      Environment=HOST=::
+      Environment=PORT=3010
+      Environment=NODE_ENV=production
+      Environment=UPTIME_KUMA_DB_TYPE=sqlite
+      ExecStart=${pkgs.uptime-kuma}/bin/uptime-kuma-server
+      Restart=on-failure
+      RestartSec=5
     '';
   };
 }

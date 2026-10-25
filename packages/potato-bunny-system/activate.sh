@@ -11,9 +11,9 @@
 # "no DSM changes", and changes nothing at all.
 #
 # --root prefixes every filesystem path (the tests use a scratch root). DSM's
-# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI, SYNOPKG, ID, CHOWN and
-# NIX_ENV, and the daemon health probe from DAEMON_PROBE, so the tests can
-# stub them.
+# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI, SYNOPKG, ID,
+# CHOWN, RAGE and NIX_ENV, and the daemon health probe from DAEMON_PROBE, so
+# the tests can stub them.
 #
 # Ownership rules:
 # - /etc: only declared files under /etc/nix are written or removed.
@@ -53,6 +53,7 @@ ID=${ID:-id}
 CHOWN=${CHOWN:-chown}
 SYNOPKG=${SYNOPKG:-/usr/syno/bin/synopkg}
 NIX_ENV=${NIX_ENV:-nix-env}
+RAGE=${RAGE:-rage}
 DAEMON_PROBE=${DAEMON_PROBE:-}
 DAEMON_TIMEOUT=${ACTIVATE_DAEMON_TIMEOUT:-10}
 DAEMON_SETTLE=${ACTIVATE_DAEMON_SETTLE:-2}
@@ -359,6 +360,48 @@ while IFS= read -r user; do
   fi
   "$CHOWN" "$uid:100" "$home" "$home/.ssh" "$keys"
 done < <(jq -r '.users | to_entries[] | select((.value.authorizedKeys // []) | length > 0) | .key' "$GEN/users.json")
+
+# ---------------------------------------------------------------- secrets
+
+# age.secrets, decrypted with the host key into /run/nix-secrets (tmpfs on
+# DSM). After the accounts, so owners exist; before any unit starts, so
+# services find them. Each is decrypted to a temporary file and renamed into
+# place only if it changed. Anything else in the directory is removed. A
+# secret that fails to decrypt is reported, and the rest still apply.
+SECRETS_DIR=$ROOT/run/nix-secrets
+AGE_IDENTITY=$ROOT$(jq -r '.identity' "$GEN/age-secrets.json")
+mkdir -p "$SECRETS_DIR"
+chmod 0751 "$SECRETS_DIR"
+declared_secrets=()
+while IFS= read -r name; do
+  [ -n "$name" ] || continue
+  declared_secrets+=("$name")
+  read -r file owner mode < <(jq -r --arg n "$name" '.secrets[$n] | "\(.file) \(.owner) \(.mode)"' "$GEN/age-secrets.json")
+  dest=$SECRETS_DIR/$name
+  tmp=$(mktemp "$SECRETS_DIR/.$name.XXXXXX")
+  if ! "$RAGE" -d -i "$AGE_IDENTITY" -o "$tmp" "$file"; then
+    rm -f "$tmp"
+    dsm_fail "secret $name: could not decrypt $file"
+    continue
+  fi
+  chmod "$mode" "$tmp"
+  "$CHOWN" "$owner" "$tmp"
+  if [ -f "$dest" ] && cmp -s "$tmp" "$dest" &&
+    [ "$(stat -c '%a %U' "$dest")" = "$(stat -c '%a %U' "$tmp")" ]; then
+    rm -f "$tmp"
+  else
+    mv -f "$tmp" "$dest"
+    log "secret $name written"
+  fi
+done < <(jq -r '.secrets | keys[]' "$GEN/age-secrets.json")
+for f in "$SECRETS_DIR"/*; do
+  [ -e "$f" ] || continue
+  name=${f##*/}
+  if ! printf '%s\n' "${declared_secrets[@]}" | grep -qxF "$name"; then
+    log "removing secret $name"
+    rm -f "$f"
+  fi
+done
 
 # ---------------------------------------------------------------- DSM tasks
 

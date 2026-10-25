@@ -36,8 +36,6 @@
     ./channel-archive-backlog.nix
     ./recyclarr.nix
     ./tailscale.nix
-    ./paperless.nix
-    ./scanner.nix
     ./peertube.nix
     ./micasa.nix
     ./minecraft.nix
