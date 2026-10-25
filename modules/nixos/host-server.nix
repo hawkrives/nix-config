@@ -7,6 +7,7 @@
     flake.nixosModules.audit-shared
     flake.nixosModules.beszel-agent
     flake.nixosModules.documentation
+    flake.nixosModules.log-shipping
     flake.nixosModules.mdns
   ];
 

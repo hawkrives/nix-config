@@ -4,9 +4,12 @@
   # nutmeg (Apple Mac mini6,2, Late 2012) has silently hard-stopped at least
   # three times: 2026-06-25, 2026-07-11 (down 3.5h), and 2026-07-26 (down 7min).
   # Every time the journal simply ends mid-line with no shutdown sequence, and
-  # `last` records a bare "crash". The 2026-07-26 stop was investigated in
-  # detail and left *no* usable evidence: no panic, no oops, no OOM kill, no
-  # hung task, no ATA/I-O error, no thermal event, no MCE, and an empty pstore.
+  # `last` records a bare "crash". (The journal streams live to tuckles,
+  # modules/nixos/log-shipping.nix: read a dead boot there with
+  # `journalctl -D /var/log/journal/remote _HOSTNAME=nutmeg -b -1`.) The
+  # 2026-07-26 stop was investigated in detail and left *no* usable evidence:
+  # no panic, no oops, no OOM kill, no hung task, no ATA/I-O error, no thermal
+  # event, no MCE, and an empty pstore.
   #
   # That absence was not bad luck — the box was configured to leave no trace:
   #   kernel.nmi_watchdog = 0   (hard lockup detector off, despite HW support)
