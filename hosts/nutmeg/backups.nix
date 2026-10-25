@@ -87,14 +87,6 @@ in {
         ];
         path = "Preferences.xml"; # never rsync the Cache/Metadata/Media trees
       };
-      # HA writes its automatic backups to this local dir and prunes its own
-      # retention (see home-assistant.nix); this is their only offsite copy.
-      # Nothing here holds an NFS mount, so unlike the rest of the fleet the
-      # tars are already local — this job just mirrors them to the NAS.
-      home-assistant = {
-        root = config.users.users.homeassistant.home;
-        path = "backups";
-      };
 
       # beets' library.db. Worth more than its 173MB suggests: the first
       # mbsync pass over the whole library runs at MusicBrainz's ~1 req/s rate

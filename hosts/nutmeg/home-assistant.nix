@@ -1,4 +1,12 @@
-{config, ...}: {
+{
+  config,
+  synologyMount,
+  utils,
+  ...
+}: let
+  backups = "/var/lib/home-assistant/backups";
+  automount = "${utils.escapeSystemdPath backups}.automount";
+in {
   # Long-lived Home Assistant access token (ragenix). Decrypts to
   # /run/agenix/hass-token (root-owned, 0400) for driving the HA REST/WebSocket
   # API — the *supported* way to edit dashboards, config entries and registries,
@@ -56,7 +64,12 @@
     # advertisements through BlueZ over the /run/dbus mount below.
     user = "${toString config.users.users.homeassistant.uid}:${toString config.users.groups.homeassistant.gid}";
     volumes = [
-      "${config.users.users.homeassistant.home}:/config"
+      # rslave carries the backups automount (below) into the container, and
+      # with it each NAS mount and idle unmount as they happen on the host.
+      # Binding the backups path on its own would instead trigger the mount
+      # and bind the NFS mount itself; its first idle unmount would then leave
+      # HA writing to the local directory underneath.
+      "${config.users.users.homeassistant.home}:/config:rslave"
       "/run/dbus:/run/dbus:ro"
     ];
     labels = {
@@ -69,12 +82,20 @@
     ];
   };
 
-  # HA's automatic backups (~160M each, ~15 kept ≈ 2.4G) live on the local root
-  # SSD, where HA manages its own retention. They were once an NFS automount
-  # here, but hard-Requiring that mount (RequiresMountsFor) let its 5-minute
-  # idle-unmount cascade a clean stop onto HA — and failed HA's start at boot
-  # whenever the NAS wasn't reachable yet. HA now depends on nothing over the
-  # network. The offsite copy comes the same way every other service's does:
-  # the service-backup timer rsyncs /var/lib/home-assistant/backups to the NAS
-  # nightly. See hosts/nutmeg/backups.nix.
+  # HA's automatic backups (~160M each) go straight to the NAS, where HA
+  # manages its own retention.
+  #
+  # HA must never depend on the .mount: synologyMount idle-unmounts after
+  # 5 minutes, and a Requires=/RequiresMountsFor= edge on the mount turns that
+  # unmount into a clean stop of HA (and fails HA's start at boot whenever the
+  # NAS isn't reachable yet). It orders after the .automount instead, which
+  # stays up and never stops anything, so that the container's /config bind
+  # captures the automount rather than the bare local directory underneath it.
+  # With the NAS down, a backup fails after the mount timeout and HA keeps
+  # running.
+  fileSystems.${backups} = synologyMount "/volume1/app-servarr/home-assistant/backups" {};
+  systemd.services.podman-homeassistant = {
+    wants = [automount];
+    after = [automount];
+  };
 }
