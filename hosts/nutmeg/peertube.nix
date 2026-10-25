@@ -5,8 +5,10 @@
 }: let
   cfg = config.services.peertube;
 in {
-  services.tsnsrv.services.peertube.urlParts.host = "127.0.0.1";
-  services.tsnsrv.services.peertube.urlParts.port = config.services.peertube.listenHttp;
+  services.tsnsrv.services.peertube = lib.mkIf cfg.enable {
+    urlParts.host = "127.0.0.1";
+    urlParts.port = cfg.listenHttp;
+  };
 
   services.peertube = {
     # disable until we get the media off of nutmeg
