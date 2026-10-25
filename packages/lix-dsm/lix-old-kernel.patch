@@ -1,0 +1,38 @@
+diff -ru a/lix/libexec/launch-builder-linux.cc b/lix/libexec/launch-builder-linux.cc
+--- a/lix/libexec/launch-builder-linux.cc
++++ b/lix/libexec/launch-builder-linux.cc
+@@ -119,7 +119,8 @@
+                 reinterpret_cast<const struct sock_filter *>(seccompBPF.begin())
+             ),
+         };
+-        if (syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, 0, &fprog) != 0) {
++        // A kernel built without CONFIG_SECCOMP returns ENOSYS; build unfiltered there.
++        if (syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, 0, &fprog) != 0 && errno != ENOSYS) {
+             throw SysError("unable to load seccomp BPF program");
+         }
+     }
+@@ -329,7 +330,8 @@
+     /* Unshare the cgroup namespace. This means
+        /proc/self/cgroup will show the child's cgroup as '/'
+        rather than whatever it is in the parent. */
+-    if (unshare(CLONE_NEWCGROUP) == -1) {
++    // Cgroup namespaces need Linux 4.6; older kernels return EINVAL, so build without one.
++    if (unshare(CLONE_NEWCGROUP) == -1 && errno != EINVAL) {
+         throw SysError("unsharing cgroup namespace");
+     }
+ 
+diff -ru a/lix/nix/daemon.cc b/lix/nix/daemon.cc
+--- a/lix/nix/daemon.cc
++++ b/lix/nix/daemon.cc
+@@ -212,6 +212,11 @@
+                 == -1
+             && errno != ERANGE)
+         {
++            // Linux < 4.13 has no SO_PEERGROUPS; carry on without supplementary groups.
++            if (errno == ENOPROTOOPT) {
++                supplementaryGids.clear();
++                break;
++            }
+             throw SysError("getting peer groups");
+         }
+ 
