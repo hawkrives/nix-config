@@ -30,21 +30,34 @@
   # $ROOT/active/<unit>; nix-daemon's health comes from $ROOT/daemon-health.
   # Groups live in $ROOT/groups/<name> (one member per line); known users in
   # $ROOT/known-users.
+  # nix-daemon's behaviour after a (re)start comes from $ROOT/daemon-health:
+  #   ok (default)  active and answering
+  #   crashloop     systemd says active, but the socket never answers
+  #   dead          not active at all
   systemctlStub = pkgs.writeShellScript "systemctl" ''
     echo "systemctl $*" >> "$ROOT/calls"
+    unit=''${*: -1}
+    health=$(cat "$ROOT/daemon-health" 2>/dev/null || echo ok)
     case "$1" in
       is-active)
-        [ "$2" = --quiet ] && shift
-        if [ "$2" = nix-daemon.service ]; then
-          [ "$(cat "$ROOT/daemon-health" 2>/dev/null || echo active)" = active ]
-        else
-          [ -e "$ROOT/active/$2" ]
-        fi ;;
-      start|restart) mkdir -p "$ROOT/active"; touch "$ROOT/active/$2" ;;
-      stop) rm -f "$ROOT/active/$2" ;;
+        [ -e "$ROOT/active/$unit" ] || exit 1
+        [ "$unit" != nix-daemon.service ] || [ "$health" != dead ] ;;
+      start|restart) mkdir -p "$ROOT/active"; touch "$ROOT/active/$unit" ;;
+      stop) rm -f "$ROOT/active/$unit" ;;
       daemon-reload) ;;
       *) echo "systemctl stub: unexpected $*" >&2; exit 2 ;;
     esac
+  '';
+  # Stands in for "the daemon answers on its socket".
+  probeStub = pkgs.writeShellScript "probe" ''
+    [ -e "$ROOT/active/nix-daemon.service" ] && [ "$(cat "$ROOT/daemon-health" 2>/dev/null || echo ok)" = ok ]
+  '';
+  # nix-env -p <profile> --set <path>: just repoint the profile link.
+  nixEnvStub = pkgs.writeShellScript "nix-env" ''
+    echo "nix-env $*" >> "$ROOT/calls"
+    [ "$1" = -p ] && [ "$3" = --set ] || { echo "nix-env stub: unexpected $*" >&2; exit 2; }
+    mkdir -p "$(dirname "$2")"
+    ln -sfn "$4" "$2"
   '';
   synouserStub = pkgs.writeShellScript "synouser" ''
     echo "synouser $*" >> "$ROOT/calls"
@@ -84,8 +97,11 @@
       echo hawken > $ROOT/known-users
       mkdir -p $ROOT/groups && : > $ROOT/groups/video   # a DSM group that already exists
 
+      mkdir -p $ROOT/usr/lib/systemd/system
+      printf '[Service]\nExecStart=/usr/lib/systemd/systemd --user\n' > "$ROOT/usr/lib/systemd/system/user@.service"
+
       export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub}
-      export NIX_ENV=true ACTIVATE_DAEMON_TIMEOUT=1
+      export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1
       run() { : > $ROOT/calls; "$1/bin/activate" --root "$ROOT"; }
       called() { grep -qx -- "$1" $ROOT/calls; }
       called_matching() { grep -q -- "$1" $ROOT/calls; }
@@ -139,8 +155,28 @@
       users.groups.nixbld.members = ["nixbld1" "nixbld2"];
     }
   ];
+  genMediaGroup = mkGeneration [
+    {
+      users.users.svc-a.extraGroups = ["media"];
+      users.groups.media = {};
+    }
+  ];
+  genDaemonConf = conf:
+    mkGeneration [
+      {
+        environment.etc."nix/nix.conf".text = conf;
+        systemd.units."nix-daemon.service" = unit "[Service]\nExecStart=/old/nix-daemon\n";
+      }
+    ];
+  genCollidesDsm = mkGeneration [{systemd.units."synorelayd.service" = unit "[Service]\nExecStart=/bin/x\n";}];
+  genCollidesTemplate = mkGeneration [{systemd.units."user@.service" = unit "[Service]\nExecStart=/bin/x\n";}];
+  installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
+  installerSocket = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.socket";
 in {
   assertions-reject = assert rejects [{environment.etc."passwd".text = "";}];
+  assert rejects [{environment.etc."nix/../shadow".text = "";}];
+  assert rejects [{environment.etc."nix//x".text = "";}];
+  assert rejects [{systemd.units."../x.service".text = "";}];
   assert rejects [{users.users.plex = {};}];
   assert !(rejects [{users.users.svc-plex = {};}]);
     check "assertions-reject" "";
@@ -229,6 +265,64 @@ in {
     ! called_matching 'foo.service' || fail "foreign unit acted on"
   '';
 
+  # The state says b.service is ours, but by now DSM has a real file there.
+  ignores-foreign-in-state = scenario "ignores-foreign-in-state" ''
+    run ${genAB}
+    rm $ROOT/etc/systemd/system/b.service
+    printf '[Unit]\nDescription=DSM b\n' > $ROOT/etc/systemd/system/b.service
+    run ${genA}
+    grep -q 'DSM b' $ROOT/etc/systemd/system/b.service || fail "DSM's b.service removed"
+    ! called "systemctl stop b.service" || fail "DSM's b.service stopped"
+  '';
+
+  refuses-dsm-collision = scenario "refuses-dsm-collision" ''
+    if run ${genCollidesDsm}; then fail "declaring a DSM unit name succeeded"; fi
+    if run ${genCollidesTemplate}; then fail "shadowing DSM's user@.service succeeded"; fi
+    [ ! -e "$ROOT/etc/systemd/system/user@.service" ] || fail "user@.service written"
+  '';
+
+  wants-foreign = scenario "wants-foreign" ''
+    run ${genDropIn}
+    # DSM (or a person) re-points the link; it is no longer the one we made.
+    ln -sfn /etc/systemd/system/user@1027.service $ROOT/etc/systemd/system/multi-user.target.wants/user@1027.service
+    run ${genA}
+    [ -L $ROOT/etc/systemd/system/multi-user.target.wants/user@1027.service ] || fail "foreign wants link removed"
+  '';
+
+  etc-path-guard = scenario "etc-path-guard" ''
+    run ${genA}
+    jq '.etc += ["passwd", "nix/../shadow"]' $ROOT/volume1/@appdata/nix-system/state.json > s.json
+    mv s.json $ROOT/volume1/@appdata/nix-system/state.json
+    run ${genA}
+  '';
+
+  pending-state = scenario "pending-state" ''
+    run ${genA}
+    if NIX_ENV=false run ${genAB}; then fail "expected the profile step to fail"; fi
+    run ${genA}
+    [ ! -e $ROOT/etc/systemd/system/b.service ] || fail "b.service from the failed run leaked"
+    [ ! -e $ROOT/etc/nix/old.conf ] || fail "old.conf from the failed run leaked"
+  '';
+
+  corrupt-state = scenario "corrupt-state" ''
+    mkdir -p $ROOT/volume1/@appdata/nix-system
+    echo '{not json' > $ROOT/volume1/@appdata/nix-system/state.json
+    run ${genDaemon1}
+    [ -e $ROOT/active/nix-daemon.service ] || fail "daemon not started with a corrupt state"
+  '';
+
+  profile-switch = scenario "profile-switch" ''
+    run ${genA}
+    [ "$(readlink $ROOT/nix/var/nix/profiles/potato-bunny)" = "${genA}" ] || fail "system profile not switched"
+    run ${genA}
+    ! called_matching '^nix-env' || fail "profile re-switched with nothing changed"
+  '';
+
+  gc-root = scenario "gc-root" ''
+    if NIX_ENV=false run ${genA}; then fail "expected the profile step to fail"; fi
+    [ "$(readlink $ROOT/nix/var/nix/gcroots/potato-bunny-pending)" = "${genA}" ] || fail "generation not GC-rooted before switching"
+  '';
+
   restart-changed = scenario "restart-changed" ''
     run ${genA}
     run ${genA2}
@@ -242,9 +336,69 @@ in {
     ! called "systemctl restart a.service" || fail "restartIfChanged=false unit restarted"
   '';
 
+  daemon-started = scenario "daemon-started" ''
+    run ${genDaemon1}
+    called "systemctl start nix-daemon.service" || fail "daemon not started"
+  '';
+
+  # systemd reports a crash-looping simple service as active; only the socket tells.
+  daemon-probe = scenario "daemon-probe" ''
+    run ${genDaemon1}
+    echo crashloop > $ROOT/daemon-health
+    if run ${genDaemon2}; then fail "activate succeeded with a daemon that never answers"; fi
+    [ "$(link nix-daemon.service)" = "${genDaemon1}/units/nix-daemon.service" ] || fail "not rolled back"
+  '';
+
+  # First activation on the NAS: the installer's daemon is linked and running.
+  daemon-first-run = scenario "daemon-first-run" ''
+    ln -s ${installerDaemon} $ROOT/etc/systemd/system/nix-daemon.service
+    mkdir -p $ROOT/active && touch $ROOT/active/nix-daemon.service
+    run ${genDaemon1}
+    called "systemctl restart nix-daemon.service" || fail "installer daemon not replaced"
+    [ "$(link nix-daemon.service)" = "${genDaemon1}/units/nix-daemon.service" ] || fail "not linked"
+  '';
+
+  daemon-first-run-rollback = scenario "daemon-first-run-rollback" ''
+    ln -s ${installerDaemon} $ROOT/etc/systemd/system/nix-daemon.service
+    mkdir -p $ROOT/active && touch $ROOT/active/nix-daemon.service
+    echo crashloop > $ROOT/daemon-health
+    if run ${genDaemon1}; then fail "activate succeeded with a broken daemon"; fi
+    [ "$(link nix-daemon.service)" = ${installerDaemon} ] || fail "installer daemon not restored: $(link nix-daemon.service)"
+  '';
+
+  nixconf-restarts-daemon = scenario "nixconf-restarts-daemon" ''
+    run ${genDaemonConf "a = 1\n"}
+    run ${genDaemonConf "a = 2\n"}
+    called "systemctl restart nix-daemon.service" || fail "nix.conf change did not restart the daemon"
+  '';
+
+  nixconf-rollback = scenario "nixconf-rollback" ''
+    run ${genDaemonConf "a = 1\n"}
+    echo crashloop > $ROOT/daemon-health
+    if run ${genDaemonConf "a = 2\n"}; then fail "activate succeeded with a broken daemon"; fi
+    grep -qx 'a = 1' $ROOT/etc/nix/nix.conf || fail "old nix.conf not restored"
+  '';
+
+  keeps-daemon = scenario "keeps-daemon" ''
+    run ${genDaemon1}
+    run ${genA}
+    ! called "systemctl stop nix-daemon.service" || fail "daemon stopped"
+    [ -L $ROOT/etc/systemd/system/nix-daemon.service ] || fail "daemon unlinked"
+  '';
+
+  installer-socket-removed = scenario "installer-socket-removed" ''
+    mkdir -p $ROOT/etc/systemd/system/sockets.target.wants
+    ln -s ${installerSocket} $ROOT/etc/systemd/system/nix-daemon.socket
+    ln -s ${installerSocket} $ROOT/etc/systemd/system/sockets.target.wants/nix-daemon.socket
+    run ${genDaemon1}
+    [ ! -e $ROOT/etc/systemd/system/nix-daemon.socket ] || fail "installer socket left linked"
+    [ ! -L $ROOT/etc/systemd/system/sockets.target.wants/nix-daemon.socket ] || fail "installer socket still wanted"
+    called "systemctl stop nix-daemon.socket" || fail "installer socket not stopped"
+  '';
+
   daemon-rollback = scenario "daemon-rollback" ''
     run ${genDaemon1}
-    echo failed > $ROOT/daemon-health
+    echo dead > $ROOT/daemon-health
     if run ${genDaemon2}; then fail "activate succeeded with a dead daemon"; fi
     [ "$(link nix-daemon.service)" = "${genDaemon1}/units/nix-daemon.service" ] \
       || fail "daemon not rolled back: $(link nix-daemon.service)"
@@ -258,9 +412,25 @@ in {
     called_matching '^synouser --add svc-test ' || fail "svc-test not created"
     ! called_matching '^synouser --add svc-known' || fail "existing user re-added"
     called "synogroup --add nixbld" || fail "missing group not created"
-    called "synogroup --member nixbld nixbld1 nixbld2" || fail "membership not set"
+    called "synogroup --memberadd nixbld nixbld1" || fail "nixbld1 not added"
+    called "synogroup --memberadd nixbld nixbld2" || fail "nixbld2 not added"
     called "synogroup --memberadd video svc-known" || fail "extraGroups not applied"
     ! called_matching '--del' || fail "something was deleted"
+  '';
+
+  # Membership only grows: members DSM (or a person) added are never removed.
+  groups-additive = scenario "groups-additive" ''
+    printf 'stranger\nnixbld1\n' > $ROOT/groups/nixbld
+    run ${genUsers}
+    grep -qx stranger $ROOT/groups/nixbld || fail "existing member removed"
+    ! called_matching '^synogroup --member ' || fail "membership replaced wholesale"
+    ! called "synogroup --memberadd nixbld nixbld1" || fail "existing member re-added"
+  '';
+
+  # A user's extraGroups may name a group this generation creates.
+  groups-before-users = scenario "groups-before-users" ''
+    run ${genMediaGroup}
+    grep -qx svc-a $ROOT/groups/media || fail "svc-a not in media"
   '';
 
   no-direct-account-writes = scenario "no-direct-account-writes" ''

@@ -113,8 +113,8 @@ in {
 
   config.assertions =
     lib.mapAttrsToList (path: _: {
-      assertion = lib.hasPrefix "nix/" path;
-      message = "environment.etc.\"${path}\": only files under /etc/nix are managed (the rest of /etc belongs to DSM).";
+      assertion = lib.hasPrefix "nix/" path && lib.all (c: c != "" && c != "." && c != "..") (lib.splitString "/" path);
+      message = "environment.etc.\"${path}\": only plain paths under /etc/nix are managed (the rest of /etc belongs to DSM).";
     })
     config.environment.etc
     ++ lib.mapAttrsToList (name: _: {
@@ -123,8 +123,8 @@ in {
     })
     config.users.users
     ++ lib.mapAttrsToList (name: _: {
-      assertion = lib.length (lib.splitString "/" name) <= 2;
-      message = "systemd.units.\"${name}\": at most one \"/\" (a drop-in).";
+      assertion = builtins.match "[A-Za-z0-9@_.:-]+(\\.d/[A-Za-z0-9@_.:-]+)?" name != null && !(lib.hasInfix ".." name);
+      message = "systemd.units.\"${name}\": must be a unit name or one drop-in (\"foo.service.d/bar.conf\").";
     })
     config.systemd.units;
 }

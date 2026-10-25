@@ -17,7 +17,7 @@
 
   activateScript = pkgs.writeShellApplication {
     name = "potato-bunny-activate";
-    runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils];
+    runtimeInputs = [pkgs.coreutils pkgs.findutils pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.diffutils pkgs.util-linux];
     text = builtins.readFile ./activate.sh;
   };
 
@@ -83,8 +83,13 @@
       cp ${usersJson} $out/users.json
       printf '%s\n' ${lib.escapeShellArgs restartExempt} | sed '/^$/d' > $out/restart-exempt
       ${lib.optionalString (defaultProfile != null) "ln -s ${defaultProfile} $out/default-profile"}
+      # The generation's own nix-env, since neither sudo's secure_path nor the
+      # DSM Task Scheduler has nix on PATH.
       cat > $out/bin/activate <<EOF
       #!${pkgs.runtimeShell}
+      if [ -z "\''${NIX_ENV:-}" ] && [ -x $out/default-profile/bin/nix-env ]; then
+        export NIX_ENV=$out/default-profile/bin/nix-env
+      fi
       exec ${lib.getExe activateScript} --generation $out "\$@"
       EOF
       chmod +x $out/bin/activate
