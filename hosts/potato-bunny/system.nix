@@ -11,7 +11,7 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
-  imports = [./nix-cache.nix ./mbx-cache.nix];
+  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix];
 
   nix.package = lix;
   profileExtra = [pkgs.cacert];

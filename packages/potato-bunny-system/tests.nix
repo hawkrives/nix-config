@@ -1128,6 +1128,21 @@ in {
     fi
   '';
 
+  watch-units = check "watch-units" ''
+    g=${hostGeneration}
+    s=$g/units/host-watch-nutmeg.service
+    [ -f $s ] && [ -f "$g/units/notify-failure@.service" ] && [ -f $g/units/host-watch-nutmeg.timer ] || fail "units missing"
+    [ -e $g/wants/timers.target/host-watch-nutmeg.timer ] || fail "timer not wanted by timers.target"
+    [ ! -e $g/wants/multi-user.target/host-watch-nutmeg.service ] || fail "check started at boot"
+    [ ! -e "$g/wants/multi-user.target/notify-failure@.service" ] || fail "template wanted"
+    grep -qx 'OnFailure=notify-failure@%n.service' $s || fail "no OnFailure"
+    probe=$(sed -n 's/^ExecStart=//p' $s)
+    grep -q '100.70.139.99' $probe && grep -q ' 22 ' $probe || fail "probe target: $(cat $probe)"
+    notify=$(sed -n 's/^ExecStart=//p' "$g/units/notify-failure@.service" | cut -d' ' -f1)
+    grep -q '/usr/bin/journalctl' $notify && grep -q 'potato-bunny' $notify || fail "notify script: $(cat $notify)"
+    grep -q 'telegram-notify.env' "$g/units/notify-failure@.service" || fail "token file"
+  '';
+
   generation-layout = check "generation-layout" ''
     g=${layoutGen}
     grep -qx 'x = 1' $g/etc/nix/nix.conf || fail "nix.conf content"
