@@ -297,6 +297,9 @@ in {
     openFirewall = true;
 
     dataDir = "/var/lib/tautulli";
+    # The module's default is still /var/lib/plexpy/config.ini (Tautulli's old
+    # PlexPy name) and doesn't follow dataDir.
+    configFile = "/var/lib/tautulli/config.ini";
   };
 
   # Tautulli binds IPv4-only (0.0.0.0:8181), so point tsnsrv at 127.0.0.1
