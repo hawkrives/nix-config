@@ -263,6 +263,47 @@ for u in "${declared_units[@]}"; do
   fi
 done
 
+# ---------------------------------------------------------------- accounts
+
+# Before any unit starts, so a service's User= exists when it does.
+
+members_of() {
+  "$SYNOGROUP" --get "$1" 2>/dev/null | sed -nE 's/^[0-9]+:\[(.*)\]$/\1/p'
+}
+add_member() { # add_member <group> <user>: only ever adds
+  if ! members_of "$1" | grep -qxF "$2"; then
+    log "adding $2 to $1"
+    "$SYNOGROUP" --memberadd "$1" "$2" >/dev/null
+  fi
+}
+
+# Groups first, so users' extraGroups can name groups this generation creates.
+while IFS= read -r group; do
+  [ -n "$group" ] || continue
+  if ! "$SYNOGROUP" --get "$group" >/dev/null 2>&1; then
+    log "creating group $group"
+    "$SYNOGROUP" --add "$group" >/dev/null
+  fi
+  while IFS= read -r member; do
+    [ -n "$member" ] && add_member "$group" "$member"
+  done < <(jq -r --arg g "$group" '.groups[$g][]' "$GEN/users.json")
+done < <(jq -r '.groups | keys[]' "$GEN/users.json")
+
+while IFS= read -r user; do
+  [ -n "$user" ] || continue
+  if ! "$SYNOUSER" --get "$user" >/dev/null 2>&1; then
+    log "creating user $user"
+    desc=$(jq -r --arg u "$user" '.users[$u].description' "$GEN/users.json")
+    # The account only runs services; nobody logs in with this password. The
+    # suffix satisfies DSM's optional mixed-class password rules.
+    pw="$(head -c 24 /dev/urandom | base64 | tr -d '\n')Aa1!"
+    "$SYNOUSER" --add "$user" "$pw" "$desc" 0 "" 0 >/dev/null
+  fi
+  while IFS= read -r group; do
+    [ -n "$group" ] && add_member "$group" "$user"
+  done < <(jq -r --arg u "$user" '.users[$u].extraGroups[]' "$GEN/users.json")
+done < <(jq -r '.users | keys[]' "$GEN/users.json")
+
 # ---------------------------------------------------------------- nix-daemon
 
 probe_daemon() {
@@ -310,6 +351,7 @@ rollback_daemon() {
   fi
 }
 
+daemon_failed=false
 if declared nix-daemon.service; then
   daemon_changed=$etc_changed
   for u in "${changed[@]}"; do
@@ -323,8 +365,14 @@ if declared nix-daemon.service; then
     "$SYSTEMCTL" start nix-daemon.service || true
   fi
   if ! daemon_healthy; then
-    $daemon_changed && rollback_daemon
-    die "nix-daemon is not healthy; state not advanced"
+    if $daemon_changed; then
+      rollback_daemon
+      die "nix-daemon is not healthy; state not advanced"
+    fi
+    # Nothing to roll back to (typically at boot): bring up everything else,
+    # which doesn't need the daemon, then fail without advancing anything.
+    log "nix-daemon is not healthy; starting the other units anyway"
+    daemon_failed=true
   fi
 fi
 
@@ -354,46 +402,9 @@ for w in "${declared_wants[@]}"; do
   fi
 done
 
-# ---------------------------------------------------------------- accounts
-
-members_of() {
-  "$SYNOGROUP" --get "$1" 2>/dev/null | sed -nE 's/^[0-9]+:\[(.*)\]$/\1/p'
-}
-add_member() { # add_member <group> <user>: only ever adds
-  if ! members_of "$1" | grep -qxF "$2"; then
-    log "adding $2 to $1"
-    "$SYNOGROUP" --memberadd "$1" "$2" >/dev/null
-  fi
-}
-
-# Groups first, so users' extraGroups can name groups this generation creates.
-while IFS= read -r group; do
-  [ -n "$group" ] || continue
-  if ! "$SYNOGROUP" --get "$group" >/dev/null 2>&1; then
-    log "creating group $group"
-    "$SYNOGROUP" --add "$group" >/dev/null
-  fi
-  while IFS= read -r member; do
-    [ -n "$member" ] && add_member "$group" "$member"
-  done < <(jq -r --arg g "$group" '.groups[$g][]' "$GEN/users.json")
-done < <(jq -r '.groups | keys[]' "$GEN/users.json")
-
-while IFS= read -r user; do
-  [ -n "$user" ] || continue
-  if ! "$SYNOUSER" --get "$user" >/dev/null 2>&1; then
-    log "creating user $user"
-    desc=$(jq -r --arg u "$user" '.users[$u].description' "$GEN/users.json")
-    # The account only runs services; nobody logs in with this password. The
-    # suffix satisfies DSM's optional mixed-class password rules.
-    pw="$(head -c 24 /dev/urandom | base64 | tr -d '\n')Aa1!"
-    "$SYNOUSER" --add "$user" "$pw" "$desc" 0 "" 0 >/dev/null
-  fi
-  while IFS= read -r group; do
-    [ -n "$group" ] && add_member "$group" "$user"
-  done < <(jq -r --arg u "$user" '.users[$u].extraGroups[]' "$GEN/users.json")
-done < <(jq -r '.users | keys[]' "$GEN/users.json")
-
 # ---------------------------------------------------------------- profiles
+
+$daemon_failed && die "nix-daemon is not healthy; profiles and state not advanced"
 
 switch_profile() { # switch_profile <profile> <target>
   if [ "$(readlink -f "$1" 2>/dev/null)" != "$(readlink -f "$2")" ]; then

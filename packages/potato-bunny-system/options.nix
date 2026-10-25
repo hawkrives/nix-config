@@ -88,7 +88,7 @@ in {
         };
       });
       default = {};
-      description = "Groups whose membership activate sets to exactly `members`.";
+      description = "Groups that must contain at least `members`; activate only ever adds.";
     };
 
     homeUsers = mkOption {
@@ -135,15 +135,20 @@ in {
   config.systemd.units = lib.mkMerge (lib.mapAttrsToList (name: u: let
       uid = toString u.uid;
     in {
-      "user-runtime-dir-${uid}.service".text = ''
-        [Unit]
-        Description=Runtime directory for ${name}
+      # restartIfChanged off: its text changes with every coreutils bump, and a
+      # restart propagates to user@<uid> (Requires=) and every user service.
+      "user-runtime-dir-${uid}.service" = {
+        restartIfChanged = false;
+        text = ''
+          [Unit]
+          Description=Runtime directory for ${name}
 
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=${pkgs.coreutils}/bin/install -d -m 0700 -o ${uid} -g 100 /run/user/${uid}
-      '';
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=${pkgs.coreutils}/bin/install -d -m 0700 -o ${uid} -g 100 /run/user/${uid}
+        '';
+      };
       "user@${uid}.service.d/nix-system.conf".text = ''
         [Unit]
         Requires=user-runtime-dir-${uid}.service

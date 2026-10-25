@@ -75,7 +75,10 @@ a root-only (`0400`, in a `0700` directory) file, written once by hand:
 
 ```bash
 sudo install -d -m 0700 /volume1/@appdata/nix-system/secrets
-sudo sh -c 'umask 077; echo "TOKEN=<token>" > /volume1/@appdata/nix-system/secrets/beszel-agent.env'
+read -rs TOKEN    # paste the token; it isn't echoed, logged or put on a command line
+printf 'TOKEN=%s\n' "$TOKEN" |
+  sudo sh -c 'umask 277; cat > /volume1/@appdata/nix-system/secrets/beszel-agent.env'
+unset TOKEN
 ```
 
 `/volume1/@appdata` is not an SMB share, unlike `/volume1/nix`. The unit has no

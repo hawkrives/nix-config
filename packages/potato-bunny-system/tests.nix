@@ -199,6 +199,18 @@
   genCollidesDsm = mkGeneration [{systemd.units."synorelayd.service" = unit "[Service]\nExecStart=/bin/x\n";}];
   genCollidesTemplate = mkGeneration [{systemd.units."user@.service" = unit "[Service]\nExecStart=/bin/x\n";}];
   genProfile = mkGeneration [{nix.package = pkgs.hello;}];
+  genUserUnit = mkGeneration [
+    {
+      users.users.svc-foo = {};
+      systemd.units."foo.service" = unit "[Service]\nUser=svc-foo\nExecStart=/bin/foo\n";
+    }
+  ];
+  genDaemonAndA = mkGeneration [
+    {
+      systemd.units."nix-daemon.service" = unit "[Service]\nExecStart=/old/nix-daemon\n";
+      systemd.units."a.service" = unit "[Service]\nExecStart=/bin/a\n";
+    }
+  ];
   installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
   installerSocket = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.socket";
 in {
@@ -216,6 +228,7 @@ in {
     grep -q 'XDG_RUNTIME_DIR=/run/user/1027' "$g/units/user@1027.service.d/nix-system.conf" || fail "user@1027 drop-in"
     grep -q 'Requires=user-runtime-dir-1027.service' "$g/units/user@1027.service.d/nix-system.conf" || fail "user@1027 requires runtime dir"
     [ -e "$g/wants/multi-user.target/user@1027.service" ] || fail "user@1027 not wanted at boot"
+    grep -qx user-runtime-dir-1027.service $g/restart-exempt || fail "runtime dir unit restarts (and drags user@1027 along) when its store paths change"
     jq -e '.groups.nixbld | length == 32' $g/users.json >/dev/null || fail "nixbld members"
     grep -q "$g/default-profile/bin/nix-env" $g/bin/activate || fail "activate does not default to its own nix-env"
   '';
@@ -510,6 +523,25 @@ in {
     [ ! -e $ROOT/etc/systemd/system/nix-daemon.socket ] || fail "installer socket left linked"
     [ ! -L $ROOT/etc/systemd/system/sockets.target.wants/nix-daemon.socket ] || fail "installer socket still wanted"
     called "systemctl stop nix-daemon.socket" || fail "installer socket not stopped"
+  '';
+
+  # A service's account must exist before the service starts.
+  users-before-units = scenario "users-before-units" ''
+    run ${genUserUnit}
+    add=$(grep -n "^synouser --add svc-foo " $ROOT/calls | cut -d: -f1)
+    start=$(grep -n "^systemctl start foo.service" $ROOT/calls | cut -d: -f1)
+    [ -n "$add" ] && [ -n "$start" ] || fail "missing add or start: $(cat $ROOT/calls)"
+    [ "$add" -lt "$start" ] || fail "foo.service started before svc-foo existed"
+  '';
+
+  # At boot (nothing changed) a daemon that won't come up must not keep the
+  # rest of the layer down; activate still fails and leaves the state alone.
+  daemon-down-others-start = scenario "daemon-down-others-start" ''
+    run ${genDaemonAndA}
+    rm -f $ROOT/active/a.service
+    echo dead > $ROOT/daemon-health
+    if run ${genDaemonAndA}; then fail "activate succeeded with a dead daemon"; fi
+    called "systemctl start a.service" || fail "a.service not started while the daemon was down"
   '';
 
   daemon-rollback = scenario "daemon-rollback" ''
