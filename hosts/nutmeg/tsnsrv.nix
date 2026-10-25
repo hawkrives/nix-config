@@ -5,8 +5,8 @@
   #
   # Keep it in ragenix rather than a file placed on the host: this grants the
   # ability to mint tailnet nodes, and anything outside agenix ends up
-  # world-readable to every local user here, `techcyte` (who has ssh access)
-  # included. Same arrangement as tuckles. See secrets/secrets.nix.
+  # world-readable to every local user here. Same arrangement as tuckles. See
+  # secrets/secrets.nix.
   age.secrets.tsnsrv-authkey-nutmeg.file = ../../secrets/tsnsrv-authkey-nutmeg.age;
 
   services.tsnsrv = {

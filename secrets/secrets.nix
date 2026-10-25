@@ -75,7 +75,7 @@ in {
 
   # Same, for nutmeg. It grants the ability to mint tailnet nodes, so it lives
   # here rather than as a file on the host, where it would be readable by every
-  # local user — `techcyte` has ssh access to nutmeg.
+  # local user.
   "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [nutmeg];
 
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
