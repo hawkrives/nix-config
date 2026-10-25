@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2029 # remote commands embed store paths built on this side, on purpose
+# shellcheck disable=SC2029,SC2087 # remote commands embed values from this side (store paths, the boot script), on purpose
 # Deploy potato-bunny (the Synology) from this machine: build the system layer
 # and hawken's home-manager generation here, copy both to the NAS, then
 # activate them there.
@@ -46,6 +46,30 @@ fi
 
 echo "activating system layer…"
 ssh "$host" "sudo $system/bin/activate"
+
+# DSM runs this Task Scheduler boot-up task as root at every boot: it mounts
+# /nix and /etc/nix (bind mounts of /volume1/nix, which can't move into the
+# layer since they are what makes /nix exist) and re-applies the system
+# layer. Its script is hosts/potato-bunny/boot-task.sh; it's set through
+# DSM's own API, the same path as the Task Scheduler UI.
+echo "checking the boot task…"
+boot_task="Mount nix and start daemon"
+ssh "$host" "sudo bash -s" <<EOF
+set -euo pipefail
+W=/usr/syno/bin/synowebapi
+want=\$(echo '$(base64 -w0 "$flake/hosts/potato-bunny/boot-task.sh")' | base64 -d)
+have=\$(\$W --exec api=SYNO.Core.EventScheduler method=get version=1 task_name='"$boot_task"' 2>/dev/null | jq -r .data.operation)
+if [ "\$have" = "\$want" ]; then
+  echo "boot task up to date"
+else
+  echo "updating boot task"
+  \$W --exec api=SYNO.Core.EventScheduler method=set version=1 \\
+    task_name='"$boot_task"' event='"bootup"' enable=true owner='{"0":"root"}' \\
+    depend_on_task='""' operation_type='"script"' \\
+    notify_enable=true notify_if_error=true notify_mail='"hawkrives@fastmail.fm"' \\
+    operation="\$(jq -Rs . <<<"\$want")" 2>/dev/null | jq -e .success >/dev/null
+fi
+EOF
 
 echo "activating home-manager for hawken…"
 ssh "$host" "PATH=$remote_bin:\$PATH XDG_RUNTIME_DIR=/run/user/1027 HOME_MANAGER_BACKUP_EXT=pre-hm $home/activate"
