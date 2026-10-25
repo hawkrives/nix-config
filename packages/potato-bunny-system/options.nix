@@ -99,6 +99,45 @@ in {
       description = "Users whose systemd user manager runs from boot, for home-manager services.";
     };
 
+    dsm.tasks = mkOption {
+      type = types.attrsOf (types.submodule {
+        options = {
+          event = mkOption {
+            type = types.enum ["bootup" "shutdown"];
+            description = "When DSM runs the task.";
+          };
+          script = mkOption {
+            type = types.str;
+            description = "Shell script DSM runs as root.";
+          };
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+          };
+          dependsOn = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Name of a task DSM must run first.";
+          };
+          notifyOnError = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Have DSM email notifyMail when the script exits non-zero.";
+          };
+          notifyMail = mkOption {
+            type = types.str;
+            default = "";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        DSM Task Scheduler boot-up/shutdown tasks, keyed by task name, run as
+        root. activate creates and updates them through DSM's EventScheduler
+        API and never deletes any, declared before or not.
+      '';
+    };
+
     nix.package = mkOption {
       type = types.nullOr types.package;
       default = null;
@@ -118,6 +157,11 @@ in {
       message = "environment.etc.\"${path}\": only plain paths under /etc/nix are managed (the rest of /etc belongs to DSM).";
     })
     config.environment.etc
+    ++ lib.mapAttrsToList (name: _: {
+      assertion = name != "Mount nix and start daemon";
+      message = "dsm.tasks.\"${name}\": that task mounts /nix and runs activate, so scripts/deploy-potato-bunny.sh owns it.";
+    })
+    config.dsm.tasks
     ++ lib.mapAttrsToList (name: _: {
       assertion = lib.hasPrefix "svc-" name;
       message = "users.users.${name}: service accounts must be named svc-<service>.";

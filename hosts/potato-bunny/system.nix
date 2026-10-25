@@ -53,6 +53,42 @@ in {
 
   homeUsers.hawken.uid = 1027;
 
+  # DSM Task Scheduler boot-up tasks (run as root). DSM also has tasks this
+  # layer doesn't manage: "Mount nix and start daemon" (scripts/deploy-potato-
+  # bunny.sh owns it), "enable nested virtualization" and "add hawken to
+  # sudoers" (owned by hawken in DSM; declaring them would make them root's),
+  # and "HDD Hibernation Fixer task" (a 14 KB self-extracting script).
+  dsm.tasks = let
+    notify = {
+      notifyOnError = true;
+      notifyMail = "hawkrives@fastmail.fm";
+    };
+  in {
+    # 007revad's scripts, from /volume1/bin/007revad: add the drives to DSM's
+    # compatibility db, then enable deduplication for them.
+    "Synology_HDD_db" =
+      notify
+      // {
+        event = "bootup";
+        script = "bash /volume1/bin/007revad/Synology_HDD_db/syno_hdd_db.sh --noupdate --ram --autoupdate=3 --email -S";
+      };
+    "Synology_enable_Deduplication" =
+      notify
+      // {
+        event = "bootup";
+        dependsOn = "Synology_HDD_db";
+        script = "bash /volume1/bin/007revad/Synology_enable_Deduplication/syno_enable_dedupe.sh --autoupdate=3 --email --hdd";
+      };
+    "tailscale tunnel" = {
+      event = "bootup";
+      script = "/var/packages/Tailscale/target/bin/tailscale configure-host; synosystemctl restart pkgctl-Tailscale.service\n";
+    };
+    "enable wifi card" = {
+      event = "bootup";
+      script = "/sbin/modprobe usbserial\n/sbin/modprobe ftdi_sio\n#/sbin/modprobe cdc-acm";
+    };
+  };
+
   # The beszel agent, natively. docs/beszel-synology.md explains each setting
   # (why the LAN hub address, why :sat, the synthetic sensors tree, why NVMe
   # needs CAP_SYS_ADMIN); this unit only carries them.

@@ -5,6 +5,7 @@
 #   units/<name>            systemd units and drop-ins
 #   wants/<target>/<name>   empty markers; activate links <target>.wants/<name>
 #   users.json              {"users": {...}, "groups": {name: [members]}}
+#   dsm-tasks.json          DSM Task Scheduler boot-up/shutdown tasks
 #   restart-exempt          units not restarted when they change
 #   default-profile         the root default profile (Lix + extras), if nix.package is set
 #   bin/activate            applies all of the above; see activate.sh
@@ -62,6 +63,8 @@
       groups = lib.mapAttrs (_: g: g.members) checked.users.groups;
     });
 
+    dsmTasksJson = pkgs.writeText "dsm-tasks.json" (builtins.toJSON checked.dsm.tasks);
+
     restartExempt = lib.attrNames (lib.filterAttrs (_: u: !u.restartIfChanged) checked.systemd.units);
 
     defaultProfile =
@@ -89,6 +92,7 @@
         '')
         wants}
       cp ${usersJson} $out/users.json
+      cp ${dsmTasksJson} $out/dsm-tasks.json
       printf '%s\n' ${lib.escapeShellArgs restartExempt} | sed '/^$/d' > $out/restart-exempt
       ${lib.optionalString (defaultProfile != null) "ln -s ${defaultProfile} $out/default-profile"}
       # The generation's own nix-env, since neither sudo's secure_path nor the

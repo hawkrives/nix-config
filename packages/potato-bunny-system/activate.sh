@@ -7,7 +7,7 @@
 # Usage: activate --generation <store path> [--root <dir>]
 #
 # --root prefixes every filesystem path (the tests use a scratch root). DSM's
-# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP and NIX_ENV, and the daemon
+# tools come from SYSTEMCTL, SYNOUSER, SYNOGROUP, SYNOWEBAPI and NIX_ENV, and the daemon
 # health probe from DAEMON_PROBE, so the tests can stub them.
 #
 # Ownership rules:
@@ -20,6 +20,8 @@
 #   back (unit link and /etc/nix) if it doesn't answer. Never removed.
 # - Accounts: only through synouser/synogroup; users and members are only ever
 #   added. passwd, group and shadow are never opened.
+# - DSM boot-up/shutdown tasks: created and updated through DSM's own
+#   EventScheduler API (what its UI uses); never deleted.
 
 GEN=""
 ROOT=""
@@ -35,6 +37,7 @@ done
 SYSTEMCTL=${SYSTEMCTL:-/usr/bin/systemctl}
 SYNOUSER=${SYNOUSER:-/usr/syno/sbin/synouser}
 SYNOGROUP=${SYNOGROUP:-/usr/syno/sbin/synogroup}
+SYNOWEBAPI=${SYNOWEBAPI:-/usr/syno/bin/synowebapi}
 NIX_ENV=${NIX_ENV:-nix-env}
 DAEMON_PROBE=${DAEMON_PROBE:-}
 DAEMON_TIMEOUT=${ACTIVATE_DAEMON_TIMEOUT:-10}
@@ -303,6 +306,36 @@ while IFS= read -r user; do
     [ -n "$group" ] && add_member "$group" "$user"
   done < <(jq -r --arg u "$user" '.users[$u].extraGroups[]' "$GEN/users.json")
 done < <(jq -r '.users | keys[]' "$GEN/users.json")
+
+# ---------------------------------------------------------------- DSM tasks
+
+# event_api <method> key=<json>...: one EventScheduler call, its JSON on stdout.
+event_api() {
+  "$SYNOWEBAPI" --exec api=SYNO.Core.EventScheduler version=1 method="$1" "${@:2}" 2>/dev/null
+}
+
+while IFS= read -r task; do
+  [ -n "$task" ] || continue
+  want=$(jq -c --arg t "$task" '.[$t] | {
+      event, operation: .script, enable,
+      notify_enable: .notifyOnError, notify_if_error: .notifyOnError, notify_mail: .notifyMail,
+      owner: {"0": "root"},
+      depend_on_task: (if .dependsOn == null then "" else "[" + .dependsOn + "]" end)
+    }' "$GEN/dsm-tasks.json")
+  name_json=$(jq -n --arg t "$task" '$t')
+  have=$(event_api get task_name="$name_json" |
+    jq -c '.data // empty | {event, operation, enable, notify_enable, notify_if_error, notify_mail, owner, depend_on_task}')
+  if [ "$have" = "$want" ]; then
+    continue
+  fi
+  if [ -z "$have" ]; then method="create"; else method="set"; fi
+  log "$method DSM task \"$task\""
+  args=(task_name="$name_json" operation_type='"script"')
+  while IFS=$'\t' read -r key value; do
+    args+=("$key=$value")
+  done < <(jq -r 'to_entries[] | [.key, (.value | tojson)] | @tsv' <<<"$want")
+  event_api "$method" "${args[@]}" | jq -e .success >/dev/null || die "DSM refused to $method task \"$task\""
+done < <(jq -r 'keys[]' "$GEN/dsm-tasks.json")
 
 # ---------------------------------------------------------------- nix-daemon
 

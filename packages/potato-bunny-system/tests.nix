@@ -111,6 +111,30 @@
       ${script}
     '';
 
+  # DSM's Task Scheduler API: tasks live in $ROOT/tasks/<name>.json as the
+  # "data" object get returns; a missing task gets success with no data.
+  synowebapiStub = pkgs.writeShellScript "synowebapi" ''
+    [ "$1" = --exec ] && shift
+    method="" name="" obj='{}'
+    for arg in "$@"; do
+      key=''${arg%%=*} val=''${arg#*=}
+      case "$key" in
+        api|version) ;;
+        method) method=$val ;;
+        *) obj=$(${pkgs.jq}/bin/jq -c --arg k "$key" --argjson v "$val" '. + {($k): $v}' <<<"$obj")
+           [ "$key" = task_name ] && name=$(${pkgs.jq}/bin/jq -r . <<<"$val") ;;
+      esac
+    done
+    echo "synowebapi $method $name" >> "$ROOT/calls"
+    f="$ROOT/tasks/$name.json"
+    case "$method" in
+      get) if [ -f "$f" ]; then ${pkgs.jq}/bin/jq -c '{data: ., success: true}' "$f"; else echo '{"success":true}'; fi ;;
+      create|set) mkdir -p "$ROOT/tasks"; echo "$obj" > "$f"; echo '{"success":true}' ;;
+      delete) rm -f "$f"; echo '{"success":true}' ;;
+      *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+    esac
+  '';
+
   # A scenario: fresh scratch root with DSM-owned fixtures, then `script`,
   # which calls `run <generation>` one or more times.
   scenario = name: script:
@@ -128,7 +152,7 @@
       mkdir -p $ROOT/usr/lib/systemd/system
       printf '[Service]\nExecStart=/usr/lib/systemd/systemd --user\n' > "$ROOT/usr/lib/systemd/system/user@.service"
 
-      export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub}
+      export SYSTEMCTL=${systemctlStub} SYNOUSER=${synouserStub} SYNOGROUP=${synogroupStub} SYNOWEBAPI=${synowebapiStub}
       export DAEMON_PROBE=${probeStub} NIX_ENV=${nixEnvStub} ACTIVATE_DAEMON_TIMEOUT=1
       run() { : > $ROOT/calls; "$1/bin/activate" --root "$ROOT"; }
       called() { grep -qx -- "$1" $ROOT/calls; }
@@ -209,6 +233,30 @@
     {
       systemd.units."nix-daemon.service" = unit "[Service]\nExecStart=/old/nix-daemon\n";
       systemd.units."a.service" = unit "[Service]\nExecStart=/bin/a\n";
+    }
+  ];
+  genTasks = script:
+    mkGeneration [
+      {
+        dsm.tasks."HDD db" = {
+          event = "bootup";
+          inherit script;
+          notifyOnError = true;
+          notifyMail = "me@example.com";
+        };
+      }
+    ];
+  genTaskDepends = mkGeneration [
+    {
+      dsm.tasks."HDD db" = {
+        event = "bootup";
+        script = "x";
+      };
+      dsm.tasks.dedupe = {
+        event = "bootup";
+        script = "y";
+        dependsOn = "HDD db";
+      };
     }
   ];
   installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
@@ -298,6 +346,30 @@ in {
   assert rejects [{environment.etc."nix/../shadow".text = "";}];
   assert rejects [{environment.etc."nix//x".text = "";}];
   assert rejects [{systemd.units."../x.service".text = "";}];
+  assert rejects [
+    {
+      dsm.tasks."Mount nix and start daemon" = {
+        event = "bootup";
+        script = "x";
+      };
+    }
+  ];
+  assert !(rejects [
+    {
+      dsm.tasks.ok = {
+        event = "shutdown";
+        script = "x";
+      };
+    }
+  ]);
+  assert rejects [
+    {
+      dsm.tasks.x = {
+        event = "weekly";
+        script = "x";
+      };
+    }
+  ];
   assert rejects [{users.users.plex = {};}];
   assert !(rejects [{users.users.svc-plex = {};}]);
     check "assertions-reject" "";
@@ -542,6 +614,51 @@ in {
     echo dead > $ROOT/daemon-health
     if run ${genDaemonAndA}; then fail "activate succeeded with a dead daemon"; fi
     called "systemctl start a.service" || fail "a.service not started while the daemon was down"
+  '';
+
+  tasks-created = scenario "tasks-created" ''
+    run ${genTasks "bash /x.sh"}
+    called "synowebapi create HDD db" || fail "task not created: $(cat $ROOT/calls)"
+    t="$ROOT/tasks/HDD db.json"
+    jq -e '.event == "bootup" and .operation == "bash /x.sh" and .enable == true and .operation_type == "script"' "$t" >/dev/null || fail "task fields: $(cat "$t")"
+    jq -e '.owner == {"0": "root"} and .notify_enable == true and .notify_if_error == true and .notify_mail == "me@example.com"' "$t" >/dev/null || fail "task owner/notify: $(cat "$t")"
+    jq -e '.depend_on_task == ""' "$t" >/dev/null || fail "unexpected dependency: $(cat "$t")"
+  '';
+
+  tasks-depends = scenario "tasks-depends" ''
+    run ${genTaskDepends}
+    jq -e '.depend_on_task == "[HDD db]"' "$ROOT/tasks/dedupe.json" >/dev/null || fail "dependency: $(cat "$ROOT/tasks/dedupe.json")"
+    run ${genTaskDepends}
+    ! called_matching '^synowebapi \(create\|set\) ' || fail "dependent task rewritten on an unchanged run"
+  '';
+
+  # A declared task runs as root; one DSM has under another owner is corrected.
+  tasks-owner-drift = scenario "tasks-owner-drift" ''
+    run ${genTasks "bash /x.sh"}
+    jq '.owner = {"1027": "hawken"}' "$ROOT/tasks/HDD db.json" > o.json && mv o.json "$ROOT/tasks/HDD db.json"
+    run ${genTasks "bash /x.sh"}
+    called "synowebapi set HDD db" || fail "owner drift not corrected"
+  '';
+
+  tasks-updated = scenario "tasks-updated" ''
+    run ${genTasks "bash /x.sh"}
+    run ${genTasks "bash /y.sh"}
+    called "synowebapi set HDD db" || fail "changed task not updated"
+    jq -e '.operation == "bash /y.sh"' "$ROOT/tasks/HDD db.json" >/dev/null || fail "operation not updated"
+  '';
+
+  tasks-idempotent = scenario "tasks-idempotent" ''
+    run ${genTasks "bash /x.sh"}
+    run ${genTasks "bash /x.sh"}
+    ! called_matching '^synowebapi \(create\|set\|delete\) ' || fail "unchanged task rewritten: $(cat $ROOT/calls)"
+  '';
+
+  # Tasks are never deleted, including ones this layer used to declare.
+  tasks-never-deleted = scenario "tasks-never-deleted" ''
+    run ${genTasks "bash /x.sh"}
+    run ${genA}
+    ! called_matching '^synowebapi delete' || fail "task deleted"
+    [ -f "$ROOT/tasks/HDD db.json" ] || fail "task gone"
   '';
 
   daemon-rollback = scenario "daemon-rollback" ''
