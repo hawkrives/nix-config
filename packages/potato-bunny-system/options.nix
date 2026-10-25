@@ -288,10 +288,13 @@ in {
       assertion = config.dsm.services.ssh.enable != false;
       message = "dsm.services.ssh.enable = false would lock out deploys, which run over ssh.";
     }
+    # DSM's get returns these as [{name, in_use, ...}] while its set takes plain
+    # name lists, so a declared value would never match and be re-set on every
+    # deploy (and a wrong one could lock ssh out).
     ++ lib.concatMap (key:
       lib.optional (config.dsm.services ? ssh && config.dsm.services.ssh.settings ? ${key}) {
-        assertion = lib.any (a: a.in_use or false) config.dsm.services.ssh.settings.${key};
-        message = "dsm.services.ssh.settings.${key}: at least one entry must be in_use, or ssh (and deploys) stop working.";
+        assertion = false;
+        message = "dsm.services.ssh.settings.${key}: not supported; set ssh algorithms in DSM.";
       }) ["ssh_cipher" "ssh_kex" "ssh_mac"]
     ++ lib.mapAttrsToList (name: _: {
       assertion = lib.hasPrefix "svc-" name;

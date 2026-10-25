@@ -129,7 +129,34 @@ dsm_run_state() {
   done < <(managed_packages)
 }
 
-dsm_settings() { :; }
+# Feature settings: read the current object, and if any declared key differs
+# (compared as JSON), send one set with every declared key. Keys not declared
+# are never sent.
+dsm_settings() {
+  local name api version have changes line key args
+  while IFS=$'\t' read -r name api version; do
+    if ! have=$(webapi "$api" "$version" get) || ! jq -e .success <<<"$have" >/dev/null; then
+      dsm_fail "reading $name settings ($api)"
+      continue
+    fi
+    changes=$(jq -r --arg n "$name" --argjson have "$have" '.[$n].settings | to_entries[]
+      | select(.value != $have.data[.key])
+      | "set \($n): \(.key) \($have.data[.key] | tojson) -> \(.value | tojson)"' "$GEN/dsm-services.json")
+    [ -n "$changes" ] || continue
+    if $DRY_RUN; then
+      while IFS= read -r line; do echo "would: $line"; done <<<"$changes"
+      DSM_PLANNED=true
+      continue
+    fi
+    while IFS= read -r line; do log "$line"; done <<<"$changes"
+    args=()
+    while IFS= read -r key; do
+      args+=("$key=$(jq -c --arg n "$name" --arg k "$key" '.[$n].settings[$k]' "$GEN/dsm-services.json")")
+    done < <(jq -r --arg n "$name" '.[$n].settings | keys[]' "$GEN/dsm-services.json")
+    webapi_ok "$api" "$version" set "${args[@]}" || dsm_fail "setting $name settings ($api)"
+  done < <(jq -r 'to_entries[] | select(.value.settingsApi != null and .value.settings != {})
+    | [.key, .value.settingsApi.api, (.value.settingsApi.version | tostring)] | @tsv' "$GEN/dsm-services.json")
+}
 dsm_scheduled_tasks() { :; }
 
 # The deploy-time DSM steps, in dependency order: a package's feed before

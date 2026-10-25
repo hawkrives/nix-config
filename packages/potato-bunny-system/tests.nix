@@ -116,6 +116,7 @@
   #   $ROOT/tasks/<name>.json as the "data" object get returns; a missing task
   #   gets success with no data. Logged as "synowebapi <method> <name>".
   # - SYNO.Core.Package.Feed: $ROOT/feeds.json, an array of {name, feed}.
+  # - Any other api: a settings object (see below).
   # Other APIs are logged as "synowebapi <api> <method>". Methods activate
   # must never call (deletes) exit 3.
   synowebapiStub = pkgs.writeShellScript "synowebapi" ''
@@ -152,7 +153,18 @@
           delete) exit 3 ;;
           *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
         esac ;;
-      *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+      *)
+        # Any other API is one settings object, $ROOT/settings/<api>.json;
+        # set merges the given keys into it.
+        echo "synowebapi $api $method" >> "$ROOT/calls"
+        f="$ROOT/settings/$api.json"
+        mkdir -p "$ROOT/settings"
+        [ -f "$f" ] || echo '{}' > "$f"
+        case "$method" in
+          get) $jq -c '{data: ., success: true}' "$f" ;;
+          set) $jq -c --argjson o "$obj" '. + $o' "$f" > "$f.new" && mv "$f.new" "$f"; echo '{"success":true}' ;;
+          *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+        esac ;;
     esac
   '';
 
@@ -352,6 +364,25 @@
     }
   ];
   genFeed = mkGeneration [{dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";}];
+  genSmb = mkGeneration [
+    {
+      dsm.services.smb.settings = {
+        smb_max_protocol = 3;
+        workgroup = "W";
+      };
+    }
+  ];
+  genListSetting = mkGeneration [
+    {
+      dsm.services.x = {
+        settingsApi = {
+          api = "SYNO.Test.List";
+          version = 1;
+        };
+        settings.items = [{name = "a";} {name = "b";}];
+      };
+    }
+  ];
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -479,50 +510,20 @@ in {
   assert !(rejects [{users.users.svc-plex = {};}]);
   assert rejects [{dsm.services.ssh.enable = false;}];
   assert !(rejects [{dsm.services.ssh.enable = true;}]);
+  # DSM's get returns these as [{name, in_use, ...}] but set takes plain name
+  # lists, so a declared value could never compare equal.
   assert rejects [
-    {
-      dsm.services.ssh.settings.ssh_cipher = [
-        {
-          name = "aes128-ctr";
-          in_use = false;
-        }
-      ];
-    }
-  ];
-  assert rejects [
-    {
-      dsm.services.ssh.settings.ssh_kex = [
-        {
-          name = "curve25519-sha256";
-          in_use = false;
-        }
-      ];
-    }
-  ];
-  assert rejects [
-    {
-      dsm.services.ssh.settings.ssh_mac = [
-        {
-          name = "hmac-sha2-256";
-          in_use = false;
-        }
-      ];
-    }
-  ];
-  assert !(rejects [
     {
       dsm.services.ssh.settings.ssh_cipher = [
         {
           name = "aes128-ctr";
           in_use = true;
         }
-        {
-          name = "3des-cbc";
-          in_use = false;
-        }
       ];
     }
-  ]);
+  ];
+  assert rejects [{dsm.services.ssh.settings.ssh_kex = ["curve25519-sha256"];}];
+  assert rejects [{dsm.services.ssh.settings.ssh_mac = ["hmac-sha2-256"];}];
   assert rejects [{dsm.services.x.settings.a = 1;}];
   assert rejects [
     {
@@ -656,6 +657,37 @@ in {
     run ${genFeed}
     jq -e 'map(.name) == ["Other", "SynoCommunity"]' $ROOT/feeds.json >/dev/null || fail "feeds: $(cat $ROOT/feeds.json)"
     ! called_matching 'Feed delete' || fail "feed deleted"
+  '';
+
+  settings-applied = scenario "settings-applied" ''
+    mkdir -p $ROOT/settings
+    echo '{"smb_max_protocol": 2, "workgroup": "W", "enable_symlink": true}' > $ROOT/settings/SYNO.Core.FileServ.SMB.json
+    run ${genSmb}
+    called "synowebapi SYNO.Core.FileServ.SMB set" || fail "not set: $(cat $ROOT/calls)"
+    jq -e '. == {"smb_max_protocol": 3, "workgroup": "W", "enable_symlink": true}' $ROOT/settings/SYNO.Core.FileServ.SMB.json >/dev/null ||
+      fail "settings: $(cat $ROOT/settings/SYNO.Core.FileServ.SMB.json)"
+  '';
+
+  settings-idempotent = scenario "settings-idempotent" ''
+    run ${genSmb}
+    run ${genSmb}
+    ! called "synowebapi SYNO.Core.FileServ.SMB set" || fail "unchanged settings set again"
+  '';
+
+  settings-dry-run-diff = scenario "settings-dry-run-diff" ''
+    mkdir -p $ROOT/settings
+    echo '{"smb_max_protocol": 2, "workgroup": "W"}' > $ROOT/settings/SYNO.Core.FileServ.SMB.json
+    ${genSmb}/bin/activate --root "$ROOT" --dry-run > out
+    grep -qx 'would: set smb: smb_max_protocol 2 -> 3' out || fail "diff not shown: $(cat out)"
+    ! grep -q workgroup out || fail "unchanged key shown: $(cat out)"
+  '';
+
+  # Values compare as JSON, so lists and objects don't look changed every run.
+  settings-list-values = scenario "settings-list-values" ''
+    run ${genListSetting}
+    called "synowebapi SYNO.Test.List set" || fail "not set"
+    run ${genListSetting}
+    ! called "synowebapi SYNO.Test.List set" || fail "list setting set again"
   '';
 
   generation-layout = check "generation-layout" ''
