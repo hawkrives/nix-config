@@ -10,6 +10,7 @@
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
+    flake.nixosModules.host-remote-deployed
     inputs.disko.nixosModules.default
     flake.nixosModules.notify-failure
     flake.nixosModules.host-watch

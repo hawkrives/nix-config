@@ -10,7 +10,8 @@
 
   # enable the nice nh tool (reimplements darwin-rebuild, nixos-rebuild, etc)
   # <https://schmiggolas.dev/posts/2024/nh/>
-  programs.nh.enable = true;
+  # mkDefault so remote-deployed hosts (host-remote-deployed.nix) can drop it.
+  programs.nh.enable = lib.mkDefault true;
 
   # Every host is flake-only, so the nixos-generate-config script is dead weight.
   # It also embeds bcachefs-tools for filesystem detection, which pulled that

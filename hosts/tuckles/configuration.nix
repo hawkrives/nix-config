@@ -10,6 +10,7 @@
     flake.nixosModules.host-shared
     flake.nixosModules.host-server
     flake.nixosModules.host-nixos
+    flake.nixosModules.host-remote-deployed
     inputs.disko.nixosModules.default
     inputs.vpn-confinement.nixosModules.default
     flake.nixosModules.synology-mounts
