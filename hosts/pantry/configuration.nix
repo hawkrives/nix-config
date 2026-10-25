@@ -15,6 +15,7 @@
     flake.nixosModules.host-watch
     ./disk.nix
     ./networking.nix
+    ./mbx-cache.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -76,7 +77,7 @@
     ];
   };
 
-  # pantry only builds and serves Nix paths; it runs no containers.
+  # No containers here: mbx-cache runs as a plain systemd service.
   virtualisation.podman.enable = false;
 
   environment.systemPackages = with pkgs; [

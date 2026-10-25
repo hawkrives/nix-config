@@ -48,6 +48,7 @@
     ./live-notify.nix
     ./stream-watch.nix
     ./beszel.nix
+    ./mbx.nix
 
     inputs.nix-minecraft.nixosModules.minecraft-servers
     inputs.tsnsrv.nixosModules.default

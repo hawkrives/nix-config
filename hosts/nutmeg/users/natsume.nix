@@ -7,5 +7,12 @@
     flake.homeModules.helix-shared
     flake.homeModules.sqlite-shared
     flake.homeModules.ssh-shared
+    flake.homeModules.mbx-shared
   ];
+
+  # Personal projects (slime, ...). Token decrypted by hosts/nutmeg/mbx.nix.
+  mbx = {
+    namespace = "home";
+    tokenFile = "/run/agenix/mbx-token";
+  };
 }

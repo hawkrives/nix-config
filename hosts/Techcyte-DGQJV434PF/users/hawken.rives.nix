@@ -13,6 +13,7 @@
     flake.homeModules.helix-shared
     flake.homeModules.sqlite-shared
     flake.homeModules.ssh-shared
+    flake.homeModules.mbx-shared
   ];
 
   home.packages =
@@ -51,5 +52,12 @@
 
   home.sessionVariables = {
     GOPRIVATE = "gitlab.com/techcyte/";
+  };
+
+  # Techcyte projects (techcyte-cli, gitlab-restricted-api-proxy, ...). Token
+  # decrypted by the host's darwin-configuration.
+  mbx = {
+    namespace = "techcyte";
+    tokenFile = "/run/agenix/mbx-token";
   };
 }

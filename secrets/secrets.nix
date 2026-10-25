@@ -207,4 +207,14 @@ in {
   # wheels for Techcyte's private GitLab package index, which 401 without it.
   # Shared into the guest over virtiofs; see the host's darwin-configuration.
   "builder-netrc.age".publicKeys = users ++ [techcyte];
+
+  # mbx remote build cache (hosts/pantry/mbx-cache.nix). Each client host has its
+  # own bearer token, granted read+write on its own namespace only: nutmeg ->
+  # `home`, the Mac -> `techcyte`, so work artifacts and personal ones never mix.
+  # The server's env file (MBX_CACHE_TOKENS_JSON='[...]') holds both tokens and
+  # their grants; each client file holds just its bare token, so rotating one
+  # means editing it in both places.
+  "mbx-cache-tokens.age".publicKeys = users ++ [pantry];
+  "mbx-token-nutmeg.age".publicKeys = users ++ [nutmeg];
+  "mbx-token-techcyte.age".publicKeys = users ++ [techcyte];
 }

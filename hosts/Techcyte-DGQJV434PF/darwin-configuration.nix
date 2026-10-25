@@ -69,6 +69,13 @@ in {
     symlink = false;
   };
 
+  # Bearer token for the mbx remote cache on pantry; read by the user-level mbx
+  # config (modules/home/mbx-shared.nix).
+  age.secrets.mbx-token = {
+    file = ../../secrets/mbx-token-techcyte.age;
+    owner = "hawken.rives";
+  };
+
   nix.linux-builder = {
     enable = true;
 
