@@ -230,17 +230,25 @@
       | jq '.fileDate = "none"' \
       | req -X PUT "$api/config/mediamanagement" -H 'Content-Type: application/json' -d @- >/dev/null
 
-    # 2. upsert the beets-sync custom-script connection (idempotent by name)
-    if ! req "$api/notification" | jq -e '.[] | select(.name == "beets-sync")' >/dev/null; then
+    # 2. upsert the beets-sync custom-script connection (idempotent by name). The
+    #    trigger's store path changes across rebuilds and the old one gets GC'd, so
+    #    an existing connection has its path rewritten too, not just created once.
+    setPath='.fields |= map(if .name == "path" then .value = $path else . end)'
+    id=$(req "$api/notification" | jq -r '.[] | select(.name == "beets-sync") | .id')
+    if [ -z "$id" ]; then
       req "$api/notification/schema" \
-        | jq --arg path "${beetsTrigger}" '
-            ( map(select(.implementation == "CustomScript")) | .[0] )
-            | .name = "beets-sync"
+        | jq --arg path "${beetsTrigger}" "
+            ( map(select(.implementation == \"CustomScript\")) | .[0] )
+            | .name = \"beets-sync\"
             | .onReleaseImport = true
             | .onUpgrade = true
-            | ( .fields |= map(if .name == "path" then .value = $path else . end) )
-          ' \
+            | $setPath
+          " \
         | req -X POST "$api/notification?forceSave=true" -H 'Content-Type: application/json' -d @- >/dev/null
+    else
+      req "$api/notification/$id" \
+        | jq --arg path "${beetsTrigger}" "$setPath" \
+        | req -X PUT "$api/notification/$id?forceSave=true" -H 'Content-Type: application/json' -d @- >/dev/null
     fi
   '';
 in {
