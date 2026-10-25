@@ -260,6 +260,32 @@
       };
     }
   ];
+  genServices = mkGeneration [
+    {
+      dsm.services.smb = {
+        enable = true;
+        settings.smb_max_protocol = 3;
+      };
+      dsm.services.ssh.enable = true;
+      dsm.services.foo = {
+        package = "Foo";
+        enable = false;
+      };
+      dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";
+    }
+  ];
+  genSchedule = mkGeneration [
+    {
+      dsm.tasks.t = {
+        event = "schedule";
+        script = "x";
+        schedule = {
+          hour = 0;
+          minute = 0;
+        };
+      };
+    }
+  ];
   installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
   installerSocket = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.socket";
 in {
@@ -373,7 +399,104 @@ in {
   ];
   assert rejects [{users.users.plex = {};}];
   assert !(rejects [{users.users.svc-plex = {};}]);
+  assert rejects [{dsm.services.ssh.enable = false;}];
+  assert !(rejects [{dsm.services.ssh.enable = true;}]);
+  assert rejects [
+    {
+      dsm.services.ssh.settings.ssh_cipher = [
+        {
+          name = "aes128-ctr";
+          in_use = false;
+        }
+      ];
+    }
+  ];
+  assert rejects [
+    {
+      dsm.services.ssh.settings.ssh_kex = [
+        {
+          name = "curve25519-sha256";
+          in_use = false;
+        }
+      ];
+    }
+  ];
+  assert rejects [
+    {
+      dsm.services.ssh.settings.ssh_mac = [
+        {
+          name = "hmac-sha2-256";
+          in_use = false;
+        }
+      ];
+    }
+  ];
+  assert !(rejects [
+    {
+      dsm.services.ssh.settings.ssh_cipher = [
+        {
+          name = "aes128-ctr";
+          in_use = true;
+        }
+        {
+          name = "3des-cbc";
+          in_use = false;
+        }
+      ];
+    }
+  ]);
+  assert rejects [{dsm.services.x.settings.a = 1;}];
+  assert rejects [
+    {
+      dsm.tasks.s = {
+        event = "schedule";
+        script = "x";
+      };
+    }
+  ];
+  assert rejects [
+    {
+      dsm.tasks.b = {
+        event = "bootup";
+        script = "x";
+        schedule = {
+          hour = 0;
+          minute = 0;
+        };
+      };
+    }
+  ];
+  assert rejects [
+    {
+      dsm.tasks.s = {
+        event = "schedule";
+        script = "x";
+        schedule = {
+          hour = 0;
+          minute = 0;
+          repeatMinutes = 5;
+          repeatHours = 1;
+        };
+      };
+    }
+  ];
     check "assertions-reject" "";
+
+  dsm-services-json = check "dsm-services-json" ''
+    s=${genServices}/dsm-services.json
+    jq -e '.smb.package == "SMBService"' $s >/dev/null || fail "smb package: $(cat $s)"
+    jq -e '.smb.settings == {"smb_max_protocol": 3, "enable_samba": true}' $s >/dev/null || fail "smb settings: $(cat $s)"
+    jq -e '.smb.settingsApi == {"api": "SYNO.Core.FileServ.SMB", "version": 3}' $s >/dev/null || fail "smb api: $(cat $s)"
+    jq -e '.ssh.package == null and .ssh.settings.enable_ssh == true' $s >/dev/null || fail "ssh: $(cat $s)"
+    jq -e '.foo.enable == false and .foo.volume == "/volume1" and .foo.package == "Foo"' $s >/dev/null || fail "foo: $(cat $s)"
+    jq -e 'has("container-manager") | not' $s >/dev/null || fail "undeclared service present: $(cat $s)"
+    jq -e '. == {"SynoCommunity": "https://packages.synocommunity.com/"}' ${genServices}/dsm-feeds.json >/dev/null || fail "feeds"
+  '';
+
+  dsm-schedule-json = check "dsm-schedule-json" ''
+    t=${genSchedule}/dsm-tasks.json
+    jq -e '.t.schedule == {"weekDays": [0,1,2,3,4,5,6], "hour": 0, "minute": 0, "repeatMinutes": null, "repeatHours": null, "lastHour": 23}' $t >/dev/null || fail "schedule: $(cat $t)"
+  '';
 
   generation-layout = check "generation-layout" ''
     g=${layoutGen}
