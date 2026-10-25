@@ -150,8 +150,8 @@ in {
         User=svc-uptime-kuma
         PermissionsStartOnly=true
         ExecStartPre=${pkgs.coreutils}/bin/install -d -o svc-uptime-kuma -m 0750 ${data}
-      # Owns everything in its data dir, as StateDirectory= would.
-      ExecStartPre=${pkgs.coreutils}/bin/chown -R svc-uptime-kuma ${data}
+        # Owns everything in its data dir, as StateDirectory= would.
+        ExecStartPre=${pkgs.coreutils}/bin/chown -R svc-uptime-kuma ${data}
         ExecStartPre=${sync}
         Environment=DATA_DIR=${data}/
         Environment=HOST=::
