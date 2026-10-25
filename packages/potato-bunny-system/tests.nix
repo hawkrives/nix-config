@@ -1307,7 +1307,7 @@ in {
     u=$g/units/nix-tailscaled.service
     [ -e $g/wants/multi-user.target/nix-tailscaled.service ] || fail "not started at boot"
     grep -qx 'Conflicts=pkgctl-Tailscale.service' $u || fail "can run alongside the Synology package"
-    grep -qx 'After=pkgctl-Tailscale.service network-online.target' $u || fail "not ordered after the package stops"
+    grep -qx 'After=pkgctl-Tailscale.service nix-ipv6-forwarding.service network-online.target' $u || fail "not ordered after the package stops"
     grep -q -- '--state=/volume2/@appdata/nix-tailscale/tailscaled.state' $u || fail "state path"
     grep -q -- '--port=41641' $u || fail "port"
     grep -q 'TS_DEBUG_FIREWALL_MODE=iptables' $u || fail "firewall mode"
@@ -1330,6 +1330,25 @@ in {
     # activate starts units one at a time, so After= alone doesn't hold at boot.
     grep -qx 'Wants=nix-tailscaled.service' $g/units/mbx-cache-serve.service || fail "serve doesn't pull in nix-tailscaled"
     [ -x $g/default-profile/bin/tailscale ] || fail "no tailscale CLI on root's PATH"
+  '';
+
+  # IPv6 forwarding for the exit node, on a fake /proc/sys/net/ipv6/conf.
+  ipv6-forwarding = check "ipv6-forwarding" ''
+    c=$PWD/conf
+    for i in all default ovs_eth0 sit0 docker0; do mkdir -p $c/$i; echo 0 > $c/$i/forwarding; done
+    echo 1 > $c/all/accept_ra; echo 0 > $c/default/accept_ra
+    echo 2 > $c/ovs_eth0/accept_ra; echo 1 > $c/sit0/accept_ra; echo 0 > $c/docker0/accept_ra
+    CONF=$c ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/ipv6-forwarding.sh} on
+    [ "$(cat $c/all/forwarding)" = 1 ] || fail "forwarding not on"
+    # Interfaces that took router advertisements keep taking them (2), so the
+    # NAS keeps its SLAAC address and default route; the others stay as they were.
+    [ "$(cat $c/sit0/accept_ra)" = 2 ] && [ "$(cat $c/ovs_eth0/accept_ra)" = 2 ] || fail "accept_ra not kept"
+    [ "$(cat $c/docker0/accept_ra)" = 0 ] && [ "$(cat $c/all/accept_ra)" = 1 ] || fail "touched an interface that took no RAs"
+    CONF=$c ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/ipv6-forwarding.sh} off
+    [ "$(cat $c/all/forwarding)" = 0 ] || fail "forwarding not turned off"
+    u=${hostGeneration}/units
+    [ -e ${hostGeneration}/wants/multi-user.target/nix-ipv6-forwarding.service ] || fail "not applied at boot"
+    grep -qx 'Wants=nix-ipv6-forwarding.service' $u/nix-tailscaled.service || fail "tailscaled doesn't pull it in"
   '';
 
   generation-layout = check "generation-layout" ''

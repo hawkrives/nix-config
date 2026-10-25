@@ -47,11 +47,26 @@ in {
   dsm.services.tailscale.enable = false;
   profileExtra = [cli];
 
+  # The exit node's IPv6 side (::/0 is advertised); IPv4 forwarding is DSM's,
+  # already on for its VMs and containers.
+  systemd.units."nix-ipv6-forwarding.service".text = ''
+    [Unit]
+    Description=IPv6 forwarding for the Tailscale exit node
+    Before=nix-tailscaled.service
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=${pkgs.bash}/bin/bash ${./ipv6-forwarding.sh} on
+    ExecStop=${pkgs.bash}/bin/bash ${./ipv6-forwarding.sh} off
+  '';
+
   systemd.units."nix-tailscaled.service".text = ''
     [Unit]
     Description=Tailscale (nixpkgs)
     Conflicts=pkgctl-Tailscale.service
-    After=pkgctl-Tailscale.service network-online.target
+    Wants=nix-ipv6-forwarding.service
+    After=pkgctl-Tailscale.service nix-ipv6-forwarding.service network-online.target
     Wants=network-online.target
     RequiresMountsFor=/volume2
     OnFailure=notify-failure@%n.service
