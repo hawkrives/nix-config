@@ -5,39 +5,12 @@ potato-bunny isn't NixOS, so its agent is a unit in the potato-bunny system
 layer, `beszel-agent.service` in `hosts/potato-bunny/system.nix`, deployed with
 `mise run potato-bunny:ask` and re-applied at every boot.
 
-## This agent goes over the LAN, not the tailnet
+## This agent talks to the hub over loopback
 
-Every NixOS agent reaches the hub at `http://[fd7a:115c:a1e0::b346:8b63]:8091`
-— nutmeg's tailscale ULA. This one uses the LAN instead. The NAS's Tailscale
-(nix-tailscaled, `hosts/potato-bunny/tailscale.nix`) runs with a real
-`tailscale0`, so the tailnet path would work too; moving to it means
-pointing `HUB_URL` at the ULA and dropping the firewall rule below.
-
-This agent uses nutmeg's stable LAN IPv6, `http://[2600:2b00:9b16:6d01::228]:8091`,
-and `hosts/nutmeg/beszel.nix` carries a matching firewall rule admitting
-**only** the NAS's own stable LAN IPv6 to that port:
-
-```nix
-networking.firewall.extraInputRules = ''
-  ip6 saddr 2600:2b00:9b16:6d01:9209:d0ff:fe15:4261 tcp dport 8091 accept
-'';
-```
-
-The rest of the LAN still cannot reach the hub.
-
-Both addresses now live inside `2600:2b00:9b16:6d01::/64`, a prefix the ISP
-delegates to this network rather than something pinned in this repo (nutmeg's
-is pinned via `ipv6AcceptRAConfig.Token` in `hosts/nutmeg/hardware.nix`; the
-NAS's is EUI-64, derived from its MAC, so it doesn't move the way a DHCP lease
-could). **If the ISP ever rotates that `/64`,** both this firewall rule and the
-NAS's `HUB_URL` break silently — the agent just retries forever, and the fix
-is either to re-derive the new addresses and update both places, or to fall
-back to the LAN IPv4 addresses this setup used before 2026-08-13
-(`192.168.1.228` for nutmeg, `192.168.1.194` for the NAS, via a matching
-`ip saddr` rule instead of `ip6 saddr`).
-
-An IP rather than a hostname, either way, so it doesn't depend on DSM's
-resolver handling `.local` names.
+The hub runs on this NAS (`hosts/potato-bunny/beszel-hub.nix`), so this agent
+reaches it at `http://[::1]:8091`. Every NixOS agent reaches it at
+`http://[fd7a:115c:a1e0:ab12:4843:cd96:626f:fb9c]:8091`, the NAS's tailscale
+ULA.
 
 ## Deployment
 
@@ -47,7 +20,7 @@ CAP_DAC_OVERRIDE`, with nixpkgs' smartmontools on its `PATH`. Its environment:
 
 | Variable | Value | Why |
 | --- | --- | --- |
-| `HUB_URL` | `http://[2600:2b00:9b16:6d01::228]:8091` | LAN, not tailnet — see above |
+| `HUB_URL` | `http://[::1]:8091` | the hub runs on this NAS — see above |
 | `KEY` | the hub's public key | same value as `modules/nixos/beszel-agent.nix` |
 | `TOKEN` | from `/volume1/@appdata/nix-system/secrets/beszel-agent.env` | see below |
 | `DATA_DIR` | `/volume1/docker/beszel-agent/data` | holds `fingerprint`, the agent's identity in the hub |

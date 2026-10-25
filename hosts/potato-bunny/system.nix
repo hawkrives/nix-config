@@ -11,7 +11,7 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
-  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix];
+  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix];
 
   nix.package = lix;
   profileExtra = [pkgs.cacert];
@@ -154,7 +154,7 @@ in {
   };
 
   # The beszel agent, natively. docs/beszel-synology.md explains each setting
-  # (why the LAN hub address, why :sat, the synthetic sensors tree, why NVMe
+  # (why loopback, why :sat, the synthetic sensors tree, why NVMe
   # needs CAP_SYS_ADMIN); this unit only carries them.
   #
   # Runs as root, bounded to the capabilities SMART and the sensors need.
@@ -173,7 +173,7 @@ in {
     ExecStart=${pkgs.beszel}/bin/beszel-agent
     EnvironmentFile=/volume1/@appdata/nix-system/secrets/beszel-agent.env
     Environment=PATH=${pkgs.smartmontools}/bin:/usr/bin:/bin
-    Environment="HUB_URL=http://[2600:2b00:9b16:6d01::228]:8091"
+    Environment="HUB_URL=http://[::1]:8091"
     Environment="KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds"
     Environment=DATA_DIR=/volume1/docker/beszel-agent/data
     Environment=EXTRA_FILESYSTEMS=/volume1

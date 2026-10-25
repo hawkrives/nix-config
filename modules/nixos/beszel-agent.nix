@@ -1,5 +1,5 @@
 # Beszel monitoring agent — enabled fleet-wide via host-server.nix, so every
-# NixOS server reports to the hub on nutmeg (hosts/nutmeg/beszel.nix).
+# NixOS server reports to the hub on potato-bunny (hosts/potato-bunny/beszel-hub.nix).
 #
 # WebSocket mode: the agent dials *out* to the hub and self-registers with a
 # universal token, so nothing needs opening in the firewall — 45876 is not in
@@ -11,11 +11,10 @@
 # allowedTCPPorts. Not from the LAN or the WAN. Authentication is the hub's key,
 # so this is acceptable — but it is not "no listening port".
 #
-# HUB_URL is nutmeg's tailscale address rather than a name because it has to
-# resolve identically everywhere: nutmeg itself runs --accept-dns=false so it
-# can't resolve MagicDNS names, and the Synology's agent avoids .local names
-# (docs/beszel-synology.md). It is nutmeg's tailnet ULA rather than its CGNAT
-# IPv4 — stable per-node either way, and holds no secret.
+# HUB_URL is potato-bunny's tailscale address rather than a name because it
+# has to resolve identically everywhere, and nutmeg runs --accept-dns=false, so
+# it can't resolve MagicDNS names. It is the NAS's tailnet ULA rather than
+# its CGNAT IPv4 — stable per-node either way, and holds no secret.
 #
 # SMART monitoring is deliberately NOT enabled here — it loosens the systemd
 # sandbox, so it's opted into per host on real hardware only: nutmeg today, and
@@ -26,17 +25,17 @@
   services.beszel.agent = {
     enable = true;
     environment = {
-      HUB_URL = "http://[fd7a:115c:a1e0::b346:8b63]:8091";
+      HUB_URL = "http://[fd7a:115c:a1e0:ab12:4843:cd96:626f:fb9c]:8091";
 
       # The hub's public key. Required even in WebSocket mode — the agent
       # refuses to start without it ("no key provided"), because TOKEN only
       # authorizes registration while KEY is what authenticates the hub to the
-      # agent. It is the public half of /var/lib/beszel-hub/beszel_data/id_ed25519
-      # on nutmeg (the hub also shows it on its Add System dialog), so it is not
-      # a secret and belongs here rather than in agenix. Regenerating the hub's
-      # keypair means updating this value — and the Synology's agent carries its
-      # own copy of it in hosts/potato-bunny/system.nix, so that needs updating
-      # too.
+      # agent. It is the public half of beszel_data/id_ed25519 in the hub's data
+      # dir on potato-bunny (the hub also shows it on its Add System dialog), so
+      # it is not a secret and belongs here rather than in agenix. Regenerating
+      # the hub's keypair means updating this value — and the Synology's agent
+      # carries its own copy of it in hosts/potato-bunny/system.nix, so that
+      # needs updating too.
       KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds";
     };
     environmentFile = config.age.secrets.beszel-token.path;

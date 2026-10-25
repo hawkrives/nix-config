@@ -33,7 +33,7 @@
   mkGeneration = modules: let
     evaluated = lib.evalModules {
       modules = [./options.nix] ++ modules;
-      specialArgs = {inherit pkgs perSystem;};
+      specialArgs = {inherit pkgs perSystem flake;};
     };
     cfg = evaluated.config;
 

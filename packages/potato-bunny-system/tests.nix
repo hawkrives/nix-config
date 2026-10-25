@@ -687,7 +687,7 @@ in {
     u=${hostGeneration}/units/beszel-agent.service
     [ -f $u ] || fail "no beszel-agent.service"
     for want in \
-      'HUB_URL=http://[2600:2b00:9b16:6d01::228]:8091' \
+      'HUB_URL=http://[::1]:8091' \
       'KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds' \
       'DATA_DIR=/volume1/docker/beszel-agent/data' \
       'SYS_SENSORS=/volume1/docker/beszel-agent/sensors' \
@@ -1232,14 +1232,25 @@ in {
     jq -e '.vol_path == "/volume1"' $ROOT/shares/mbx-cache.json >/dev/null || fail "moved"
   '';
 
+  # Push monitors come from every NixOS host's heartbeat list plus the NAS's
+  # own jobs, and are written before Kuma starts.
+  kuma-monitors = check "kuma-monitors" ''
+    u=${hostGeneration}/units/uptime-kuma.service
+    sync=$(sed -n 's/^ExecStartPre=\(.*uptime-kuma-monitor-sync\)$/\1/p' $u)
+    [ -n "$sync" ] || fail "no monitor sync before Kuma starts"
+    for m in restic-backups-nas service-backup-plex appdata-backup; do
+      grep -qF "SELECT '$m', 'push'" $sync || fail "no push monitor for $m"
+    done
+  '';
+
   nas-units-guarded = check "nas-units-guarded" ''
     u=${hostGeneration}/units
-    for n in nix-postgresql mbx-cache mbx-cache-evict; do
+    for n in nix-postgresql mbx-cache mbx-cache-evict beszel-hub uptime-kuma appdata-backup nix-tsnsrv-beszel nix-tsnsrv-status; do
       grep -qx 'ConditionPathIsMountPoint=/volume2' $u/$n.service || fail "$n runs without /volume2 mounted"
     done
     pre=$(sed -n 's/^ExecStartPre=//p' $u/nix-postgresql.service)
     ! grep -q 'install -d' $pre || grep -q '/volume2/@appdata ]' $pre || fail "pre-start creates the data dir's parents unchecked"
-    for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg; do
+    for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg beszel-hub uptime-kuma appdata-backup nix-tsnsrv-beszel nix-tsnsrv-status; do
       grep -qx 'OnFailure=notify-failure@%n.service' $u/$n.service || fail "$n has no failure alert"
     done
   '';

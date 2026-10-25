@@ -78,6 +78,12 @@ in {
   # local user.
   "tsnsrv-authkey-nutmeg.age".publicKeys = users ++ [nutmeg];
 
+  # Same, for potato-bunny: a separate OAuth client, since a client mints keys
+  # carrying exactly its own tag set. potato-bunny has no age identity, so
+  # this is the record copy; the NAS's is placed by hand, root 0400 (see
+  # hosts/potato-bunny/tsnsrv.nix).
+  "tsnsrv-authkey-potato-bunny.age".publicKeys = users;
+
   # slime-chat Twitch OAuth app credentials (TWITCH_CLIENT_ID / _SECRET),
   # injected via environmentFile (nutmeg).
   "slime-chat-env.age".publicKeys = users ++ [nutmeg];

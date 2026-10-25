@@ -1,6 +1,6 @@
-# Watch nutmeg from outside nutmeg. Everything else that monitors the fleet
-# (the Beszel hub, Uptime Kuma) runs on nutmeg, so none of it can report nutmeg
-# itself being down; this does, from the NAS, and alerts on Telegram. The same
+# Watch nutmeg from outside nutmeg: an ssh probe from the NAS that alerts on
+# Telegram when nutmeg stops answering. The Beszel hub and Uptime Kuma run
+# here too; this is the direct "is nutmeg up" check. The same
 # behaviour as modules/nixos/host-watch.nix + notify-failure.nix, as plain
 # systemd-219 units.
 #

@@ -16,29 +16,10 @@
 # so it would report "started", not "succeeded". OnSuccess= fires only on
 # genuine successful completion, for every service type.
 #
-# ── How the monitors get created ──────────────────────────────────────────
-#
-# Uptime Kuma has no declarative config: monitors live in a SQLite DB behind a
-# Vue SPA whose only API is Socket.io. So this module writes the monitor rows
-# into that DB directly and restarts Kuma to pick them up.
-#
-# Driving the web UI instead sounds like the "supported" path and is not: it
-# binds you to CSS selectors upstream changes silently and without migration
-# (the monitor-type control is `#type`, not the documented `#monitor-type`),
-# and the Push URL field is rendered *disabled*, so the token cannot be chosen
-# from the UI at all. The schema is versioned by knex migrations and fails
-# loudly, which is the better thing to depend on.
-#
-# Choosing the token is the real prize: it is just the unit name, so the URL a
-# unit pings is derivable from its own name. No generated token map, no state
-# file, nothing to keep in sync.
-#
-# The sync runs with Kuma STOPPED. Kuma caches monitors in memory, so a write to
-# a live DB appears to succeed and then does nothing until the next restart.
-#
-# RISK, stated plainly: this writes into a schema another application owns. If a
-# future Kuma release changes the `monitor` table, this breaks — but it breaks
-# as a failed unit with a SQL error, not silently, and notifyFailure reports it.
+# The matching Push monitors are written into Kuma by its unit on potato-bunny,
+# from every NixOS host's `units` list (hosts/potato-bunny/uptime-kuma.nix).
+# The push token is the unit name, so the URL a unit pings is derivable from
+# its own name.
 {
   lib,
   pkgs,
@@ -53,63 +34,14 @@
   # SQLite does not enforce that, so an over-long name would be stored fine and
   # then mismatch anything that does enforce it. Catch it at eval instead.
   tooLong = lib.filter (u: lib.stringLength (unitName u.unit) > 32) cfg.units;
-
-  sqlStr = s: "'" + lib.replaceStrings ["'"] ["''"] s + "'";
-
-  # One idempotent upsert per unit. INSERT ... WHERE NOT EXISTS rather than
-  # INSERT OR REPLACE: replace would rewrite the primary key and orphan every
-  # heartbeat row that references this monitor, silently wiping its history.
-  desiredSql =
-    lib.concatMapStrings (
-      u: let
-        n = unitName u.unit;
-        i = toString u.interval;
-      in ''
-        INSERT INTO monitor (name, type, push_token, interval, retry_interval, user_id, active)
-          SELECT ${sqlStr n}, 'push', ${sqlStr n}, ${i}, ${i},
-                 (SELECT id FROM user ORDER BY id LIMIT 1), 1
-          WHERE NOT EXISTS (SELECT 1 FROM monitor WHERE name = ${sqlStr n});
-        UPDATE monitor SET type = 'push', push_token = ${sqlStr n},
-               interval = ${i}, retry_interval = ${i}, active = 1
-          WHERE name = ${sqlStr n};
-      ''
-    )
-    cfg.units;
-
-  # Normalised snapshot of what we care about, so the sync can tell "already
-  # correct" from "needs a restart" without diffing 116 columns.
-  # NB: the placeholder is '-' rather than the obvious empty string. Two
-  # apostrophes in a row terminate a Nix indented string, so COALESCE(x,'')
-  # would end this expression mid-SQL. '-' can never collide with a real token,
-  # since tokens here are always unit names.
-  stateQuery = ''
-    SELECT name || '|' || COALESCE(push_token,'-') || '|' || interval || '|' || active
-      FROM monitor WHERE type = 'push' ORDER BY name;
-  '';
-
-  desiredState =
-    lib.concatMapStrings (
-      u: "${unitName u.unit}|${unitName u.unit}|${toString u.interval}|1\n"
-    )
-    cfg.units;
 in {
   options.services.unitHeartbeat = {
     enable = lib.mkEnableOption "success heartbeats to an Uptime Kuma push monitor";
 
     baseUrl = lib.mkOption {
       type = lib.types.str;
-      example = "http://127.0.0.1:3010";
+      example = "http://[fd7a:115c:a1e0:ab12:4843:cd96:626f:fb9c]:3010";
       description = "Base URL of the Uptime Kuma instance, no trailing slash.";
-    };
-
-    database = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/private/uptime-kuma/kuma.db";
-      description = ''
-        Kuma's SQLite database. The default is the DynamicUser StateDirectory
-        path — /var/lib/uptime-kuma is a symlink into /var/lib/private, and
-        sqlite needs to create -wal/-shm siblings, so name the real location.
-      '';
     };
 
     units = lib.mkOption {
@@ -157,75 +89,6 @@ in {
               + lib.concatMapStringsSep ", " (u: unitName u.unit) tooLong;
           }
         ];
-
-        # ── Monitor sync ──────────────────────────────────────────────────
-        # Ordered after Kuma so that on a first-ever boot the DB and its schema
-        # already exist (Kuma runs its knex migrations at startup). It then
-        # stops Kuma to write, and starts it again — see the header for why a
-        # live write is not enough.
-        systemd.services.uptime-kuma-monitor-sync = {
-          description = "Sync Uptime Kuma push monitors from the NixOS config";
-          after = ["uptime-kuma.service"];
-          wants = ["uptime-kuma.service"];
-          wantedBy = ["multi-user.target"];
-          # The desired set is embedded in the script below, so this unit's
-          # definition changes whenever the config does — which is what makes
-          # it re-run on deploy rather than only at boot.
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-          };
-          path = [
-            pkgs.sqlite
-            pkgs.systemd
-            pkgs.coreutils
-          ];
-          script = ''
-            set -euo pipefail
-            db=${lib.escapeShellArg cfg.database}
-
-            # Kuma creates the DB and runs its migrations on first start; give
-            # it a chance rather than failing a fresh install's first boot.
-            for _ in $(seq 60); do
-              [ -f "$db" ] && sqlite3 "$db" \
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='monitor';" \
-                | grep -q 1 && break
-              sleep 2
-            done
-            if ! sqlite3 "$db" "SELECT 1 FROM sqlite_master WHERE type='table' AND name='monitor';" | grep -q 1; then
-              echo "uptime-kuma-monitor-sync: no monitor table at $db; is uptime-kuma running?" >&2
-              exit 1
-            fi
-
-            if [ "$(sqlite3 "$db" 'SELECT count(*) FROM user;')" = "0" ]; then
-              # Monitors are owned by a user row; without one Kuma shows nothing
-              # and the whole sync is pointless. The admin account is created
-              # once through the web UI (or `nix run .#provision-uptime-kuma`).
-              echo "uptime-kuma-monitor-sync: no admin account yet — create one, then re-run this unit" >&2
-              exit 1
-            fi
-
-            want=${lib.escapeShellArg desiredState}
-            have=$(sqlite3 "$db" ${lib.escapeShellArg stateQuery})
-
-            if [ "$(printf '%s' "$want" | sort)" = "$(printf '%s\n' "$have" | sort)" ]; then
-              echo "uptime-kuma-monitor-sync: ${toString (builtins.length cfg.units)} monitors already correct"
-              exit 0
-            fi
-
-            echo "uptime-kuma-monitor-sync: applying changes (kuma will restart)"
-            # Stop first: Kuma holds monitors in memory and would both ignore
-            # these rows and potentially write its cached copy back over them.
-            systemctl stop uptime-kuma.service
-            sqlite3 "$db" <<'SQL'
-            BEGIN;
-            ${desiredSql}
-            COMMIT;
-            SQL
-            systemctl start uptime-kuma.service
-            echo "uptime-kuma-monitor-sync: synced ${toString (builtins.length cfg.units)} monitors"
-          '';
-        };
 
         systemd.services."unit-heartbeat@" = {
           description = "Heartbeat %i to Uptime Kuma";
