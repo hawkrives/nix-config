@@ -116,6 +116,7 @@
   #   $ROOT/tasks/<name>.json as the "data" object get returns; a missing task
   #   gets success with no data. Logged as "synowebapi <method> <name>".
   # - SYNO.Core.Package.Feed: $ROOT/feeds.json, an array of {name, feed}.
+  # - SYNO.Core.TaskScheduler(.Root): scheduled tasks (see below).
   # - Any other api: a settings object (see below).
   # Other APIs are logged as "synowebapi <api> <method>". Methods activate
   # must never call (deletes) exit 3.
@@ -152,6 +153,34 @@
           add) $jq -c --argjson o "$obj" '. + [$o]' "$f" > "$f.new" && mv "$f.new" "$f"; echo '{"success":true}' ;;
           delete) exit 3 ;;
           *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+        esac ;;
+      SYNO.Core.TaskScheduler | SYNO.Core.TaskScheduler.Root)
+        # Scheduled tasks: $ROOT/sched/<id>.json, each the v4 get "data"
+        # object plus type and real_owner.
+        d="$ROOT/sched"
+        mkdir -p "$d"
+        id=$($jq -r '.id // empty' <<<"$obj")
+        case "$method" in
+          list)
+            echo "synowebapi $api list" >> "$ROOT/calls"
+            if ls "$d"/*.json >/dev/null 2>&1; then
+              $jq -sc '{data: {tasks: map({id, name, type, owner, real_owner, enable}), total: length}, success: true}' "$d"/*.json
+            else
+              echo '{"data":{"tasks":[],"total":0},"success":true}'
+            fi ;;
+          get)
+            echo "synowebapi $api get $id" >> "$ROOT/calls"
+            $jq -c '{data: ., success: true}' "$d/$id.json" ;;
+          create)
+            echo "synowebapi $api create $($jq -r .name <<<"$obj")" >> "$ROOT/calls"
+            id=$(( $(ls "$d" | sed 's/\.json$//' | sort -n | tail -1) + 1 ))
+            $jq -c --argjson id "$id" '. + {id: $id, real_owner: "root"}' <<<"$obj" > "$d/$id.json"
+            echo '{"success":true}' ;;
+          set)
+            echo "synowebapi $api set $id" >> "$ROOT/calls"
+            $jq -c --argjson o "$obj" '. + $o' "$d/$id.json" > "$d/$id.new" && mv "$d/$id.new" "$d/$id.json"
+            echo '{"success":true}' ;;
+          *) exit 3 ;;
         esac ;;
       *)
         # Any other API is one settings object, $ROOT/settings/<api>.json;
@@ -380,6 +409,39 @@
           version = 1;
         };
         settings.items = [{name = "a";} {name = "b";}];
+      };
+    }
+  ];
+  genSched = minute:
+    mkGeneration [
+      {
+        dsm.tasks."tailscale update" = {
+          event = "schedule";
+          script = "tailscale update --yes";
+          schedule = {
+            hour = 0;
+            inherit minute;
+          };
+        };
+      }
+    ];
+  genSchedRsync = mkGeneration [
+    {
+      dsm.tasks."rsync.net" = {
+        event = "schedule";
+        script = "rsync";
+        schedule = {
+          hour = 3;
+          minute = 0;
+        };
+      };
+      dsm.tasks.other = {
+        event = "schedule";
+        script = "other";
+        schedule = {
+          hour = 4;
+          minute = 0;
+        };
       };
     }
   ];
@@ -688,6 +750,64 @@ in {
     called "synowebapi SYNO.Test.List set" || fail "not set"
     run ${genListSetting}
     ! called "synowebapi SYNO.Test.List set" || fail "list setting set again"
+  '';
+
+  sched-created = scenario "sched-created" ''
+    run ${genSched 0}
+    called "synowebapi SYNO.Core.TaskScheduler.Root create tailscale update" || fail "not created: $(cat $ROOT/calls)"
+    t=$(ls $ROOT/sched/*.json)
+    jq -e '.name == "tailscale update" and .owner == "root" and .enable == true and .type == "script"' $t >/dev/null || fail "task: $(cat $t)"
+    jq -e '.extra.script == "tailscale update --yes" and .extra.notify_enable == false' $t >/dev/null || fail "extra: $(cat $t)"
+    jq -e '.schedule | .date_type == 0 and .week_day == "0,1,2,3,4,5,6" and .hour == 0 and .minute == 0
+      and .repeat_hour == 0 and .repeat_min == 0 and .last_work_hour == 0' $t >/dev/null || fail "schedule: $(cat $t)"
+  '';
+
+  sched-idempotent = scenario "sched-idempotent" ''
+    run ${genSched 0}
+    run ${genSched 0}
+    ! called_matching 'TaskScheduler.* \(create\|set\)' || fail "unchanged task rewritten: $(cat $ROOT/calls)"
+  '';
+
+  sched-updated = scenario "sched-updated" ''
+    run ${genSched 0}
+    id=$(jq .id $ROOT/sched/*.json)
+    run ${genSched 30}
+    called "synowebapi SYNO.Core.TaskScheduler.Root set $id" || fail "not updated: $(cat $ROOT/calls)"
+    jq -e '.schedule.minute == 30' $ROOT/sched/$id.json >/dev/null || fail "minute: $(cat $ROOT/sched/$id.json)"
+    [ "$(ls $ROOT/sched | wc -l)" = 1 ] || fail "task duplicated"
+  '';
+
+  # DSM task names aren't unique: two matching script tasks are an error, not a guess.
+  sched-ambiguous = scenario "sched-ambiguous" ''
+    mkdir -p $ROOT/sched
+    for i in 1 2; do
+      echo "{\"id\": $i, \"name\": \"rsync.net\", \"type\": \"script\", \"owner\": \"root\", \"real_owner\": \"root\", \"enable\": true, \"extra\": {\"script\": \"x$i\"}, \"schedule\": {}}" > $ROOT/sched/$i.json
+    done
+    cp -a $ROOT/sched before
+    if run ${genSchedRsync}; then fail "ambiguous task accepted"; fi
+    for i in 1 2; do cmp -s before/$i.json $ROOT/sched/$i.json || fail "task $i changed"; done
+    called "synowebapi SYNO.Core.TaskScheduler.Root create other" || fail "other task not applied: $(cat $ROOT/calls)"
+  '';
+
+  sched-ignores-other-types = scenario "sched-ignores-other-types" ''
+    mkdir -p $ROOT/sched
+    echo '{"id": 1, "name": "rsync.net", "type": "custom", "owner": "root", "real_owner": "root", "enable": true}' > $ROOT/sched/1.json
+    cp $ROOT/sched/1.json before.json
+    run ${genSchedRsync}
+    called "synowebapi SYNO.Core.TaskScheduler.Root create rsync.net" || fail "script task not created: $(cat $ROOT/calls)"
+    cmp -s before.json $ROOT/sched/1.json || fail "custom task changed"
+  '';
+
+  sched-never-deleted = scenario "sched-never-deleted" ''
+    run ${genSched 0}
+    run ${genA}
+    [ "$(ls $ROOT/sched | wc -l)" = 1 ] || fail "task deleted"
+    ! called_matching 'TaskScheduler.* delete' || fail "delete called"
+  '';
+
+  sched-not-event = scenario "sched-not-event" ''
+    run ${genSched 0}
+    ! called_matching '^synowebapi \(get\|create\|set\) tailscale update' || fail "scheduled task sent to EventScheduler: $(cat $ROOT/calls)"
   '';
 
   generation-layout = check "generation-layout" ''

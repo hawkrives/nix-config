@@ -157,7 +157,74 @@ dsm_settings() {
   done < <(jq -r 'to_entries[] | select(.value.settingsApi != null and .value.settings != {})
     | [.key, .value.settingsApi.api, (.value.settingsApi.version | tostring)] | @tsv' "$GEN/dsm-services.json")
 }
-dsm_scheduled_tasks() { :; }
+# Scheduled script tasks, through the TaskScheduler API. DSM's names aren't
+# unique (apps add their own tasks, sometimes several with one name), so a
+# task matches by name and type "script"; more than one match is an error.
+# Root-owned tasks are created and set through TaskScheduler.Root, as DSM's
+# UI does.
+dsm_scheduled_tasks() {
+  local list task matches id real_owner want have today args
+  [ "$(jq '[.[] | select(.event == "schedule")] | length' "$GEN/dsm-tasks.json")" -gt 0 ] || return 0
+  if ! list=$(webapi SYNO.Core.TaskScheduler 3 list) || ! jq -e .success <<<"$list" >/dev/null; then
+    dsm_fail "listing scheduled tasks"
+    return 0
+  fi
+  today=$(date +%Y/%-m/%-d)
+  while IFS= read -r task; do
+    # The fields compared, in DSM's shape. last_work_hour is the first hour
+    # for a task that runs once a day.
+    want=$(jq -c --arg t "$task" '.[$t] | .schedule as $s | {
+        enable, owner: "root",
+        extra: {script: .script, notify_enable: .notifyOnError, notify_if_error: .notifyOnError, notify_mail: .notifyMail},
+        schedule: {
+          date_type: 0, week_day: ($s.weekDays | map(tostring) | join(",")),
+          hour: $s.hour, minute: $s.minute,
+          repeat_hour: ($s.repeatHours // 0), repeat_min: ($s.repeatMinutes // 0),
+          last_work_hour: (if $s.repeatHours == null and $s.repeatMinutes == null then $s.hour else $s.lastHour end)
+        }
+      }' "$GEN/dsm-tasks.json")
+    matches=$(jq -c --arg t "$task" '[.data.tasks[] | select(.name == $t and .type == "script")]' <<<"$list")
+    case "$(jq length <<<"$matches")" in
+      0) id="" ;;
+      1)
+        id=$(jq -r '.[0].id' <<<"$matches")
+        real_owner=$(jq -c '.[0].real_owner' <<<"$matches")
+        if ! have=$(webapi SYNO.Core.TaskScheduler 4 get id="$id" real_owner="$real_owner") || ! jq -e .success <<<"$have" >/dev/null; then
+          dsm_fail "reading scheduled task \"$task\""
+          continue
+        fi
+        have=$(jq -c '.data | {
+            enable, owner,
+            extra: (.extra | {script, notify_enable, notify_if_error, notify_mail}),
+            schedule: (.schedule | {date_type, week_day, hour, minute, repeat_hour, repeat_min, last_work_hour})
+          }' <<<"$have")
+        [ "$have" = "$want" ] && continue
+        ;;
+      *)
+        dsm_fail "scheduled task \"$task\": $(jq length <<<"$matches") DSM script tasks have this name"
+        continue
+        ;;
+    esac
+    args=(
+      name="$(jq -n --arg t "$task" '$t')"
+      owner='"root"'
+      enable="$(jq -c .enable <<<"$want")"
+      extra="$(jq -c .extra <<<"$want")"
+      schedule="$(jq -c --arg d "$today" '.schedule + {repeat_date: 1001, date: $d}' <<<"$want")"
+    )
+    if [ -z "$id" ]; then
+      dsm_change "create scheduled task \"$task\"" \
+        webapi_ok SYNO.Core.TaskScheduler.Root 4 create type='"script"' "${args[@]}" ||
+        dsm_fail "creating scheduled task \"$task\""
+    else
+      # A refused set (an owner DSM won't change in place, say) is an error;
+      # the task is never deleted and recreated.
+      dsm_change "update scheduled task \"$task\"" \
+        webapi_ok SYNO.Core.TaskScheduler.Root 4 set id="$id" real_owner="$real_owner" "${args[@]}" ||
+        dsm_fail "updating scheduled task \"$task\""
+    fi
+  done < <(jq -r 'to_entries[] | select(.value.event == "schedule") | .key' "$GEN/dsm-tasks.json")
+}
 
 # The deploy-time DSM steps, in dependency order: a package's feed before
 # installing it, settings before starting it.
