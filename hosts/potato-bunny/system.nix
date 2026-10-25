@@ -89,11 +89,14 @@ in {
         event = "bootup";
         script = "#!/bin/sh\nprintf 'hawken ALL=(ALL) NOPASSWD: ALL\\n' > /etc/sudoers.d/hawken\nchmod 0440 /etc/sudoers.d/hawken";
       };
-    # A third-party binary patcher (no author or license in the file) that
-    # stops DSM waking the HDDs: it patches scemd/synostoraged and rewrites
-    # DSM's cron task configs from the choices baked into g_user_config at the
-    # top of the script. It logs to /var/log/hibernation_fixer.log. Runs from
-    # the store, so it waits for the task that mounts /nix.
+    # synology_hibernation_fixer by AlexFromChaos (MIT, see
+    # hdd-hibernation-fixer.LICENSE), from 007revad's fork at 62b2361
+    # (cloned in /volume1/bin/007revad/). Stops DSM waking the HDDs: patches
+    # scemd/synostoraged in memory and rewrites DSM's cron task configs from
+    # the choices its --install baked into g_user_config, which is why this
+    # copy differs from the clone's hiber_fixer.py. Logs to
+    # /var/log/hibernation_fixer.log. Runs from the store, so it waits for the
+    # task that mounts /nix.
     "HDD Hibernation Fixer task" = {
       event = "bootup";
       dependsOn = "Mount nix and start daemon";
