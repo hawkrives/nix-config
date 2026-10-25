@@ -534,6 +534,18 @@
     ];
   keyA = "restrict,command=\"/x --stdio\" ssh-ed25519 AAAAA host-a";
   keyB = "restrict,command=\"/x --stdio\" ssh-ed25519 BBBBB host-b";
+  # The store GC timer's script, with df and nix-store stubbed; `script` checks $PWD/calls.
+  storeGc = name: freeBytes: script:
+    check "store-gc-${name}" ''
+      mkdir bin
+      printf '#!${pkgs.runtimeShell}\necho Avail\necho ${toString freeBytes}\n' > bin/df
+      printf '#!${pkgs.runtimeShell}\necho "nix-store $*" >> %s/calls\n' "$PWD" > bin/nix-store
+      chmod +x bin/*
+      : > calls
+      PATH=$PWD/bin:$PATH GC_PATH=/volume1 MIN_FREE=322122547200 MAX_FREE=644245094400 NIX_STORE=$PWD/bin/nix-store \
+        ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/store-gc.sh}
+      ${script}
+    '';
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -570,6 +582,14 @@ in {
       fail "dsm services: $(cat $g/dsm-services.json)"
     jq -e '."tailscale update".event == "schedule"' $g/dsm-tasks.json >/dev/null || fail "tailscale update task"
     jq -e '.SynoCommunity' $g/dsm-feeds.json >/dev/null || fail "SynoCommunity feed"
+    for host in INRtF1Gu IKaiGtVc IEZW19gG; do
+      jq -e --arg h "$host" '.users."svc-nixcache".authorizedKeys | any(startswith("restrict,command=\"/nix/var/nix/profiles/default/bin/nix-daemon --stdio\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA" + $h))' $g/users.json >/dev/null ||
+        fail "svc-nixcache key $host: $(jq -c '.users."svc-nixcache"' $g/users.json)"
+    done
+    jq -e '.users."svc-nixcache".extraGroups == ["administrators"]' $g/users.json >/dev/null || fail "svc-nixcache groups"
+    grep -q 'Techcyte-DGQJV434PF:FDqhahy007nFE2T8Cj5sBu7uacsP5N9V9dbuERDeeSc=' $g/etc/nix/nix.conf || fail "Mac signing key not trusted"
+    [ -e $g/wants/timers.target/nix-store-gc.timer ] || fail "store GC timer not wanted by timers.target"
+    [ ! -e $g/wants/multi-user.target/nix-store-gc.service ] || fail "store GC service started at boot"
   '';
 
   hm-hawken = check "hm-hawken" ''
@@ -1039,6 +1059,14 @@ in {
     f=$ROOT/var/services/homes/svc-cache/.ssh/authorized_keys
     ! grep -q AAAAA $f || fail "removed key still present"
     grep -q BBBBB $f || fail "kept key missing"
+  '';
+
+  store-gc-noop = storeGc "noop" 429496729600 ''
+    [ ! -s calls ] || fail "GC ran with 400 GiB free: $(cat calls)"
+  '';
+
+  store-gc-frees = storeGc "frees" 107374182400 ''
+    grep -qx 'nix-store --gc --max-freed 536870912000' calls || fail "GC call: $(cat calls)"
   '';
 
   generation-layout = check "generation-layout" ''

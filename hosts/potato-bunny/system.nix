@@ -11,16 +11,19 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
+  imports = [./nix-cache.nix];
+
   nix.package = lix;
   profileExtra = [pkgs.cacert];
 
   # /etc/nix is a bind mount of /volume1/nix/etc (set up by the boot task), so
   # this lands on the volume and survives DSM updates.
   #
-  # Substituters: cache.nixos.org and nix-community only. The NAS can't reach
-  # pantry: DSM's tailscale runs in userspace mode, so tailnet addresses are
-  # unroutable from here. Closures built elsewhere arrive by `nix copy` from
-  # nutmeg, signed with the fleet keys trusted below.
+  # Substituters: cache.nixos.org and nix-community. This store is itself the
+  # fleet's cache (nix-cache.nix): other hosts push their signed builds here,
+  # which is why their keys are trusted below. DSM's Tailscale runs with a
+  # real tailscale0 (the "tailscale tunnel" boot task runs configure-host), so
+  # the tailnet works in both directions.
   environment.etc."nix/nix.conf".text = ''
     build-users-group = nixbld
     trusted-users = root hawken
@@ -28,7 +31,7 @@ in {
     sandbox = true
     max-jobs = auto
     substituters = https://cache.nixos.org https://nix-community.cachix.org
-    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nutmeg:6F0E+NkIvpTI0d4QSvrDb3+LYhrQwXkYjqgI9etpuEw= pantry:eH1y5GJInQcb8pW/gXQq5GiMiszHIjhqpeMgktIDOQA= potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts= tuckles:QXDvYTGgHgAIo/EzWTn/UcTuKZEP1MqsQsX9/3apQsc=
+    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nutmeg:6F0E+NkIvpTI0d4QSvrDb3+LYhrQwXkYjqgI9etpuEw= pantry:eH1y5GJInQcb8pW/gXQq5GiMiszHIjhqpeMgktIDOQA= Techcyte-DGQJV434PF:FDqhahy007nFE2T8Cj5sBu7uacsP5N9V9dbuERDeeSc= potato-bunny:i8Ab1IPNDKp9EWfmFDZIvMm70c+D435UlIsVFhJO3ts= tuckles:QXDvYTGgHgAIo/EzWTn/UcTuKZEP1MqsQsX9/3apQsc=
   '';
 
   # No socket unit: the daemon listens itself, so `activate` can verify it
