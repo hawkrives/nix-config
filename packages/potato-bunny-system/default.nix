@@ -8,6 +8,7 @@
 #   dsm-tasks.json          DSM Task Scheduler tasks (boot-up, shutdown, scheduled)
 #   dsm-services.json       DSM packages and feature settings (dsm.services)
 #   dsm-feeds.json          extra Package Center feeds, name -> URL
+#   dsm-shares.json         DSM shared folders (dsm.shares)
 #   restart-exempt          units not restarted when they change
 #   default-profile         the root default profile (Lix + extras), if nix.package is set
 #   bin/activate            applies all of the above; see activate.sh
@@ -68,6 +69,7 @@
     dsmTasksJson = pkgs.writeText "dsm-tasks.json" (builtins.toJSON checked.dsm.tasks);
     dsmServicesJson = pkgs.writeText "dsm-services.json" (builtins.toJSON checked.dsm.services);
     dsmFeedsJson = pkgs.writeText "dsm-feeds.json" (builtins.toJSON checked.dsm.packageSources);
+    dsmSharesJson = pkgs.writeText "dsm-shares.json" (builtins.toJSON checked.dsm.shares);
 
     restartExempt = lib.attrNames (lib.filterAttrs (_: u: !u.restartIfChanged) checked.systemd.units);
 
@@ -99,6 +101,7 @@
       cp ${dsmTasksJson} $out/dsm-tasks.json
       cp ${dsmServicesJson} $out/dsm-services.json
       cp ${dsmFeedsJson} $out/dsm-feeds.json
+      cp ${dsmSharesJson} $out/dsm-shares.json
       printf '%s\n' ${lib.escapeShellArgs restartExempt} | sed '/^$/d' > $out/restart-exempt
       ${lib.optionalString (defaultProfile != null) "ln -s ${defaultProfile} $out/default-profile"}
       # The generation's own nix-env, since neither sudo's secure_path nor the

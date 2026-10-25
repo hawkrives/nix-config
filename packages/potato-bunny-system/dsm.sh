@@ -76,6 +76,64 @@ dsm_event_tasks() {
 
 # ---------------------------------------------------------------- packages, settings, scheduled tasks
 
+# Shared folders: created if missing, set when a declared field differs, then
+# each declared user's grant set if it differs. DSM's get reports the quota as
+# quota_value while create/set take share_quota, both in MB. Undeclared shares
+# and grants stay as they are; nothing is deleted.
+dsm_shares() {
+  local share name_json have want info verb perms grants user
+  while IFS= read -r share; do
+    [ -n "$share" ] || continue
+    name_json=$(jq -n --arg s "$share" '$s')
+    want=$(jq -c --arg s "$share" '.[$s] | {vol_path: .volume, desc: .description, hidden,
+      enable_recycle_bin: .recycleBin, quota_value: (.quotaMB // 0)}' "$GEN/dsm-shares.json")
+    if ! have=$(webapi SYNO.Core.Share 1 get name="$name_json" additional='["hidden","recyclebin","share_quota"]'); then
+      dsm_fail "reading share $share"
+      continue
+    fi
+    if jq -e '.success' <<<"$have" >/dev/null; then
+      have=$(jq -c '.data | {vol_path, desc, hidden, enable_recycle_bin, quota_value}' <<<"$have")
+      verb=""
+      [ "$have" = "$want" ] || verb="set"
+    elif [ "$(jq -r '.error.code // empty' <<<"$have")" = 402 ]; then
+      verb="create"
+    else
+      dsm_fail "reading share $share"
+      continue
+    fi
+    if [ -n "$verb" ]; then
+      info=$(jq -c --arg s "$share" '{name: $s, vol_path, desc, hidden, enable_recycle_bin,
+        share_quota: (.quota_value | tostring)}' <<<"$want")
+      if ! dsm_change "$verb share $share on $(jq -r .vol_path <<<"$want")" \
+        webapi_ok SYNO.Core.Share 1 "$verb" name="$name_json" shareinfo="$info"; then
+        dsm_fail "${verb}ing share $share"
+        continue
+      fi
+    fi
+    # A share only just planned in a dry run has no grants to read yet.
+    if $DRY_RUN && [ "$verb" = create ]; then
+      grants='[]'
+    elif ! grants=$(webapi SYNO.Core.Share.Permission 1 list name="$name_json" user_group_type='"local_user"') ||
+      ! jq -e .success <<<"$grants" >/dev/null; then
+      dsm_fail "reading grants on share $share"
+      continue
+    else
+      grants=$(jq -c '.data.items' <<<"$grants")
+    fi
+    perms=$(jq -c --arg s "$share" --argjson have "$grants" '.[$s].users | to_entries
+      | map({name: .key, is_readonly: (.value == "ro"), is_writable: (.value == "rw"), is_deny: false, is_custom: false})
+      | map(. as $w | select(($have | map(select(.name == $w.name)) | first // {}
+          | {name, is_readonly, is_writable, is_deny, is_custom}) != $w))' "$GEN/dsm-shares.json")
+    [ "$perms" = "[]" ] && continue
+    while IFS= read -r user; do
+      dsm_change "grant $user $(jq -r --arg s "$share" --arg u "$user" '.[$s].users[$u]' "$GEN/dsm-shares.json") on share $share" true
+    done < <(jq -r '.[].name' <<<"$perms")
+    $DRY_RUN && continue
+    webapi_ok SYNO.Core.Share.Permission 1 set name="$name_json" user_group_type='"local_user"' permissions="$perms" ||
+      dsm_fail "setting grants on share $share"
+  done < <(jq -r 'keys[]' "$GEN/dsm-shares.json")
+}
+
 # Package Center feeds: each declared URL is added if no feed has it. Feeds
 # added by hand stay.
 dsm_feeds() {
@@ -248,9 +306,11 @@ dsm_scheduled_tasks() {
   done < <(jq -r 'to_entries[] | select(.value.event == "schedule") | .key' "$GEN/dsm-tasks.json")
 }
 
-# The deploy-time DSM steps, in dependency order: a package's feed before
-# installing it, settings before starting it.
+# The deploy-time DSM steps, in dependency order: shares first (service data
+# lives in them), a package's feed before installing it, settings before
+# starting it.
 dsm_apply() {
+  dsm_shares
   dsm_feeds
   dsm_packages
   dsm_settings

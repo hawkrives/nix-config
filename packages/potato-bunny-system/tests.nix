@@ -118,6 +118,7 @@
   #   as "synowebapi <method> <name>".
   # - SYNO.Core.Package.Feed: $ROOT/feeds.json, an array of {name, feed}.
   # - SYNO.Core.TaskScheduler(.Root): scheduled tasks (see below).
+  # - SYNO.Core.Share(.Permission): shared folders and their grants (see below).
   # - Any other api: a settings object (see below).
   # Other APIs are logged as "synowebapi <api> <method>". Methods activate
   # must never call (deletes) exit 3.
@@ -155,6 +156,33 @@
           add) $jq -c --argjson o "$obj" '. + [$o]' "$f" > "$f.new" && mv "$f.new" "$f"; echo '{"success":true}' ;;
           delete) exit 3 ;;
           *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+        esac ;;
+      SYNO.Core.Share)
+        # Shares: $ROOT/shares/<name>.json holds what get returns.
+        sname=$($jq -r '.name' <<<"$obj")
+        echo "synowebapi $api $method $sname" >> "$ROOT/calls"
+        f="$ROOT/shares/$sname.json"
+        mkdir -p "$ROOT/shares"
+        case "$method" in
+          get) if [ -f "$f" ]; then $jq -c '{data: ., success: true}' "$f"; else echo '{"error":{"code":402},"success":false}'; fi ;;
+          create|set)
+            $jq -c --arg n "$sname" '.shareinfo | {name: $n, vol_path, desc, hidden, enable_recycle_bin, quota_value: (.share_quota | tonumber)}' <<<"$obj" > "$f"
+            echo '{"success":true}' ;;
+          *) exit 3 ;;
+        esac ;;
+      SYNO.Core.Share.Permission)
+        # Grants: $ROOT/shares/<name>.perm.json, an array of permission objects.
+        sname=$($jq -r '.name' <<<"$obj")
+        echo "synowebapi $api $method $sname" >> "$ROOT/calls"
+        f="$ROOT/shares/$sname.perm.json"
+        mkdir -p "$ROOT/shares"
+        [ -f "$f" ] || echo '[]' > "$f"
+        case "$method" in
+          list) $jq -c '{data: {items: ., total: length}, success: true}' "$f" ;;
+          set)
+            $jq -c --argjson p "$($jq -c .permissions <<<"$obj")" '(map(.name) - ($p | map(.name))) as $keep | map(select(.name as $n | $keep | index($n))) + $p' "$f" > "$f.new" && mv "$f.new" "$f"
+            echo '{"success":true}' ;;
+          *) exit 3 ;;
         esac ;;
       SYNO.Core.TaskScheduler | SYNO.Core.TaskScheduler.Root)
         # Scheduled tasks: $ROOT/sched/<id>.json, each the v4 get "data"
@@ -473,6 +501,19 @@
       };
     }
   ];
+  genShare = quota:
+    mkGeneration [
+      {
+        dsm.shares.mbx-cache = {
+          volume = "/volume2";
+          description = "mbx build cache";
+          hidden = true;
+          recycleBin = false;
+          quotaMB = quota;
+          users.svc-x = "rw";
+        };
+      }
+    ];
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -912,6 +953,46 @@ in {
     touch $ROOT/event-fail
     if run ${genTaskAndA}; then fail "activate succeeded although DSM failed"; fi
     called "systemctl start a.service" || fail "a.service not started: $(cat $ROOT/calls)"
+  '';
+
+  share-created = scenario "share-created" ''
+    run ${genShare 500000}
+    called "synowebapi SYNO.Core.Share create mbx-cache" || fail "not created: $(cat $ROOT/calls)"
+    jq -e '. == {"name": "mbx-cache", "vol_path": "/volume2", "desc": "mbx build cache", "hidden": true, "enable_recycle_bin": false, "quota_value": 500000}' $ROOT/shares/mbx-cache.json >/dev/null ||
+      fail "share: $(cat $ROOT/shares/mbx-cache.json)"
+    jq -e '.[] | select(.name == "svc-x") | .is_writable == true and .is_readonly == false and .is_deny == false' $ROOT/shares/mbx-cache.perm.json >/dev/null ||
+      fail "grant: $(cat $ROOT/shares/mbx-cache.perm.json)"
+  '';
+
+  share-idempotent = scenario "share-idempotent" ''
+    run ${genShare 500000}
+    run ${genShare 500000}
+    ! called_matching 'SYNO.Core.Share.* \(create\|set\)' || fail "unchanged share rewritten: $(cat $ROOT/calls)"
+  '';
+
+  share-updated = scenario "share-updated" ''
+    run ${genShare 500000}
+    run ${genShare 600000}
+    called "synowebapi SYNO.Core.Share set mbx-cache" || fail "not updated: $(cat $ROOT/calls)"
+    jq -e '.quota_value == 600000' $ROOT/shares/mbx-cache.json >/dev/null || fail "quota: $(cat $ROOT/shares/mbx-cache.json)"
+  '';
+
+  # Undeclared shares and grants stay as DSM has them; nothing is deleted.
+  share-foreign-untouched = scenario "share-foreign-untouched" ''
+    mkdir -p $ROOT/shares
+    echo '{"name": "media", "vol_path": "/volume1", "desc": "", "hidden": false, "enable_recycle_bin": true, "quota_value": 0}' > $ROOT/shares/media.json
+    echo '[{"name": "hawken", "is_readonly": true, "is_writable": false, "is_deny": false, "is_custom": false}]' > $ROOT/shares/mbx-cache.perm.json
+    cp $ROOT/shares/media.json media.before
+    run ${genShare 500000}
+    cmp -s media.before $ROOT/shares/media.json || fail "undeclared share changed"
+    jq -e 'any(.[]; .name == "hawken" and .is_readonly == true)' $ROOT/shares/mbx-cache.perm.json >/dev/null || fail "undeclared grant changed: $(cat $ROOT/shares/mbx-cache.perm.json)"
+    ! called_matching 'Share.* delete' || fail "delete called"
+  '';
+
+  dry-run-shows-share = scenario "dry-run-shows-share" ''
+    ${genShare 500000}/bin/activate --root "$ROOT" --dry-run > out
+    grep -qx 'would: create share mbx-cache on /volume2' out || fail "share not shown: $(cat out)"
+    [ ! -e $ROOT/shares/mbx-cache.json ] || fail "dry run created the share"
   '';
 
   generation-layout = check "generation-layout" ''

@@ -238,6 +238,46 @@ in {
       '';
     };
 
+    dsm.shares = mkOption {
+      type = types.attrsOf (types.submodule {
+        options = {
+          volume = mkOption {
+            type = types.str;
+            description = "Volume the share lives on, e.g. /volume2. Set at creation; DSM moves shares, this layer doesn't.";
+          };
+          description = mkOption {
+            type = types.str;
+            default = "";
+          };
+          hidden = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Hide it from network browsing (\"My Network Places\").";
+          };
+          recycleBin = mkOption {
+            type = types.bool;
+            default = true;
+          };
+          quotaMB = mkOption {
+            type = types.nullOr types.ints.positive;
+            default = null;
+            description = "Share quota in MB (btrfs volumes); null for none.";
+          };
+          users = mkOption {
+            type = types.attrsOf (types.enum ["rw" "ro"]);
+            default = {};
+            description = "Local users granted access. Grants for users not listed stay as DSM has them.";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        DSM shared folders, created if missing and kept at their declared
+        settings. Applied at deploy, not at boot. Never deleted or renamed;
+        shares not declared here are left alone.
+      '';
+    };
+
     dsm.packageSources = mkOption {
       type = types.attrsOf types.str;
       default = {};
