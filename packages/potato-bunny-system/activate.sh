@@ -331,9 +331,11 @@ while IFS= read -r task; do
   if [ -z "$have" ]; then method="create"; else method="set"; fi
   log "$method DSM task \"$task\""
   args=(task_name="$name_json" operation_type='"script"')
-  while IFS=$'\t' read -r key value; do
-    args+=("$key=$value")
-  done < <(jq -r 'to_entries[] | [.key, (.value | tojson)] | @tsv' <<<"$want")
+  # One key=<json> argument per field. (Not via @tsv: it escapes newlines and
+  # backslashes, which then reach DSM literally.)
+  while IFS= read -r key; do
+    args+=("$key=$(jq -c --arg k "$key" '.[$k]' <<<"$want")")
+  done < <(jq -r 'keys[]' <<<"$want")
   event_api "$method" "${args[@]}" | jq -e .success >/dev/null || die "DSM refused to $method task \"$task\""
 done < <(jq -r 'keys[]' "$GEN/dsm-tasks.json")
 

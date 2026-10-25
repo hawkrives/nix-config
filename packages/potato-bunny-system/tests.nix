@@ -246,6 +246,7 @@
         };
       }
     ];
+  multilineScript = "#!/bin/sh\nprintf 'hawken ALL=(ALL) NOPASSWD: ALL\\n' > /tmp/x\nchmod 0440 /tmp/x";
   genTaskDepends = mkGeneration [
     {
       dsm.tasks."HDD db" = {
@@ -638,6 +639,15 @@ in {
     jq '.owner = {"1027": "hawken"}' "$ROOT/tasks/HDD db.json" > o.json && mv o.json "$ROOT/tasks/HDD db.json"
     run ${genTasks "bash /x.sh"}
     called "synowebapi set HDD db" || fail "owner drift not corrected"
+  '';
+
+  # Scripts reach DSM byte for byte: real newlines, backslashes untouched.
+  tasks-multiline = scenario "tasks-multiline" ''
+    run ${genTasks multilineScript}
+    jq -j .operation "$ROOT/tasks/HDD db.json" > got
+    cmp -s ${pkgs.writeText "expected" multilineScript} got || fail "script mangled: $(od -c got | head -4)"
+    run ${genTasks multilineScript}
+    ! called_matching '^synowebapi set' || fail "multi-line task rewritten on an unchanged run"
   '';
 
   tasks-updated = scenario "tasks-updated" ''

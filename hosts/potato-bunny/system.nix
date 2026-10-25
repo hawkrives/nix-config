@@ -53,11 +53,9 @@ in {
 
   homeUsers.hawken.uid = 1027;
 
-  # DSM Task Scheduler boot-up tasks (run as root). DSM also has tasks this
-  # layer doesn't manage: "Mount nix and start daemon" (scripts/deploy-potato-
-  # bunny.sh owns it), "enable nested virtualization" and "add hawken to
-  # sudoers" (owned by hawken in DSM; declaring them would make them root's),
-  # and "HDD Hibernation Fixer task" (a 14 KB self-extracting script).
+  # DSM Task Scheduler boot-up tasks (run as root). The one task this layer
+  # doesn't manage is "Mount nix and start daemon": it is what runs activate,
+  # so scripts/deploy-potato-bunny.sh owns it.
   dsm.tasks = let
     notify = {
       notifyOnError = true;
@@ -82,6 +80,28 @@ in {
     "tailscale tunnel" = {
       event = "bootup";
       script = "/var/packages/Tailscale/target/bin/tailscale configure-host; synosystemctl restart pkgctl-Tailscale.service\n";
+    };
+    # Passwordless sudo for hawken, which deploys rely on. /etc/sudoers.d
+    # doesn't survive DSM updates, so it's rewritten at every boot.
+    "add hawken to sudoers" =
+      notify
+      // {
+        event = "bootup";
+        script = "#!/bin/sh\nprintf 'hawken ALL=(ALL) NOPASSWD: ALL\\n' > /etc/sudoers.d/hawken\nchmod 0440 /etc/sudoers.d/hawken";
+      };
+    # A third-party binary patcher (no author or license in the file) that
+    # stops DSM waking the HDDs: it patches scemd/synostoraged and rewrites
+    # DSM's cron task configs from the choices baked into g_user_config at the
+    # top of the script. It logs to /var/log/hibernation_fixer.log. Runs from
+    # the store, so it waits for the task that mounts /nix.
+    "HDD Hibernation Fixer task" = {
+      event = "bootup";
+      dependsOn = "Mount nix and start daemon";
+      script = "python3 ${./hdd-hibernation-fixer.py} --run";
+    };
+    "enable nested virtualization" = {
+      event = "bootup";
+      script = "modprobe -r kvm_amd\nmodprobe kvm_amd nested=1";
     };
     "enable wifi card" = {
       event = "bootup";
