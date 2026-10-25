@@ -76,13 +76,43 @@ dsm_event_tasks() {
 
 # ---------------------------------------------------------------- packages, settings, scheduled tasks
 
+# share_grants <share> <name json> <verb> <users|groups> <local_user|local_group>:
+# set each declared grant ("rw", "ro" or "none") that differs from DSM's. A
+# name DSM lists nothing for has no access.
+share_grants() {
+  local share=$1 name_json=$2 verb=$3 kind=$4 type=$5 grants perms name
+  [ "$(jq --arg s "$share" --arg k "$kind" '.[$s][$k] | length' "$GEN/dsm-shares.json")" -gt 0 ] || return 0
+  # A share only just planned in a dry run has no grants to read yet.
+  if $DRY_RUN && [ "$verb" = create ]; then
+    grants='[]'
+  elif ! grants=$(webapi SYNO.Core.Share.Permission 1 list name="$name_json" user_group_type="\"$type\"") ||
+    ! jq -e .success <<<"$grants" >/dev/null; then
+    dsm_fail "reading $kind grants on share $share"
+    return 0
+  else
+    grants=$(jq -c '.data.items' <<<"$grants")
+  fi
+  perms=$(jq -c --arg s "$share" --arg k "$kind" --argjson have "$grants" '.[$s][$k] | to_entries
+    | map({name: .key, is_readonly: (.value == "ro"), is_writable: (.value == "rw"), is_deny: false, is_custom: false})
+    | map(. as $w | select(($have | map(select(.name == $w.name)) | first
+        // {name: $w.name, is_readonly: false, is_writable: false, is_deny: false, is_custom: false}
+        | {name, is_readonly, is_writable, is_deny, is_custom}) != $w))' "$GEN/dsm-shares.json")
+  [ "$perms" = "[]" ] && return 0
+  while IFS= read -r name; do
+    dsm_change "grant ${kind%s} $name $(jq -r --arg s "$share" --arg k "$kind" --arg n "$name" '.[$s][$k][$n]' "$GEN/dsm-shares.json") on share $share" true
+  done < <(jq -r '.[].name' <<<"$perms")
+  $DRY_RUN && return 0
+  webapi_ok SYNO.Core.Share.Permission 1 set name="$name_json" user_group_type="\"$type\"" permissions="$perms" ||
+    dsm_fail "setting $kind grants on share $share"
+}
+
 # Shared folders: created if missing, set when a declared field differs (never
-# moved: a share on another volume is reported), then
-# each declared user's grant set if it differs. DSM's get reports the quota as
-# quota_value while create/set take share_quota, both in MB. Undeclared shares
-# and grants stay as they are; nothing is deleted.
+# moved: a share on another volume is reported), then each declared user and
+# group grant set if it differs. DSM's get reports the quota as quota_value
+# while create/set take share_quota, both in MB. Undeclared shares and grants
+# stay as they are; nothing is deleted.
 dsm_shares() {
-  local share name_json have want info verb perms grants user
+  local share name_json have want info verb
   while IFS= read -r share; do
     [ -n "$share" ] || continue
     name_json=$(jq -n --arg s "$share" '$s')
@@ -117,27 +147,8 @@ dsm_shares() {
         continue
       fi
     fi
-    # A share only just planned in a dry run has no grants to read yet.
-    if $DRY_RUN && [ "$verb" = create ]; then
-      grants='[]'
-    elif ! grants=$(webapi SYNO.Core.Share.Permission 1 list name="$name_json" user_group_type='"local_user"') ||
-      ! jq -e .success <<<"$grants" >/dev/null; then
-      dsm_fail "reading grants on share $share"
-      continue
-    else
-      grants=$(jq -c '.data.items' <<<"$grants")
-    fi
-    perms=$(jq -c --arg s "$share" --argjson have "$grants" '.[$s].users | to_entries
-      | map({name: .key, is_readonly: (.value == "ro"), is_writable: (.value == "rw"), is_deny: false, is_custom: false})
-      | map(. as $w | select(($have | map(select(.name == $w.name)) | first // {}
-          | {name, is_readonly, is_writable, is_deny, is_custom}) != $w))' "$GEN/dsm-shares.json")
-    [ "$perms" = "[]" ] && continue
-    while IFS= read -r user; do
-      dsm_change "grant $user $(jq -r --arg s "$share" --arg u "$user" '.[$s].users[$u]' "$GEN/dsm-shares.json") on share $share" true
-    done < <(jq -r '.[].name' <<<"$perms")
-    $DRY_RUN && continue
-    webapi_ok SYNO.Core.Share.Permission 1 set name="$name_json" user_group_type='"local_user"' permissions="$perms" ||
-      dsm_fail "setting grants on share $share"
+    share_grants "$share" "$name_json" "$verb" users local_user
+    share_grants "$share" "$name_json" "$verb" groups local_group
   done < <(jq -r 'keys[]' "$GEN/dsm-shares.json")
 }
 

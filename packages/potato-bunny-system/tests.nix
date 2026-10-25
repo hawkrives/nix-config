@@ -173,10 +173,10 @@
           *) exit 3 ;;
         esac ;;
       SYNO.Core.Share.Permission)
-        # Grants: $ROOT/shares/<name>.perm.json, an array of permission objects.
+        # Grants: $ROOT/shares/<name>.<user_group_type>.json, an array of permission objects.
         sname=$($jq -r '.name' <<<"$obj")
         echo "synowebapi $api $method $sname" >> "$ROOT/calls"
-        f="$ROOT/shares/$sname.perm.json"
+        f="$ROOT/shares/$sname.$($jq -r .user_group_type <<<"$obj").json"
         mkdir -p "$ROOT/shares"
         [ -f "$f" ] || echo '[]' > "$f"
         case "$method" in
@@ -562,6 +562,19 @@
         ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/mbx-cache-evict.sh}
       ${script}
     '';
+  genShareGroups = mkGeneration [
+    {
+      dsm.shares.mbx-cache = {
+        volume = "/volume2";
+        description = "mbx build cache";
+        hidden = true;
+        recycleBin = false;
+        quotaMB = 500000;
+        users.svc-x = "rw";
+        groups.administrators = "none";
+      };
+    }
+  ];
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -1016,8 +1029,8 @@ in {
     called "synowebapi SYNO.Core.Share create mbx-cache" || fail "not created: $(cat $ROOT/calls)"
     jq -e '. == {"name": "mbx-cache", "vol_path": "/volume2", "desc": "mbx build cache", "hidden": true, "enable_recycle_bin": false, "quota_value": 500000}' $ROOT/shares/mbx-cache.json >/dev/null ||
       fail "share: $(cat $ROOT/shares/mbx-cache.json)"
-    jq -e '.[] | select(.name == "svc-x") | .is_writable == true and .is_readonly == false and .is_deny == false' $ROOT/shares/mbx-cache.perm.json >/dev/null ||
-      fail "grant: $(cat $ROOT/shares/mbx-cache.perm.json)"
+    jq -e '.[] | select(.name == "svc-x") | .is_writable == true and .is_readonly == false and .is_deny == false' $ROOT/shares/mbx-cache.local_user.json >/dev/null ||
+      fail "grant: $(cat $ROOT/shares/mbx-cache.local_user.json)"
   '';
 
   share-idempotent = scenario "share-idempotent" ''
@@ -1037,11 +1050,11 @@ in {
   share-foreign-untouched = scenario "share-foreign-untouched" ''
     mkdir -p $ROOT/shares
     echo '{"name": "media", "vol_path": "/volume1", "desc": "", "hidden": false, "enable_recycle_bin": true, "quota_value": 0}' > $ROOT/shares/media.json
-    echo '[{"name": "hawken", "is_readonly": true, "is_writable": false, "is_deny": false, "is_custom": false}]' > $ROOT/shares/mbx-cache.perm.json
+    echo '[{"name": "hawken", "is_readonly": true, "is_writable": false, "is_deny": false, "is_custom": false}]' > $ROOT/shares/mbx-cache.local_user.json
     cp $ROOT/shares/media.json media.before
     run ${genShare 500000}
     cmp -s media.before $ROOT/shares/media.json || fail "undeclared share changed"
-    jq -e 'any(.[]; .name == "hawken" and .is_readonly == true)' $ROOT/shares/mbx-cache.perm.json >/dev/null || fail "undeclared grant changed: $(cat $ROOT/shares/mbx-cache.perm.json)"
+    jq -e 'any(.[]; .name == "hawken" and .is_readonly == true)' $ROOT/shares/mbx-cache.local_user.json >/dev/null || fail "undeclared grant changed: $(cat $ROOT/shares/mbx-cache.local_user.json)"
     ! called_matching 'Share.* delete' || fail "delete called"
   '';
 
@@ -1209,6 +1222,39 @@ in {
     for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg; do
       grep -qx 'OnFailure=notify-failure@%n.service' $u/$n.service || fail "$n has no failure alert"
     done
+  '';
+
+  # DSM grants administrators rw on a new share; "none" takes that away.
+  share-group-revoked = scenario "share-group-revoked" ''
+    mkdir -p $ROOT/shares
+    echo '{"name": "mbx-cache", "vol_path": "/volume2", "desc": "mbx build cache", "hidden": true, "enable_recycle_bin": false, "quota_value": 500000}' > $ROOT/shares/mbx-cache.json
+    echo '[{"name": "administrators", "is_readonly": false, "is_writable": true, "is_deny": false, "is_custom": false}]' > $ROOT/shares/mbx-cache.local_group.json
+    run ${genShareGroups}
+    jq -e '.[] | select(.name == "administrators") | (.is_writable or .is_readonly or .is_deny) | not' $ROOT/shares/mbx-cache.local_group.json >/dev/null ||
+      fail "group grant: $(cat $ROOT/shares/mbx-cache.local_group.json)"
+    run ${genShareGroups}
+    ! called_matching 'Share.Permission set' || fail "group grant re-set on an unchanged run"
+  '';
+
+  # The host's mbx-cache share takes administrators' default access away.
+  mbx-share-groups = check "mbx-share-groups" ''
+    jq -e '."mbx-cache".groups == {"administrators": "none"}' ${hostGeneration}/dsm-shares.json >/dev/null || fail "groups: $(cat ${hostGeneration}/dsm-shares.json)"
+  '';
+
+  # PostgreSQL's post-start waits about as long as the unit's start timeout,
+  # and fails plainly if the server never becomes ready.
+  pg-ready-wait = check "pg-ready-wait" ''
+    post=$(sed -n 's/^ExecStartPost=//p' ${hostGeneration}/units/nix-postgresql.service)
+    grep -q 'seq 220' $post || fail "readiness wait too short: $(grep seq $post)"
+    grep -q 'never became ready' $post || fail "no explicit failure"
+  '';
+
+  # The watcher checks nutmeg's LAN address before blaming nutmeg for what may
+  # be the NAS's own tailnet link; cleanup runs every 6 hours.
+  watch-lan-fallback = check "watch-lan-fallback" ''
+    probe=$(sed -n 's/^ExecStart=//p' ${hostGeneration}/units/host-watch-nutmeg.service)
+    grep -q '2600:2b00:9b16:6d01::228' $probe || fail "no LAN fallback"
+    grep -qx 'OnCalendar=00/6:30' ${hostGeneration}/units/mbx-cache-evict.timer || fail "cleanup cadence: $(grep OnCalendar ${hostGeneration}/units/mbx-cache-evict.timer)"
   '';
 
   generation-layout = check "generation-layout" ''

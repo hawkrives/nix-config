@@ -11,6 +11,9 @@
   # nutmeg's tailnet IP, not a name: DNS failing would make this alert about
   # the wrong thing. sshd answers whenever the host is genuinely usable.
   host = "100.70.139.99";
+  # nutmeg on the LAN, asked before alerting: if it answers there, nutmeg is
+  # up and it is the tailnet path (often the NAS's own) that failed.
+  lanHost = "2600:2b00:9b16:6d01::228"; # its stable LAN IPv6, as the Beszel agent uses
   port = 22;
   attempts = 5;
   gap = 30;
@@ -25,7 +28,11 @@
       echo "nutmeg: no answer on ${host}:${toString port} (attempt $i/${toString attempts})" >&2
       [ "$i" = ${toString attempts} ] || ${pkgs.coreutils}/bin/sleep ${toString gap}
     done
-    echo "nutmeg is DOWN: no TCP answer on ${host}:${toString port} after ${toString attempts} attempts over ${toString (attempts * gap)}s" >&2
+    if ${pkgs.netcat}/bin/nc -z -w 5 ${lanHost} ${toString port} 2>/dev/null; then
+      echo "nutmeg answers on the LAN (${lanHost}) but not over the tailnet; not alerting" >&2
+      exit 0
+    fi
+    echo "nutmeg is DOWN: no TCP answer on ${host}:${toString port} after ${toString attempts} attempts over ${toString (attempts * gap)}s, nor on ${lanHost}" >&2
     exit 1
   '';
 

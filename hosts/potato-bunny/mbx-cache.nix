@@ -58,10 +58,17 @@
   pgPostStart = pkgs.writeShellScript "nix-postgresql-post-start" ''
     set -euo pipefail
     as_pg() { ${pkgs.util-linux}/bin/setpriv --reuid=svc-postgres --regid=users --init-groups -- "$@"; }
-    for _ in $(${pkgs.coreutils}/bin/seq 60); do
-      as_pg ${pg}/bin/pg_isready ${psqlArgs} -q && break
+    # Up to ~110 s, inside the unit's 120 s TimeoutSec: crash recovery after an
+    # unclean shutdown can take a while.
+    ready=false
+    for _ in $(${pkgs.coreutils}/bin/seq 220); do
+      if as_pg ${pg}/bin/pg_isready ${psqlArgs} -q; then
+        ready=true
+        break
+      fi
       ${pkgs.coreutils}/bin/sleep 0.5
     done
+    $ready || { echo "nix-postgresql never became ready" >&2; exit 1; }
     q() { as_pg ${pg}/bin/psql -X ${psqlArgs} -d postgres -tAc "$1"; }
     [ "$(q "select 1 from pg_roles where rolname = 'svc-mbx-cache'")" = 1 ] ||
       as_pg ${pg}/bin/createuser ${psqlArgs} svc-mbx-cache
@@ -92,6 +99,8 @@ in {
     recycleBin = false;
     quotaMB = 500000;
     users.svc-mbx-cache = "rw";
+    # DSM grants administrators rw on every new share; svc-nixcache is one.
+    groups.administrators = "none";
   };
 
   systemd.units."nix-postgresql.service".text = ''
@@ -176,10 +185,10 @@ in {
     wantedBy = ["timers.target"];
     text = ''
       [Unit]
-      Description=Nightly mbx-cache size check
+      Description=mbx-cache size check, every 6 hours
 
       [Timer]
-      OnCalendar=*-*-* 03:30
+      OnCalendar=00/6:30
       Persistent=true
     '';
   };

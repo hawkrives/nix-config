@@ -11,6 +11,11 @@
 # login shell; its password is random and never used. The daemon serves it as
 # an untrusted user, so every pushed path must carry a signature from a key in
 # nix.conf's trusted-public-keys (system.nix).
+#
+# Untrusted clients can still ask the daemon to build (Lix has no per-user
+# switch against it), so root on any host whose key is listed can run code
+# here, inside lix-dsm's sandbox, which on this kernel has no seccomp or
+# user namespaces. Only fleet host keys are listed.
 {pkgs, ...}: let
   forced = key: ''restrict,command="/nix/var/nix/profiles/default/bin/nix-daemon --stdio" ${key}'';
   gib = n: n * 1024 * 1024 * 1024;

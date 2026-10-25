@@ -1,8 +1,8 @@
 # Keep mbx-cache's blobs under a size cap: when the regular files under
 # DATA_DIR total more than HIGH_BYTES, delete the oldest (by mtime) until they
 # total LOW_BYTES or less, then sweep metadata older than the oldest blob kept.
-# A blob deleted out from under its metadata is only a cache miss. Run nightly
-# by mbx-cache-evict.timer (mbx-cache.nix); the share's quota is the hard
+# A blob deleted out from under its metadata is only a cache miss. Run every 6
+# hours by mbx-cache-evict.timer (mbx-cache.nix); the share's quota is the hard
 # ceiling behind it.
 #
 # Env: DATA_DIR, HIGH_BYTES, LOW_BYTES, MBX_CACHE (the server binary, which

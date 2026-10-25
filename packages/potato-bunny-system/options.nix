@@ -273,9 +273,17 @@ in {
             description = "Share quota in MB (btrfs volumes); null for none.";
           };
           users = mkOption {
-            type = types.attrsOf (types.enum ["rw" "ro"]);
+            type = types.attrsOf (types.enum ["rw" "ro" "none"]);
             default = {};
-            description = "Local users granted access. Grants for users not listed stay as DSM has them.";
+            description = "Local users' access (\"none\" takes it away). Users not listed stay as DSM has them.";
+          };
+          groups = mkOption {
+            type = types.attrsOf (types.enum ["rw" "ro" "none"]);
+            default = {};
+            description = ''
+              Local groups' access, as for users. DSM grants `administrators`
+              rw on every new share; `administrators = "none"` takes that away.
+            '';
           };
         };
       });
