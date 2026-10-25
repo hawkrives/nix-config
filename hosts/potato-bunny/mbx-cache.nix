@@ -80,7 +80,7 @@
   # Never touches another port.
   serve = pkgs.writeShellScript "mbx-cache-serve" ''
     set -euo pipefail
-    ts() { /var/packages/Tailscale/target/bin/tailscale --socket=/volume2/@appdata/Tailscale/tailscaled.sock "$@"; }
+    ts() { ${pkgs.tailscale}/bin/tailscale "$@"; }
     if ts serve status --json | ${pkgs.jq}/bin/jq -e '
         [(.Web // {}) | to_entries[] | select(.key | endswith(":8443")) | .value.Handlers["/"].Proxy]
         | index("http://127.0.0.1:8080") != null' >/dev/null; then
@@ -152,7 +152,7 @@ in {
     [Unit]
     Description=Publish mbx-cache on the tailnet (:8443)
     OnFailure=notify-failure@%n.service
-    After=mbx-cache.service network-online.target
+    After=mbx-cache.service nix-tailscaled.service network-online.target
 
     [Service]
     Type=oneshot

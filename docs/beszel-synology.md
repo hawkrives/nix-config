@@ -8,9 +8,9 @@ layer, `beszel-agent.service` in `hosts/potato-bunny/system.nix`, deployed with
 ## This agent goes over the LAN, not the tailnet
 
 Every NixOS agent reaches the hub at `http://[fd7a:115c:a1e0::b346:8b63]:8091`
-— nutmeg's tailscale ULA. This one uses the LAN instead. DSM's Tailscale runs
-with a real `tailscale0` (the "tailscale tunnel" boot task runs `tailscale
-configure-host`), so the tailnet path would work too; moving to it means
+— nutmeg's tailscale ULA. This one uses the LAN instead. The NAS's Tailscale
+(nix-tailscaled, `hosts/potato-bunny/tailscale.nix`) runs with a real
+`tailscale0`, so the tailnet path would work too; moving to it means
 pointing `HUB_URL` at the ULA and dropping the firewall rule below.
 
 This agent uses nutmeg's stable LAN IPv6, `http://[2600:2b00:9b16:6d01::228]:8091`,

@@ -575,6 +575,18 @@
       };
     }
   ];
+  # The one-time copy of the Synology package's Tailscale state into the nix
+  # daemon's state dir; `setup` fills ./old (and maybe ./new).
+  tsMigrate = name: setup: script:
+    check "tailscale-migrate-${name}" ''
+      mkdir old
+      ${setup}
+      printf '#!${pkgs.runtimeShell}\necho "chown $*" >> %s/calls\n' "$PWD" > chown; chmod +x chown
+      : > calls
+      CHOWN=$PWD/chown PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin \
+        ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/tailscale-migrate.sh} $PWD/old $PWD/new
+      ${script}
+    '';
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -1255,6 +1267,49 @@ in {
     probe=$(sed -n 's/^ExecStart=//p' ${hostGeneration}/units/host-watch-nutmeg.service)
     grep -q '2600:2b00:9b16:6d01::228' $probe || fail "no LAN fallback"
     grep -qx 'OnCalendar=00/6:30' ${hostGeneration}/units/mbx-cache-evict.timer || fail "cleanup cadence: $(grep OnCalendar ${hostGeneration}/units/mbx-cache-evict.timer)"
+  '';
+
+  tailscale-migrate-copies =
+    tsMigrate "copies" ''
+      echo state > old/tailscaled.state; mkdir old/certs; echo cert > old/certs/a.crt
+      echo 123 > old/tailscaled.pid; : > old/tailscaled.sock; echo log > old/tailscaled.stdout.log
+    '' ''
+      [ "$(cat new/tailscaled.state)" = state ] && [ "$(cat new/certs/a.crt)" = cert ] || fail "state not copied: $(find new)"
+      [ ! -e new/tailscaled.pid ] && [ ! -e new/tailscaled.sock ] && [ ! -e new/tailscaled.stdout.log ] || fail "runtime files copied: $(find new)"
+      grep -q "^chown -R 0:0 $PWD/new" calls || fail "not chowned to root: $(cat calls)"
+      [ "$(stat -c %a new)" = 700 ] || fail "dir mode $(stat -c %a new)"
+    '';
+
+  # Only ever once: the nix daemon's own state is never overwritten.
+  tailscale-migrate-keeps-existing =
+    tsMigrate "keeps-existing" ''
+      echo old-state > old/tailscaled.state
+      mkdir new; echo new-state > new/tailscaled.state
+    '' ''
+      [ "$(cat new/tailscaled.state)" = new-state ] || fail "existing state overwritten"
+      [ ! -s calls ] || fail "touched an existing state dir"
+    '';
+
+  tailscale-migrate-nothing = tsMigrate "nothing" "" ''
+    [ ! -e new/tailscaled.state ] || fail "invented a state"
+  '';
+
+  tailscale-units = check "tailscale-units" ''
+    g=${hostGeneration}
+    u=$g/units/nix-tailscaled.service
+    [ -e $g/wants/multi-user.target/nix-tailscaled.service ] || fail "not started at boot"
+    grep -qx 'Conflicts=pkgctl-Tailscale.service' $u || fail "can run alongside the Synology package"
+    grep -qx 'After=pkgctl-Tailscale.service network-online.target' $u || fail "not ordered after the package stops"
+    grep -q -- '--state=/volume2/@appdata/nix-tailscale/tailscaled.state' $u || fail "state path"
+    grep -q -- '--port=41641' $u || fail "port"
+    grep -q 'TS_DEBUG_FIREWALL_MODE=iptables' $u || fail "firewall mode"
+    grep -q 'accept-dns=false' $(sed -n 's/^ExecStartPost=//p' $u) || fail "MagicDNS would rewrite DSM's resolv.conf"
+    grep -q 'tailscale-migrate' $(sed -n 's/^ExecStartPre=//p' $u | head -1) || fail "no state migration"
+    jq -e '.tailscale.enable == false' $g/dsm-services.json >/dev/null || fail "Synology package not stopped"
+    jq -e '."tailscale update".enable == false and ."tailscale tunnel".enable == false' $g/dsm-tasks.json >/dev/null || fail "package tasks still enabled"
+    serve=$(sed -n 's/^ExecStart=//p' $g/units/mbx-cache-serve.service)
+    ! grep -q '/var/packages/Tailscale' $serve || fail "serve still uses the Synology CLI"
+    [ -x $g/default-profile/bin/tailscale ] || fail "no tailscale CLI on root's PATH"
   '';
 
   generation-layout = check "generation-layout" ''

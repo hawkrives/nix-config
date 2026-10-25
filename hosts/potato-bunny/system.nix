@@ -11,7 +11,7 @@
 }: let
   lix = perSystem.self.lix-dsm;
 in {
-  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix];
+  imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix];
 
   nix.package = lix;
   profileExtra = [pkgs.cacert];
@@ -21,9 +21,8 @@ in {
   #
   # Substituters: cache.nixos.org and nix-community. This store is itself the
   # fleet's cache (nix-cache.nix): other hosts push their signed builds here,
-  # which is why their keys are trusted below. DSM's Tailscale runs with a
-  # real tailscale0 (the "tailscale tunnel" boot task runs configure-host), so
-  # the tailnet works in both directions.
+  # which is why their keys are trusted below. Tailscale (tailscale.nix) runs
+  # with a real tailscale0, so the tailnet works in both directions.
   environment.etc."nix/nix.conf".text = ''
     build-users-group = nixbld
     trusted-users = root hawken
@@ -81,8 +80,11 @@ in {
         dependsOn = "Synology_HDD_db";
         script = "bash /volume1/bin/007revad/Synology_enable_Deduplication/syno_enable_dedupe.sh --autoupdate=3 --email --hdd";
       };
+    # The Synology Tailscale package's: configure-host, then restart its daemon.
+    # Off while nix-tailscaled (tailscale.nix) runs instead; kept for fallback.
     "tailscale tunnel" = {
       event = "bootup";
+      enable = false;
       script = "/var/packages/Tailscale/target/bin/tailscale configure-host; synosystemctl restart pkgctl-Tailscale.service\n";
     };
     # Passwordless sudo for hawken, which deploys rely on. /etc/sudoers.d
@@ -114,8 +116,10 @@ in {
       event = "bootup";
       script = "/sbin/modprobe usbserial\n/sbin/modprobe ftdi_sio\n#/sbin/modprobe cdc-acm";
     };
+    # The Synology package's self-update; off with the package (tailscale.nix).
     "tailscale update" = {
       event = "schedule";
+      enable = false;
       script = "tailscale update --yes";
       schedule = {
         hour = 0;
@@ -130,7 +134,6 @@ in {
   dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";
   dsm.services = {
     container-manager.enable = true;
-    tailscale.enable = true;
     syncthing = {
       package = "syncthing"; # from SynoCommunity
       enable = true;
