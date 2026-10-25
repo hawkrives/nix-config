@@ -111,26 +111,47 @@
       ${script}
     '';
 
-  # DSM's Task Scheduler API: tasks live in $ROOT/tasks/<name>.json as the
-  # "data" object get returns; a missing task gets success with no data.
+  # DSM's web APIs, by api:
+  # - SYNO.Core.EventScheduler (boot-up/shutdown tasks): tasks live in
+  #   $ROOT/tasks/<name>.json as the "data" object get returns; a missing task
+  #   gets success with no data. Logged as "synowebapi <method> <name>".
+  # - SYNO.Core.Package.Feed: $ROOT/feeds.json, an array of {name, feed}.
+  # Other APIs are logged as "synowebapi <api> <method>". Methods activate
+  # must never call (deletes) exit 3.
   synowebapiStub = pkgs.writeShellScript "synowebapi" ''
+    jq=${pkgs.jq}/bin/jq
     [ "$1" = --exec ] && shift
-    method="" name="" obj='{}'
+    api="" method="" name="" obj='{}'
     for arg in "$@"; do
       key=''${arg%%=*} val=''${arg#*=}
       case "$key" in
-        api|version) ;;
+        version) ;;
+        api) api=$val ;;
         method) method=$val ;;
-        *) obj=$(${pkgs.jq}/bin/jq -c --arg k "$key" --argjson v "$val" '. + {($k): $v}' <<<"$obj")
-           [ "$key" = task_name ] && name=$(${pkgs.jq}/bin/jq -r . <<<"$val") ;;
+        *) obj=$($jq -c --arg k "$key" --argjson v "$val" '. + {($k): $v}' <<<"$obj")
+           [ "$key" = task_name ] && name=$($jq -r . <<<"$val") ;;
       esac
     done
-    echo "synowebapi $method $name" >> "$ROOT/calls"
-    f="$ROOT/tasks/$name.json"
-    case "$method" in
-      get) if [ -f "$f" ]; then ${pkgs.jq}/bin/jq -c '{data: ., success: true}' "$f"; else echo '{"success":true}'; fi ;;
-      create|set) mkdir -p "$ROOT/tasks"; echo "$obj" > "$f"; echo '{"success":true}' ;;
-      delete) rm -f "$f"; echo '{"success":true}' ;;
+    case "$api" in
+      SYNO.Core.EventScheduler)
+        echo "synowebapi $method $name" >> "$ROOT/calls"
+        f="$ROOT/tasks/$name.json"
+        case "$method" in
+          get) if [ -f "$f" ]; then $jq -c '{data: ., success: true}' "$f"; else echo '{"success":true}'; fi ;;
+          create|set) mkdir -p "$ROOT/tasks"; echo "$obj" > "$f"; echo '{"success":true}' ;;
+          delete) rm -f "$f"; echo '{"success":true}' ;;
+          *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+        esac ;;
+      SYNO.Core.Package.Feed)
+        echo "synowebapi $api $method" >> "$ROOT/calls"
+        f="$ROOT/feeds.json"
+        [ -f "$f" ] || echo '[]' > "$f"
+        case "$method" in
+          list) $jq -c '{data: {items: ., total: length}, success: true}' "$f" ;;
+          add) $jq -c --argjson o "$obj" '. + [$o]' "$f" > "$f.new" && mv "$f.new" "$f"; echo '{"success":true}' ;;
+          delete) exit 3 ;;
+          *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
+        esac ;;
       *) echo "synowebapi stub: unexpected $*" >&2; exit 2 ;;
     esac
   '';
@@ -310,6 +331,27 @@
       };
     }
   ];
+  genPkg = enable:
+    mkGeneration [
+      {
+        dsm.services.foo =
+          {package = "Foo";}
+          // pkgs.lib.optionalAttrs (enable != null) {inherit enable;};
+      }
+    ];
+  genPkgAB = mkGeneration [
+    {
+      dsm.services.a = {
+        package = "A";
+        enable = true;
+      };
+      dsm.services.b = {
+        package = "B";
+        enable = true;
+      };
+    }
+  ];
+  genFeed = mkGeneration [{dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";}];
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -562,6 +604,58 @@ in {
 
   boot-task-flag = check "boot-task-flag" ''
     grep -q 'activate --boot ' ${../../hosts/potato-bunny/boot-task.sh} || fail "boot task does not pass --boot"
+  '';
+
+  pkg-installed-and-started = scenario "pkg-installed-and-started" ''
+    run ${genPkg true}
+    called "synopkg install_from_server Foo /volume1" || fail "not installed: $(cat $ROOT/calls)"
+    called "synopkg start Foo" || fail "not started: $(cat $ROOT/calls)"
+    [ "$(cat $ROOT/pkgs/Foo)" = on ] || fail "Foo not running"
+  '';
+
+  pkg-idempotent = scenario "pkg-idempotent" ''
+    run ${genPkg true}
+    run ${genPkg true}
+    ! called_matching '^synopkg \(install_from_server\|start\|stop\)' || fail "unchanged package touched: $(cat $ROOT/calls)"
+  '';
+
+  # enable = false stops a package; nothing is ever uninstalled.
+  pkg-disable-stops-not-uninstalls = scenario "pkg-disable-stops-not-uninstalls" ''
+    mkdir -p $ROOT/pkgs && echo on > $ROOT/pkgs/Foo
+    run ${genPkg false}
+    called "synopkg stop Foo" || fail "not stopped: $(cat $ROOT/calls)"
+    ! called_matching uninstall || fail "uninstalled"
+    [ -e $ROOT/pkgs/Foo ] || fail "Foo gone"
+  '';
+
+  pkg-null-untouched = scenario "pkg-null-untouched" ''
+    mkdir -p $ROOT/pkgs && echo off > $ROOT/pkgs/Foo
+    run ${genPkg null}
+    ! called_matching '^synopkg \(install_from_server\|start\|stop\)' || fail "hands-off package touched: $(cat $ROOT/calls)"
+  '';
+
+  # One failing package is reported; the others, profiles and state still advance.
+  pkg-failure-isolated = scenario "pkg-failure-isolated" ''
+    mkdir -p $ROOT/pkg-fail && touch $ROOT/pkg-fail/A
+    if run ${genPkgAB}; then fail "activate succeeded although A failed"; fi
+    called "synopkg start B" || fail "B not started: $(cat $ROOT/calls)"
+    [ "$(readlink $ROOT/nix/var/nix/profiles/potato-bunny)" = ${genPkgAB} ] || fail "profile not switched"
+    jq -e --arg g ${genPkgAB} '.generation == $g' $ROOT/volume1/@appdata/nix-system/state.json >/dev/null || fail "state not advanced"
+  '';
+
+  feeds-added = scenario "feeds-added" ''
+    run ${genFeed}
+    called "synowebapi SYNO.Core.Package.Feed add" || fail "feed not added: $(cat $ROOT/calls)"
+    jq -e '. == [{"name": "SynoCommunity", "feed": "https://packages.synocommunity.com/"}]' $ROOT/feeds.json >/dev/null || fail "feeds: $(cat $ROOT/feeds.json)"
+    run ${genFeed}
+    ! called "synowebapi SYNO.Core.Package.Feed add" || fail "feed added twice"
+  '';
+
+  feeds-foreign-kept = scenario "feeds-foreign-kept" ''
+    echo '[{"name": "Other", "feed": "https://example.com/"}]' > $ROOT/feeds.json
+    run ${genFeed}
+    jq -e 'map(.name) == ["Other", "SynoCommunity"]' $ROOT/feeds.json >/dev/null || fail "feeds: $(cat $ROOT/feeds.json)"
+    ! called_matching 'Feed delete' || fail "feed deleted"
   '';
 
   generation-layout = check "generation-layout" ''

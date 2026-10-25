@@ -72,10 +72,64 @@ dsm_event_tasks() {
 
 # ---------------------------------------------------------------- packages, settings, scheduled tasks
 
-dsm_feeds() { :; }
-dsm_packages() { :; }
+# Package Center feeds: each declared URL is added if no feed has it. Feeds
+# added by hand stay.
+dsm_feeds() {
+  local have name url
+  [ "$(jq length "$GEN/dsm-feeds.json")" -gt 0 ] || return 0
+  if ! have=$(webapi SYNO.Core.Package.Feed 1 list) || ! jq -e .success <<<"$have" >/dev/null; then
+    dsm_fail "listing package feeds"
+    return 0
+  fi
+  while IFS=$'\t' read -r name url; do
+    jq -e --arg u "$url" 'any(.data.items[]?; .feed == $u)' <<<"$have" >/dev/null && continue
+    dsm_change "add package feed $name ($url)" \
+      webapi_ok SYNO.Core.Package.Feed 1 add name="$(jq -n --arg v "$name" '$v')" feed="$(jq -n --arg v "$url" '$v')" ||
+      dsm_fail "adding package feed $name"
+  done < <(jq -r 'to_entries[] | [.key, .value] | @tsv' "$GEN/dsm-feeds.json")
+}
+
+# Packages of services with enable = true, and with enable = false (to stop),
+# as "<service>\t<package id>\t<enable>\t<volume>" lines.
+managed_packages() {
+  jq -r 'to_entries[] | select(.value.package != null and .value.enable != null)
+    | [.key, .value.package, (.value.enable | tostring), .value.volume] | @tsv' "$GEN/dsm-services.json"
+}
+
+pkg_installed() { "$SYNOPKG" list --name 2>/dev/null | grep -qxF "$1"; }
+pkg_running() { "$SYNOPKG" is_onoff "$1" >/dev/null 2>&1; }
+
+# Packages whose install failed this run; dsm_run_state skips them.
+DSM_INSTALL_FAILED=" "
+
+dsm_packages() {
+  local service id enable volume
+  while IFS=$'\t' read -r service id enable volume; do
+    [ "$enable" = true ] || continue
+    pkg_installed "$id" && continue
+    if ! dsm_change "install $id ($service) on $volume" "$SYNOPKG" install_from_server "$id" "$volume" >/dev/null; then
+      dsm_fail "installing $id ($service)"
+      DSM_INSTALL_FAILED+="$id "
+    fi
+  done < <(managed_packages)
+}
+
+# Start enabled packages and stop disabled ones. Never uninstalls.
+dsm_run_state() {
+  local service id enable volume
+  while IFS=$'\t' read -r service id enable volume; do
+    case "$DSM_INSTALL_FAILED" in *" $id "*) continue ;; esac
+    if [ "$enable" = true ]; then
+      if ! pkg_running "$id"; then
+        dsm_change "start $id ($service)" "$SYNOPKG" start "$id" >/dev/null || dsm_fail "starting $id ($service)"
+      fi
+    elif pkg_running "$id"; then
+      dsm_change "stop $id ($service)" "$SYNOPKG" stop "$id" >/dev/null || dsm_fail "stopping $id ($service)"
+    fi
+  done < <(managed_packages)
+}
+
 dsm_settings() { :; }
-dsm_run_state() { :; }
 dsm_scheduled_tasks() { :; }
 
 # The deploy-time DSM steps, in dependency order: a package's feed before
