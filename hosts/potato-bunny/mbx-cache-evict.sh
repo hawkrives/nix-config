@@ -9,8 +9,14 @@
 # reads its database settings from the environment).
 set -euo pipefail
 
-# Symlinks are neither followed nor counted: only regular files are blobs.
-list=$(find "$DATA_DIR" -type f -printf '%T@ %s %p\n' | sort -n)
+# Regular files only: symlinks are neither followed nor counted. DSM's @eaDir
+# index folders are skipped, and anything else unreadable is ignored rather
+# than stopping eviction.
+blobs() { # blobs <find -printf format>
+  find "$DATA_DIR" -name @eaDir -prune -o -type f -printf "$1" 2>/dev/null || true
+}
+
+list=$(blobs '%T@ %s %p\n' | sort -n)
 total=$(awk '{ s += $2 } END { print s + 0 }' <<<"$list")
 if [ "$total" -le "$HIGH_BYTES" ]; then
   echo "mbx-cache-evict: $total bytes, under $HIGH_BYTES; nothing to do"
@@ -26,7 +32,9 @@ while read -r _ size path; do
 done <<<"$list"
 echo "mbx-cache-evict: deleted $deleted blobs; $total bytes left"
 
-oldest=$(find "$DATA_DIR" -type f -printf '%T@\n' | sort -n | head -1)
+# The minimum by awk, which reads all its input: `sort | head -1` would close
+# the pipe early and, under pipefail, kill the script on a large listing.
+oldest=$(blobs '%T@\n' | awk 'NR == 1 || $1 < m { m = $1 } END { if (NR) print m }')
 days=1
 if [ -n "$oldest" ]; then
   days=$((($(date +%s) - ${oldest%.*}) / 86400 + 1))

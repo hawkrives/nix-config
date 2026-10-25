@@ -44,6 +44,9 @@
   # As root (PermissionsStartOnly): the data dir, and initdb exactly once.
   pgPreStart = pkgs.writeShellScript "nix-postgresql-pre-start" ''
     set -euo pipefail
+    # Only onto the real volume: if /volume2 weren't mounted, install -d would
+    # quietly build a fresh cluster on DSM's small system partition.
+    [ -d /volume2/@appdata ] || { echo "/volume2/@appdata missing; is volume2 mounted?" >&2; exit 1; }
     ${pkgs.coreutils}/bin/install -d -o svc-postgres -m 0700 ${pgData}
     if [ ! -e ${pgData}/PG_VERSION ]; then
       ${pkgs.util-linux}/bin/setpriv --reuid=svc-postgres --regid=users --init-groups -- \
@@ -94,6 +97,8 @@ in {
   systemd.units."nix-postgresql.service".text = ''
     [Unit]
     Description=PostgreSQL for mbx-cache (not DSM's)
+    ConditionPathIsMountPoint=/volume2
+    OnFailure=notify-failure@%n.service
     RequiresMountsFor=/volume2
 
     [Service]
@@ -115,6 +120,8 @@ in {
   systemd.units."mbx-cache.service".text = ''
     [Unit]
     Description=mbx remote build cache
+    ConditionPathIsMountPoint=/volume2
+    OnFailure=notify-failure@%n.service
     Requires=nix-postgresql.service
     After=nix-postgresql.service network-online.target
     RequiresMountsFor=/volume1 /volume2
@@ -135,6 +142,7 @@ in {
   systemd.units."mbx-cache-serve.service".text = ''
     [Unit]
     Description=Publish mbx-cache on the tailnet (:8443)
+    OnFailure=notify-failure@%n.service
     After=mbx-cache.service network-online.target
 
     [Service]
@@ -148,6 +156,8 @@ in {
     text = ''
       [Unit]
       Description=Keep mbx-cache's blobs under their cap
+      ConditionPathIsMountPoint=/volume2
+      OnFailure=notify-failure@%n.service
       After=mbx-cache.service
 
       [Service]

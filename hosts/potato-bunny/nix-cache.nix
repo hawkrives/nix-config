@@ -32,6 +32,7 @@ in {
     text = ''
       [Unit]
       Description=Collect Nix store garbage when /volume1 runs low
+      OnFailure=notify-failure@%n.service
       RequiresMountsFor=/nix/store
 
       [Service]

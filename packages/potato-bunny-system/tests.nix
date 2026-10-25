@@ -1167,6 +1167,50 @@ in {
     done
   '';
 
+  # A listing bigger than a pipe buffer: taking its first line must not kill
+  # the script (SIGPIPE under pipefail) before the sweep.
+  evict-many =
+    evict "many" 2000 1000 ''
+      mkdir data/d; for i in $(seq 3000); do echo > "data/d/blob-with-a-longish-name-$i"; done
+      touch -d "10 days ago" data/d/blob-with-a-longish-name-3000
+    '' ''
+      grep -q '^mbx-cache --sweep-metadata-older-than-days ' calls || fail "no sweep after evicting a large listing"
+    '';
+
+  # A directory the cache account can't read (DSM's @eaDir indexing) doesn't
+  # stop eviction.
+  evict-unreadable-dir =
+    evict "unreadable-dir" 350 200 ''
+      blob a "30 days ago"; blob b "20 days ago"; blob c "10 days ago"; blob d "1 hour ago"
+      mkdir -p data/@eaDir/x && chmod 000 data/@eaDir
+    '' ''
+      chmod 755 data/@eaDir
+      [ ! -e data/a ] || fail "nothing evicted"
+      grep -q '^mbx-cache --sweep-metadata-older-than-days ' calls || fail "no sweep"
+    '';
+
+  # A declared volume that differs from where the share lives is an error,
+  # not a set: DSM would move the share's data.
+  share-volume-not-moved = scenario "share-volume-not-moved" ''
+    mkdir -p $ROOT/shares
+    echo '{"name": "mbx-cache", "vol_path": "/volume1", "desc": "mbx build cache", "hidden": true, "enable_recycle_bin": false, "quota_value": 500000}' > $ROOT/shares/mbx-cache.json
+    if run ${genShare 500000}; then fail "volume mismatch accepted"; fi
+    ! called "synowebapi SYNO.Core.Share set mbx-cache" || fail "share set (would move it)"
+    jq -e '.vol_path == "/volume1"' $ROOT/shares/mbx-cache.json >/dev/null || fail "moved"
+  '';
+
+  nas-units-guarded = check "nas-units-guarded" ''
+    u=${hostGeneration}/units
+    for n in nix-postgresql mbx-cache mbx-cache-evict; do
+      grep -qx 'ConditionPathIsMountPoint=/volume2' $u/$n.service || fail "$n runs without /volume2 mounted"
+    done
+    pre=$(sed -n 's/^ExecStartPre=//p' $u/nix-postgresql.service)
+    ! grep -q 'install -d' $pre || grep -q '/volume2/@appdata ]' $pre || fail "pre-start creates the data dir's parents unchecked"
+    for n in nix-postgresql mbx-cache mbx-cache-evict mbx-cache-serve nix-store-gc host-watch-nutmeg; do
+      grep -qx 'OnFailure=notify-failure@%n.service' $u/$n.service || fail "$n has no failure alert"
+    done
+  '';
+
   generation-layout = check "generation-layout" ''
     g=${layoutGen}
     grep -qx 'x = 1' $g/etc/nix/nix.conf || fail "nix.conf content"

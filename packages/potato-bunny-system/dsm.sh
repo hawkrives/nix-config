@@ -76,7 +76,8 @@ dsm_event_tasks() {
 
 # ---------------------------------------------------------------- packages, settings, scheduled tasks
 
-# Shared folders: created if missing, set when a declared field differs, then
+# Shared folders: created if missing, set when a declared field differs (never
+# moved: a share on another volume is reported), then
 # each declared user's grant set if it differs. DSM's get reports the quota as
 # quota_value while create/set take share_quota, both in MB. Undeclared shares
 # and grants stay as they are; nothing is deleted.
@@ -93,6 +94,12 @@ dsm_shares() {
     fi
     if jq -e '.success' <<<"$have" >/dev/null; then
       have=$(jq -c '.data | {vol_path, desc, hidden, enable_recycle_bin, quota_value}' <<<"$have")
+      # A set with another vol_path is DSM's move-share, which would move the
+      # share's data: report it instead.
+      if [ "$(jq -r .vol_path <<<"$have")" != "$(jq -r .vol_path <<<"$want")" ]; then
+        dsm_fail "share $share is on $(jq -r .vol_path <<<"$have"), declared on $(jq -r .vol_path <<<"$want"); move it in DSM"
+        continue
+      fi
       verb=""
       [ "$have" = "$want" ] || verb="set"
     elif [ "$(jq -r '.error.code // empty' <<<"$have")" = 402 ]; then

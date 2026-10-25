@@ -5,21 +5,15 @@ potato-bunny isn't NixOS, so its agent is a unit in the potato-bunny system
 layer, `beszel-agent.service` in `hosts/potato-bunny/system.nix`, deployed with
 `mise run potato-bunny:ask` and re-applied at every boot.
 
-## Why this agent goes over the LAN, not the tailnet
+## This agent goes over the LAN, not the tailnet
 
 Every NixOS agent reaches the hub at `http://[fd7a:115c:a1e0::b346:8b63]:8091`
-— nutmeg's tailscale ULA. **This one cannot**, and the reason is worth writing
-down because the NAS looks like it should work.
+— nutmeg's tailscale ULA. This one uses the LAN instead. DSM's Tailscale runs
+with a real `tailscale0` (the "tailscale tunnel" boot task runs `tailscale
+configure-host`), so the tailnet path would work too; moving to it means
+pointing `HUB_URL` at the ULA and dropping the firewall rule below.
 
-potato-bunny holds a tailnet address (`100.111.251.156`) and `tailscale status`
-on it is perfectly healthy. But DSM's Tailscale package runs `tailscaled` as an
-unprivileged user with no `--tun`, i.e. in userspace networking mode: there is no
-`tailscale0` interface and no CGNAT routes in the kernel table. `ip route get
-100.70.139.99` on the NAS resolves via the LAN gateway and the connection times
-out. The NAS can be *reached* over the tailnet; it cannot *originate* connections
-to tailnet addresses. The agent, running on the host, is in exactly that position.
-
-So this agent uses nutmeg's stable LAN IPv6, `http://[2600:2b00:9b16:6d01::228]:8091`,
+This agent uses nutmeg's stable LAN IPv6, `http://[2600:2b00:9b16:6d01::228]:8091`,
 and `hosts/nutmeg/beszel.nix` carries a matching firewall rule admitting
 **only** the NAS's own stable LAN IPv6 to that port:
 
@@ -29,9 +23,7 @@ networking.firewall.extraInputRules = ''
 '';
 ```
 
-The rest of the LAN still cannot reach the hub. If DSM's Tailscale is ever moved
-to tun mode, this agent can switch to the tailnet address and that firewall rule
-can be deleted.
+The rest of the LAN still cannot reach the hub.
 
 Both addresses now live inside `2600:2b00:9b16:6d01::/64`, a prefix the ISP
 delegates to this network rather than something pinned in this repo (nutmeg's

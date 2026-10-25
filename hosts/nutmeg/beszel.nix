@@ -42,11 +42,10 @@
   # the tuckles VM.
   services.beszel.agent.smartmon.enable = true;
 
-  # potato-bunny (the Synology) can't reach the hub over the tailnet: DSM's
-  # Tailscale package runs tailscaled unprivileged with no tun device, so the NAS
-  # has a tailnet address but no route to one. It talks to the hub over the LAN
-  # instead, which means opening 8091 — but only to that one host, so the rest of
-  # the LAN still sees nothing. Every other agent keeps using the tailnet.
+  # potato-bunny (the Synology) talks to the hub over the LAN rather than the
+  # tailnet (docs/beszel-synology.md), which means opening 8091 — but only to
+  # that one host, so the rest of the LAN still sees nothing. Every other agent
+  # uses the tailnet.
   #
   # 2600:2b00:9b16:6d01:9209:d0ff:fe15:4261 is the NAS's stable LAN IPv6
   # (EUI-64, derived from its MAC — it doesn't move the way a DHCP lease
