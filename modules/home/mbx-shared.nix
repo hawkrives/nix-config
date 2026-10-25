@@ -1,9 +1,9 @@
 # mbx (jdx's Rust build tool) as the cargo frontend, backed by the remote cache
-# on pantry (hosts/pantry/mbx-cache.nix).
+# on potato-bunny (hosts/potato-bunny/mbx-cache.nix).
 #
 # The point is disk: mbx keeps every compiled crate in one shared local store
 # instead of a target/ per checkout, gc.max_size caps that store, and whatever
-# gets evicted comes back from pantry instead of being recompiled.
+# gets evicted comes back from the cache instead of being recompiled.
 #
 # Remote settings only take effect from this global file or MBX_REMOTE_* env
 # vars (a repo's .mbx.toml can't set them), so each host gets one namespace for
@@ -23,13 +23,14 @@
 
   configText = (pkgs.formats.toml {}).generate "mbx-config.toml" {
     remote = {
-      url = "https://pantry.vaquita-woodpecker.ts.net";
+      # :8443 because DSM's own web server holds 443 on the NAS.
+      url = "https://potato-bunny.vaquita-woodpecker.ts.net:8443";
       inherit (cfg) namespace;
       mode = "read-write";
       token_file = cfg.tokenFile;
       # mbx only uploads from protected-branch CI pushes unless told otherwise;
       # every local shell counts as read-only. This is a personal cache, and
-      # without this nothing ever reaches pantry.
+      # without this nothing ever reaches the cache.
       trust_writes = true;
     };
     gc.max_size = cfg.maxLocalSize;
@@ -38,11 +39,11 @@ in {
   options.mbx = {
     namespace = lib.mkOption {
       type = lib.types.str;
-      description = "Remote cache namespace; the token in tokenFile must be granted it on pantry.";
+      description = "Remote cache namespace; the token in tokenFile must be granted it by the cache server (hosts/potato-bunny/mbx-cache.nix).";
     };
     tokenFile = lib.mkOption {
       type = lib.types.str;
-      description = "Bare bearer token for pantry's mbx-cache, readable by this user.";
+      description = "Bare bearer token for the mbx-cache server, readable by this user.";
     };
     maxLocalSize = lib.mkOption {
       type = lib.types.str;

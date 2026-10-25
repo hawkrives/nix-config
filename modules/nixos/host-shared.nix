@@ -121,18 +121,16 @@
     min-free = 5 * 1024 * 1024 * 1024;
     max-free = 20 * 1024 * 1024 * 1024;
 
-    # support pulling things from lix and flakehub, plus the pantry cache (over
-    # the tailnet; the host-key is pinned so no known_hosts is needed). pantry
-    # doesn't substitute from itself. nutmeg runs --accept-dns=false so we use
-    # pantry's stable tailnet IP rather than its MagicDNS name.
-    extra-substituters =
-      [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-      ]
-      ++ lib.optionals (config.networking.hostName != "pantry") [
-        "ssh-ng://nixremote@100.120.197.118?ssh-key=/etc/ssh/ssh_host_ed25519_key&base64-ssh-public-host-key=c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUJpVVEwUGxtMmNlb25WRVJBUDBtNU5vRUgzOUozakNzdXhRZ094VzFLNjc="
-      ];
+    # support pulling things from lix and flakehub, plus the fleet's cache on
+    # potato-bunny (hosts/potato-bunny/nix-cache.nix), over the tailnet at home
+    # and away; the host key is pinned so no known_hosts is needed. nutmeg runs
+    # --accept-dns=false, so this is potato-bunny's stable tailnet IP rather
+    # than its MagicDNS name.
+    extra-substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "ssh-ng://svc-nixcache@100.111.251.156?ssh-key=/etc/ssh/ssh_host_ed25519_key&base64-ssh-public-host-key=c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUxzNFU1cFN4aFB0SEpiWXRxZjMwNmtnWFlBWWpyaThDSStPOVl0UjF4elY="
+    ];
     # Nix keeps these as a name -> key map, so a name appears at most once:
     # re-keying a host replaces trust for everything it signed before, it does
     # not add to it. (The old "cache:..." entry here was pantry's key from
