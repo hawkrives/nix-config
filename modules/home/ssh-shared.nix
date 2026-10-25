@@ -36,10 +36,6 @@
         HostName = "tuckles.local";
         User = "haru";
       };
-      pantry = {
-        HostName = "pantry.local";
-        User = "nix";
-      };
 
       # Tailnet addresses rather than MagicDNS names: nutmeg runs
       # --accept-dns=false so MagicDNS won't resolve there, and the IPs are
@@ -51,10 +47,6 @@
       tuckles-ts = {
         HostName = "100.100.204.63";
         User = "haru";
-      };
-      pantry-ts = {
-        HostName = "100.120.197.118";
-        User = "nix";
       };
 
       # bigpond (T2 MacBook remote builder). Fill in its LAN IP or Tailscale

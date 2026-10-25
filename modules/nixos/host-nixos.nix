@@ -64,7 +64,7 @@
 
   # enables the "virtualisation.oci-containers.containers" namespace for running containers
   virtualisation.oci-containers.backend = "podman";
-  # mkDefault so hosts that run no containers (pantry) can turn podman off.
+  # mkDefault so hosts that run no containers can turn podman off.
   virtualisation.podman = {
     enable = lib.mkDefault true;
 

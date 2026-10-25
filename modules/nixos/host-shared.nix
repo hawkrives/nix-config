@@ -68,7 +68,7 @@
   # to when something changed: Lix caches per flake source fingerprint, so an
   # unchanged tree short-circuits to ~2s, and any edit invalidates the lot.)
   #
-  # mkDefault so memory-tight hosts can opt out -- see pantry.
+  # mkDefault so memory-tight hosts can opt out.
   environment.variables.GC_INITIAL_HEAP_SIZE = lib.mkDefault "4g";
 
   # 2.96, not `latest` (2.95.4): latest doesn't build in the current nixpkgs
@@ -91,13 +91,10 @@
   # which nothing here uses.
   nix.channel.enable = false;
 
-  # This host's binary-cache signing key. It used to be hand-generated into
-  # /etc/nix/private-key, which made it the one piece of fleet identity that
-  # wasn't declarative — so when pantry was reinstalled the key vanished, and
-  # since nix opens secret-key-files at the end of every build, *every* build on
-  # pantry then died with "opening file '/etc/nix/private-key': No such file or
-  # directory". Keeping it in ragenix means it survives a reinstall and the
-  # public half stays stable, so extra-trusted-public-keys below stays correct.
+  # This host's binary-cache signing key, kept in ragenix so it survives a
+  # reinstall: nix opens secret-key-files at the end of every build, so a
+  # missing key fails *every* build, and a stable public half keeps
+  # extra-trusted-public-keys below correct.
   #
   # One file per host, named for networking.hostName; a host without one fails
   # at eval rather than at the end of its first build.
@@ -133,9 +130,7 @@
     ];
     # Nix keeps these as a name -> key map, so a name appears at most once:
     # re-keying a host replaces trust for everything it signed before, it does
-    # not add to it. (The old "cache:..." entry here was pantry's key from
-    # before its reinstall; the private half is gone, so nothing could ever
-    # produce a matching signature again. Dropped.)
+    # not add to it.
     extra-trusted-public-keys =
       [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
@@ -143,7 +138,8 @@
       ]
       # plus my hosts. nutmeg and tuckles carry their original keys, adopted
       # into ragenix as-is so nothing they have already pushed goes stale.
-      # pantry is new (it never had one). Techcyte's is a fresh key, replacing
+      # pantry was the cache VM, retired; its key stays trusted for the paths it
+      # signed. Techcyte's is a fresh key, replacing
       # 2Xo6QORWHHSNQHveplJ1Fq1Ji8GXwtm7FsD4l/tM/0I= — only ever used on
       # aarch64-darwin paths, which no other host here can consume anyway.
       ++ [

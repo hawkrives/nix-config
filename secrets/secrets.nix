@@ -15,13 +15,11 @@ let
   nutmeg = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRtF1Gu1NN25zb3ZWL+D2XBn2i0FszefxLVMwhItgOb";
   techcyte = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZW19gGFVWa3uCxOv4CHItnUuucmNQiExpgMAqTUSNO";
   tuckles = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaiGtVceXg9xJh0+jIIhFKZtnlNdPaWCZqSp0KNsb6r";
-  pantry = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBiUQ0Plm2ceonVERAP0m5NoEH39J3jCsuxQgOxW1K67";
   bigpond = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICwYnYwie4qge41DnWPPn+sL3n/97y8883FanBwhkSTj";
   systems = [
     nutmeg
     techcyte
     tuckles
-    pantry
     bigpond
   ];
 in {
@@ -65,9 +63,6 @@ in {
   # Tailscale auth key for tuckles.
   "tailscale-authkey-tuckles.age".publicKeys = users ++ [tuckles];
 
-  # Tailscale auth key for pantry (cache VM).
-  "tailscale-authkey-pantry.age".publicKeys = users ++ [pantry];
-
   # Tailscale auth key for bigpond (T2 MacBook builder).
   "tailscale-authkey-bigpond.age".publicKeys = users ++ [bigpond];
 
@@ -103,7 +98,6 @@ in {
     ++ [
       nutmeg
       tuckles
-      pantry
       bigpond
     ];
 
@@ -135,7 +129,6 @@ in {
     ++ [
       nutmeg
       tuckles
-      pantry
     ];
 
   # Binary-cache signing keys, one per host, named for networking.hostName so
@@ -151,7 +144,6 @@ in {
   # everything it signed before rather than adding to it.
   "nix-signing-key-nutmeg.age".publicKeys = users ++ [nutmeg];
   "nix-signing-key-tuckles.age".publicKeys = users ++ [tuckles];
-  "nix-signing-key-pantry.age".publicKeys = users ++ [pantry];
   "nix-signing-key-Techcyte-DGQJV434PF.age".publicKeys = users ++ [techcyte];
 
   # YouTube Data API key for live-notify (env file: YOUTUBE_API_KEY=). Used
@@ -208,13 +200,15 @@ in {
   # Shared into the guest over virtiofs; see the host's darwin-configuration.
   "builder-netrc.age".publicKeys = users ++ [techcyte];
 
-  # mbx remote build cache (hosts/pantry/mbx-cache.nix). Each client host has its
+  # mbx remote build cache (hosts/potato-bunny/mbx-cache.nix). Each client host has its
   # own bearer token, granted read+write on its own namespace only: nutmeg ->
   # `home`, the Mac -> `techcyte`, so work artifacts and personal ones never mix.
   # The server's env file (MBX_CACHE_TOKENS_JSON='[...]') holds both tokens and
   # their grants; each client file holds just its bare token, so rotating one
   # means editing it in both places.
-  "mbx-cache-tokens.age".publicKeys = users ++ [pantry];
+  # potato-bunny has no age identity: the server copy is placed on the NAS by
+  # hand (see hosts/potato-bunny/mbx-cache.nix), as is telegram-notify's.
+  "mbx-cache-tokens.age".publicKeys = users;
   "mbx-token-nutmeg.age".publicKeys = users ++ [nutmeg];
   "mbx-token-techcyte.age".publicKeys = users ++ [techcyte];
 }

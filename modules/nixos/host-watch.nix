@@ -8,10 +8,10 @@
 # and nobody is told. So the check for nutmeg has to run somewhere that is not
 # nutmeg.
 #
-# Scope, honestly: pantry and nutmeg share a house, a network and a power feed,
-# so this catches "nutmeg died" and not "the house lost power". Covering the
-# latter needs something off site — one external check would do it — and is
-# deliberately not attempted here.
+# Scope, honestly: a watcher at home shares a house, a network and a power
+# feed with nutmeg, so it catches "nutmeg died" and not "the house lost
+# power". Covering the latter needs something off site — one external check
+# would do it — and is deliberately not attempted here.
 #
 # Alerting is by failing the unit, so modules/nixos/notify-failure.nix does the
 # actual pushing. That keeps one notification path for the whole fleet rather

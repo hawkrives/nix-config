@@ -33,11 +33,6 @@ run = 'nh os switch .#tuckles --target-host haru@tuckles.local --hostname tuckle
 [tasks."tuckles:yes"]
 run = 'nh os switch .#tuckles --target-host haru@tuckles.local --hostname tuckles -e passwordless'
 
-[tasks."pantry:ask"]
-run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e passwordless --ask'
-
-[tasks."pantry:yes"]
-run = 'nh os switch .#pantry --target-host nix@pantry.local --hostname pantry -e passwordless'
 
 # channel-archive-status ships with the channelArchive module, which only nutmeg
 # enables, so run it directly there and over ssh from anywhere else. The `nutmeg`

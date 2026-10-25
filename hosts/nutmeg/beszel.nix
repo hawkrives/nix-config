@@ -39,7 +39,7 @@
   # SMART health and drive temps for the Mac Mini's SATA SSD. This is opt-in per
   # host because it grants the agent CAP_SYS_RAWIO/CAP_SYS_ADMIN and drops
   # NoNewPrivileges + PrivateDevices — worth it on real hardware, pointless on
-  # the tuckles/pantry VMs.
+  # the tuckles VM.
   services.beszel.agent.smartmon.enable = true;
 
   # potato-bunny (the Synology) can't reach the hub over the tailnet: DSM's

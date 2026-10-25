@@ -64,7 +64,7 @@
 
     mr-boxington = {
       # mbx, the Rust build cache (modules/home/mbx-shared.nix). Pinned to a tag
-      # so it moves together with the cache server on pantry
+      # so it moves together with the cache server on potato-bunny
       # (packages/mbx-cache.nix): both sides of the protocol are experimental.
       url = "github:jdx/mr-boxington/v1.27.0";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -255,8 +255,8 @@ in {
   # `-o sftp.command`, which would have to survive both Nix string escaping and
   # systemd's ExecStart quoting. This way the repository URL stays trivial.
   #
-  # Host keys are pinned inline for the same reason cache-push.nix pins
-  # pantry's: restic runs non-interactively as root, and a root known_hosts
+  # Host keys are pinned inline for the same reason cache-push.nix pins the
+  # cache's: restic runs non-interactively as root, and a root known_hosts
   # that has to be seeded by hand is exactly the kind of imperative state this
   # repo keeps trying to get rid of.
   programs.ssh.knownHosts = {

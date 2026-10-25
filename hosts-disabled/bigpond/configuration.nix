@@ -73,7 +73,7 @@
   };
   nix.settings.trusted-users = ["nixremote"];
 
-  # Age-based retention GC (same mechanism as pantry/tuckles).
+  # Age-based retention GC (same mechanism as tuckles).
   programs.nh.clean = {
     enable = true;
     dates = "weekly";

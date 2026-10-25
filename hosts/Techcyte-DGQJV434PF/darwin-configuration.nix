@@ -19,15 +19,11 @@ in {
     inputs.self.nixosModules.host-shared
     inputs.self.darwinModules.host-shared
     inputs.self.nixosModules.cache-push
-    # Deliberately NOT pantry-builder. This host has its own linux-builder VM
-    # (below), and with both registered Lix sent nearly everything to pantry:
-    # when two builders are idle it breaks the tie on speedFactor alone, and
-    # pantry declares 2 against the nix-darwin default of 1. Even with that
-    # corrected an idle pantry would still win whenever the local VM had a job
-    # running (load/speedFactor, and 0 beats every positive value), so the only
-    # way to actually keep builds on the M-series is to not offer the
-    # alternative. Building x86_64-linux locally under Rosetta beats shipping it
-    # to a 4-core V1500B over the tailnet.
+    # x86_64-linux builds stay on this host's own linux-builder VM (below), so
+    # no remote builder is registered: with two builders idle Lix breaks the tie
+    # on speedFactor alone, and a remote one still wins whenever the local VM is
+    # busy (load/speedFactor, and 0 beats every positive value). Building under
+    # Rosetta on the M-series beats shipping it over the tailnet.
     # inputs.nix-rosetta-builder.darwinModules.default
   ];
 
@@ -69,7 +65,7 @@ in {
     symlink = false;
   };
 
-  # Bearer token for the mbx remote cache on pantry; read by the user-level mbx
+  # Bearer token for the mbx remote cache on potato-bunny; read by the user-level mbx
   # config (modules/home/mbx-shared.nix).
   age.secrets.mbx-token = {
     file = ../../secrets/mbx-token-techcyte.age;

@@ -1,6 +1,6 @@
 # nix-config
 
-Personal NixOS / nix-darwin fleet (nutmeg, tuckles, pantry, …).
+Personal NixOS / nix-darwin fleet (nutmeg, tuckles, potato-bunny, …).
 
 Hosts parked out of the build live in [`hosts-disabled/`](hosts-disabled/README.md) —
 currently `bigpond`, whose machine is dead.
@@ -23,7 +23,6 @@ needs root on the *remote*, and there's no interactive prompt over SSH, so pass
 
 ```bash
 nh os switch --target-host haru@tuckles.local --hostname tuckles .#tuckles -e passwordless
-nh os switch --target-host nix@pantry.local  --hostname pantry  .#pantry  -e passwordless
 ```
 
 Add `--build-host user@host` to build on the remote instead of locally.

@@ -10,9 +10,9 @@
 # activation would make (activate --dry-run), then waits for y/N; it
 # needs a terminal, which is why mise has separate :ask and :yes tasks.
 #
-# Everything is built here because the NAS can't reach pantry (DSM's
-# tailscale is userspace-only) and its CPU is slow. Non-login ssh on DSM has
-# no nix on PATH, so remote commands use the default profile's binaries.
+# Everything is built here because the NAS's CPU is slow and the closures are
+# already in this machine's store. Non-login ssh on DSM has no nix on PATH,
+# so remote commands use the default profile's binaries.
 set -euo pipefail
 
 ask=false

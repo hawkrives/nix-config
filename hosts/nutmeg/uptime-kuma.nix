@@ -11,8 +11,8 @@
 # KNOWN BLIND SPOT, stated plainly: this runs on nutmeg, so it cannot report
 # nutmeg being down — and nutmeg is the host with a documented history of silent
 # hard stops (see ./crash-diagnostics.nix). The Beszel hub has the same problem.
-# That gap is covered from the outside by the watcher on pantry
-# (modules/nixos/host-watch.nix), not from here.
+# That gap is covered from the outside by the watcher on potato-bunny
+# (hosts/potato-bunny/watch.nix), not from here.
 {config, ...}: {
   services.uptime-kuma = {
     enable = true;

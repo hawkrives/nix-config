@@ -16,7 +16,7 @@
 # Each hunk only tolerates the specific errno an old kernel returns, so on a
 # modern kernel this behaves exactly like stock Lix.
 #
-# Not in cache.nixos.org: nutmeg builds it and pushes it to pantry. Tests are
+# Not in cache.nixos.org: nutmeg builds it and pushes it to the fleet cache. Tests are
 # skipped because the functional suite needs kernel features unrelated to the
 # patch and roughly doubles the build time.
 {pkgs, ...}:
