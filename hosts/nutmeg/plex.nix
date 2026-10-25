@@ -42,12 +42,15 @@
   # startup and only rewrites it when a pref changes):
   #   DlnaEnabled=0 -- nothing here uses DLNA, so its listener (:32469 plus
   #                    SSDP) is just attack surface.
-  #   logDebug=1    -- debug level is what logs each request with its source
-  #                    address ("Request: [ip:port] GET /path"); with
-  #                    PLEX_MEDIA_SERVER_USE_SYSLOG those go to the journal.
+  #   logDebug=0    -- debug level logs every decoded frame of every
+  #                    transcode and analysis (~30k lines/min during a scan)
+  #                    into the journal, via PLEX_MEDIA_SERVER_USE_SYSLOG.
+  #                    It is also what logs each request with its source
+  #                    address ("Request: [ip:port] GET /path"); set it to 1
+  #                    while troubleshooting.
   plexPrefs = {
     DlnaEnabled = "0";
-    logDebug = "1";
+    logDebug = "0";
   };
 
   # Plex's FHS wrapper gives bubblewrap a fresh tmpfs for /, /etc and
