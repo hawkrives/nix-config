@@ -53,7 +53,8 @@ in {
 
   homeUsers.hawken.uid = 1027;
 
-  # DSM Task Scheduler boot-up tasks (run as root). The one task this layer
+  # DSM Task Scheduler tasks (run as root): boot-up ones, and "tailscale
+  # update" on a schedule. The one boot task this layer
   # doesn't manage is "Mount nix and start daemon": it is what runs activate,
   # so scripts/deploy-potato-bunny.sh owns it.
   dsm.tasks = let
@@ -109,6 +110,40 @@ in {
     "enable wifi card" = {
       event = "bootup";
       script = "/sbin/modprobe usbserial\n/sbin/modprobe ftdi_sio\n#/sbin/modprobe cdc-acm";
+    };
+    "tailscale update" = {
+      event = "schedule";
+      script = "tailscale update --yes";
+      schedule = {
+        hour = 0;
+        minute = 0;
+      };
+    };
+  };
+
+  # DSM packages and feature settings, applied at deploy (not at boot).
+  # `enable = false` stops a package and leaves it installed; packages,
+  # services and setting keys not listed here are DSM's to manage.
+  dsm.packageSources.SynoCommunity = "https://packages.synocommunity.com/";
+  dsm.services = {
+    container-manager.enable = true;
+    tailscale.enable = true;
+    syncthing = {
+      package = "syncthing"; # from SynoCommunity
+      enable = true;
+    };
+    smb = {
+      enable = true;
+      settings = {
+        workgroup = "POTATOBUNNY";
+        smb_min_protocol = 1;
+        smb_max_protocol = 3;
+        smb_encrypt_transport = 1;
+      };
+    };
+    ssh = {
+      enable = true;
+      settings.ssh_port = 22;
     };
   };
 

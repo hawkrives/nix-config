@@ -6,7 +6,8 @@
 #
 #   scripts/deploy-potato-bunny.sh [--ask]
 #
-# --ask shows the closure diff against what's running and waits for y/N; it
+# --ask shows the closure diff against what's running and the DSM changes
+# activation would make (activate --dry-run), then waits for y/N; it
 # needs a terminal, which is why mise has separate :ask and :yes tasks.
 #
 # Everything is built here because the NAS can't reach pantry (DSM's
@@ -40,6 +41,8 @@ if $ask; then
   else
     echo "(first activation: no current system generation)"
   fi
+  echo "DSM changes:"
+  ssh "$host" "sudo $system/bin/activate --dry-run"
   read -r -p "activate $system on $host? [y/N] " answer
   [ "$answer" = y ] || { echo "aborted"; exit 1; }
 fi

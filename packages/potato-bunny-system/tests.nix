@@ -477,6 +477,10 @@ in {
     grep -qx user-runtime-dir-1027.service $g/restart-exempt || fail "runtime dir unit restarts (and drags user@1027 along) when its store paths change"
     jq -e '.groups.nixbld | length == 32' $g/users.json >/dev/null || fail "nixbld members"
     grep -q "$g/default-profile/bin/nix-env" $g/bin/activate || fail "activate does not default to its own nix-env"
+    jq -e '.smb.settings.workgroup == "POTATOBUNNY" and .ssh.settings.enable_ssh == true and .syncthing.package == "syncthing"' $g/dsm-services.json >/dev/null ||
+      fail "dsm services: $(cat $g/dsm-services.json)"
+    jq -e '."tailscale update".event == "schedule"' $g/dsm-tasks.json >/dev/null || fail "tailscale update task"
+    jq -e '.SynoCommunity' $g/dsm-feeds.json >/dev/null || fail "SynoCommunity feed"
   '';
 
   hm-hawken = check "hm-hawken" ''
