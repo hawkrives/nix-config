@@ -32,6 +32,8 @@
   # $ROOT/active/<unit>; nix-daemon's health comes from $ROOT/daemon-health.
   # Groups live in $ROOT/groups/<name> (one member per line); known users in
   # $ROOT/known-users.
+  # --memberadd still adds but exits 1 while $ROOT/memberadd-lies exists, as
+  # DSM's does for administrators.
   # nix-daemon's behaviour after a (re)start comes from $ROOT/daemon-health:
   #   ok (default)  active and answering
   #   crashloop     systemd says active, but the socket never answers
@@ -83,7 +85,7 @@
         i=0; while read -r m; do echo "$i:[$m]"; i=$((i+1)); done < "$f" ;;
       --add) mkdir -p "$ROOT/groups"; : > "$f" ;;
       --member) g=$2; shift 2; printf '%s\n' "$@" | sed '/^$/d' > "$ROOT/groups/$g" ;;
-      --memberadd) echo "$3" >> "$f" ;;
+      --memberadd) echo "$3" >> "$f"; [ ! -e "$ROOT/memberadd-lies" ] || exit 1 ;;
       *) echo "synogroup stub: unexpected $*" >&2; exit 2 ;;
     esac
   '';
@@ -1141,6 +1143,24 @@ in {
     notify=$(sed -n 's/^ExecStart=//p' "$g/units/notify-failure@.service" | cut -d' ' -f1)
     grep -q '/usr/bin/journalctl' $notify && grep -q 'potato-bunny' $notify || fail "notify script: $(cat $notify)"
     grep -q 'telegram-notify.env' "$g/units/notify-failure@.service" || fail "token file"
+  '';
+
+  # DSM's synogroup can report failure for an add that worked: the membership
+  # decides, and the users after it are still created.
+  memberadd-false-failure = scenario "memberadd-false-failure" ''
+    touch $ROOT/memberadd-lies
+    run ${genUsers}
+    grep -qx svc-known $ROOT/groups/video || fail "member not added"
+    called_matching '^synouser --add svc-test ' || fail "later user not created: $(cat $ROOT/calls)"
+  '';
+
+  # nixpkgs' runuser needs PAM, which DSM refuses ("Failure setting user credentials").
+  no-runuser = check "no-runuser" ''
+    for u in ${hostGeneration}/units/*.service; do
+      for s in $(sed -n 's/^Exec[A-Za-z]*=//p' $u | cut -d' ' -f1); do
+        [ -f "$s" ] && ! grep -q runuser "$s" || [ ! -f "$s" ] || fail "$u runs runuser via $s"
+      done
+    done
   '';
 
   generation-layout = check "generation-layout" ''

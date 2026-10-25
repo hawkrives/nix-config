@@ -300,7 +300,10 @@ members_of() {
 add_member() { # add_member <group> <user>: only ever adds
   if ! members_of "$1" | grep -qxF "$2"; then
     log "adding $2 to $1"
-    "$SYNOGROUP" --memberadd "$1" "$2" >/dev/null
+    # DSM's synogroup can exit non-zero for an add that worked (seen for
+    # administrators), so the membership afterwards decides.
+    "$SYNOGROUP" --memberadd "$1" "$2" >/dev/null || true
+    members_of "$1" | grep -qxF "$2" || die "could not add $2 to $1"
   fi
 }
 

@@ -46,7 +46,7 @@
     set -euo pipefail
     ${pkgs.coreutils}/bin/install -d -o svc-postgres -m 0700 ${pgData}
     if [ ! -e ${pgData}/PG_VERSION ]; then
-      ${pkgs.util-linux}/bin/runuser -u svc-postgres -- \
+      ${pkgs.util-linux}/bin/setpriv --reuid=svc-postgres --regid=users --init-groups -- \
         ${pg}/bin/initdb -D ${pgData} --auth=peer --encoding=UTF8 --no-locale
     fi
   '';
@@ -54,12 +54,12 @@
   # Once the socket answers, the role and database mbx-cache needs, if missing.
   pgPostStart = pkgs.writeShellScript "nix-postgresql-post-start" ''
     set -euo pipefail
-    as_pg() { ${pkgs.util-linux}/bin/runuser -u svc-postgres -- "$@"; }
+    as_pg() { ${pkgs.util-linux}/bin/setpriv --reuid=svc-postgres --regid=users --init-groups -- "$@"; }
     for _ in $(${pkgs.coreutils}/bin/seq 60); do
       as_pg ${pg}/bin/pg_isready ${psqlArgs} -q && break
       ${pkgs.coreutils}/bin/sleep 0.5
     done
-    q() { as_pg ${pg}/bin/psql ${psqlArgs} -d postgres -tAc "$1"; }
+    q() { as_pg ${pg}/bin/psql -X ${psqlArgs} -d postgres -tAc "$1"; }
     [ "$(q "select 1 from pg_roles where rolname = 'svc-mbx-cache'")" = 1 ] ||
       as_pg ${pg}/bin/createuser ${psqlArgs} svc-mbx-cache
     [ "$(q "select 1 from pg_database where datname = 'mbx-cache'")" = 1 ] ||
