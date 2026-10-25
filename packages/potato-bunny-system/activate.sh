@@ -398,7 +398,9 @@ done < <(jq -r '.users | keys[]' "$GEN/users.json")
 switch_profile() { # switch_profile <profile> <target>
   if [ "$(readlink -f "$1" 2>/dev/null)" != "$(readlink -f "$2")" ]; then
     log "switching $1"
-    "$NIX_ENV" -p "$1" --set "$2"
+    # Resolve first: nix-env --set takes the store path *containing* its
+    # argument, so $GEN/default-profile would become $GEN itself.
+    "$NIX_ENV" -p "$1" --set "$(readlink -f "$2")"
   fi
 }
 switch_profile "$ROOT/nix/var/nix/profiles/potato-bunny" "$GEN"

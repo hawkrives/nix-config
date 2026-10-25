@@ -59,7 +59,10 @@
     echo "nix-env $*" >> "$ROOT/calls"
     [ "$1" = -p ] && [ "$3" = --set ] || { echo "nix-env stub: unexpected $*" >&2; exit 2; }
     mkdir -p "$(dirname "$2")"
-    ln -sfn "$4" "$2"
+    # Like the real one, --set takes the store path *containing* its argument:
+    # /nix/store/<gen>/default-profile becomes /nix/store/<gen>.
+    target=$(echo "$4" | sed -E "s|^(/nix/store/[^/]+).*|\\1|")
+    ln -sfn "$target" "$2"
   '';
   synouserStub = pkgs.writeShellScript "synouser" ''
     echo "synouser $*" >> "$ROOT/calls"
@@ -195,6 +198,7 @@
     ];
   genCollidesDsm = mkGeneration [{systemd.units."synorelayd.service" = unit "[Service]\nExecStart=/bin/x\n";}];
   genCollidesTemplate = mkGeneration [{systemd.units."user@.service" = unit "[Service]\nExecStart=/bin/x\n";}];
+  genProfile = mkGeneration [{nix.package = pkgs.hello;}];
   installerDaemon = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.service";
   installerSocket = "/nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.socket";
 in {
@@ -413,6 +417,14 @@ in {
     echo '{not json' > $ROOT/volume1/@appdata/nix-system/state.json
     run ${genDaemon1}
     [ -e $ROOT/active/nix-daemon.service ] || fail "daemon not started with a corrupt state"
+  '';
+
+  default-profile-switch = scenario "default-profile-switch" ''
+    run ${genProfile}
+    [ "$(readlink -f $ROOT/nix/var/nix/profiles/default)" = "$(readlink -f ${genProfile}/default-profile)" ] \
+      || fail "default profile points at $(readlink -f $ROOT/nix/var/nix/profiles/default), not the default-profile env"
+    run ${genProfile}
+    ! called_matching "^nix-env" || fail "default profile re-switched with nothing changed"
   '';
 
   profile-switch = scenario "profile-switch" ''
