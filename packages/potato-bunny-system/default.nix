@@ -15,6 +15,7 @@
 {
   pkgs,
   perSystem,
+  flake,
   ...
 }: let
   inherit (pkgs) lib;
@@ -104,7 +105,10 @@
 
   hostGeneration = mkGeneration [../../hosts/potato-bunny/system.nix];
 
-  tests = import ./tests.nix {inherit pkgs mkGeneration hostGeneration;};
+  tests = import ./tests.nix {
+    inherit pkgs mkGeneration hostGeneration;
+    hawkenHome = flake.legacyPackages.x86_64-linux.homeConfigurations."hawken@potato-bunny".activationPackage;
+  };
 in
   hostGeneration.overrideAttrs (old: {
     passthru = old.passthru // {inherit tests mkGeneration;};

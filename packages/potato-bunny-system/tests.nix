@@ -8,6 +8,7 @@
   pkgs,
   mkGeneration,
   hostGeneration,
+  hawkenHome,
 }: let
   check = name: script:
     pkgs.runCommand "potato-bunny-system-${name}" {nativeBuildInputs = [pkgs.jq];} ''
@@ -83,6 +84,29 @@
       *) echo "synogroup stub: unexpected $*" >&2; exit 2 ;;
     esac
   '';
+
+  # User-unit scenarios: `unit <old|new> <name> <body>` and `want <old|new> <name>`
+  # build two home-files unit dirs; `go` runs the script on them.
+  userUnitsScript = pkgs.writeShellApplication {
+    name = "dsm-user-units";
+    runtimeInputs = [pkgs.coreutils pkgs.diffutils];
+    text = builtins.readFile ../../modules/home/dsm-user-units.sh;
+  };
+  userUnitsStub = pkgs.writeShellScript "systemctl" ''
+    echo "systemctl $*" >> "$CALLS"
+  '';
+  userUnits = name: script:
+    check "user-units-${name}" ''
+      mkdir -p old new
+      export CALLS=$PWD/calls SYSTEMCTL=${userUnitsStub}
+      : > $CALLS
+      unit() { printf "[Service]\n%s\n" "$3" > "$1/$2"; }
+      want() { mkdir -p "$1/default.target.wants"; ln -s "../$2" "$1/default.target.wants/$2"; }
+      go() { ${pkgs.lib.getExe userUnitsScript} "$PWD/old" "$PWD/new"; }
+      called() { grep -qx -- "$1" $CALLS; }
+      called_matching() { grep -q -- "$1" $CALLS; }
+      ${script}
+    '';
 
   # A scenario: fresh scratch root with DSM-owned fixtures, then `script`,
   # which calls `run <generation>` one or more times.
@@ -190,6 +214,48 @@ in {
     [ -e "$g/wants/multi-user.target/user@1027.service" ] || fail "user@1027 not wanted at boot"
     jq -e '.groups.nixbld | length == 32' $g/users.json >/dev/null || fail "nixbld members"
     grep -q "$g/default-profile/bin/nix-env" $g/bin/activate || fail "activate does not default to its own nix-env"
+  '';
+
+  hm-hawken = check "hm-hawken" ''
+    h=${hawkenHome}
+    grep -q nix-daemon.sh $h/home-files/.profile || fail ".profile lost the nix-daemon.sh hook"
+    grep -q hm-session-vars.sh $h/home-files/.profile || fail ".profile does not load hm-session-vars"
+    grep -q dsm-user-units $h/activate || fail "activation does not restart user units"
+    [ -x $h/home-path/bin/rg ] || fail "no rg"
+    [ -x $h/home-path/bin/btop ] || fail "no btop"
+    $h/home-path/bin/nix --version | grep -q 2.96.0 || fail "nix is not lix-dsm"
+    grep -q "lix-2.96.0" <(readlink -f $h/home-path/bin/nix) || fail "nix not from lix"
+  '';
+
+  user-units-start-new = userUnits "start-new" ''
+    unit new a.service "ExecStart=/bin/a"; want new a.service
+    unit new idle.service "ExecStart=/bin/idle"
+    go
+    called "systemctl --user daemon-reload" || fail "no daemon-reload"
+    called "systemctl --user start a.service" || fail "new wanted unit not started"
+    ! called_matching "idle.service" || fail "unwanted unit started"
+  '';
+
+  user-units-restart-changed = userUnits "restart-changed" ''
+    unit old a.service "ExecStart=/bin/a"; want old a.service
+    unit new a.service "ExecStart=/bin/a2"; want new a.service
+    unit old same.service "ExecStart=/bin/s"; unit new same.service "ExecStart=/bin/s"
+    go
+    called "systemctl --user try-restart a.service" || fail "changed unit not restarted"
+    ! called_matching "same.service" || fail "unchanged unit touched"
+  '';
+
+  user-units-stop-removed = userUnits "stop-removed" ''
+    unit old gone.service "ExecStart=/bin/g"; want old gone.service
+    go
+    called "systemctl --user stop gone.service" || fail "removed unit not stopped"
+  '';
+
+  user-units-first-run = userUnits "first-run" ''
+    unit new a.service "ExecStart=/bin/a"; want new a.service
+    rm -rf old   # first home-manager generation: no old one
+    go
+    called "systemctl --user start a.service" || fail "not started on first run"
   '';
 
   beszel-unit = check "beszel-unit" ''
