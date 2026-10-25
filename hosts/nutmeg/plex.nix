@@ -236,8 +236,10 @@ in {
         # addresses, all go out lo; mark them for the check in plex_lo.
         oif "lo" ct mark set ct mark or 0x100 accept
 
-        # GDM/SSDP/mDNS discovery.
-        ip daddr { 224.0.0.0/4, 255.255.255.255, 192.168.1.255 } accept
+        # GDM/SSDP/mDNS discovery, including the broadcast onto podman's bridge
+        # (podman0, 10.88.0.0/16): Plex sends GDM on every interface, and a
+        # refused one comes back as an error it logs every 2.5 s.
+        ip daddr { 224.0.0.0/4, 255.255.255.255, 192.168.1.255, 10.88.255.255 } accept
         ip6 daddr ff00::/8 accept
         # Remote Access maps its port through the router with NAT-PMP.
         ip daddr 192.168.1.1 udp dport 5351 accept
