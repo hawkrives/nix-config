@@ -52,4 +52,36 @@ in {
   users.groups.nixbld.members = map (i: "nixbld${toString i}") (lib.range 1 32);
 
   homeUsers.hawken.uid = 1027;
+
+  # The beszel agent, natively. docs/beszel-synology.md explains each setting
+  # (why the LAN hub address, why :sat, the synthetic sensors tree, why NVMe
+  # needs CAP_SYS_ADMIN); this unit only carries them.
+  #
+  # Runs as root, bounded to the capabilities SMART and the sensors need.
+  # DATA_DIR is the Docker agent's old data dir: its `fingerprint` is the
+  # agent's identity in the hub, so reusing it keeps the same system and its
+  # history. TOKEN (the hub's universal registration token) lives in a
+  # root-only file outside the store; see docs/beszel-synology.md.
+  systemd.units."beszel-agent.service".text = ''
+    [Unit]
+    Description=Beszel agent
+    After=network-online.target
+    Wants=network-online.target
+    RequiresMountsFor=/volume1
+
+    [Service]
+    ExecStart=${pkgs.beszel}/bin/beszel-agent
+    EnvironmentFile=/volume1/@appdata/nix-system/secrets/beszel-agent.env
+    Environment=PATH=${pkgs.smartmontools}/bin:/usr/bin:/bin
+    Environment="HUB_URL=http://[2600:2b00:9b16:6d01::228]:8091"
+    Environment="KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds"
+    Environment=DATA_DIR=/volume1/docker/beszel-agent/data
+    Environment=EXTRA_FILESYSTEMS=/volume1
+    Environment=SYS_SENSORS=/volume1/docker/beszel-agent/sensors
+    Environment=PRIMARY_SENSOR=k10temp
+    Environment=SMART_DEVICES=/dev/sata1:sat,/dev/sata2:sat,/dev/sata3:sat,/dev/sata4:sat,/dev/sata5:sat,/dev/sata6:sat,/dev/sata7:sat,/dev/sata8:sat
+    CapabilityBoundingSet=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+    Restart=always
+    RestartSec=10
+  '';
 }

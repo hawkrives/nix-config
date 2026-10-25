@@ -192,6 +192,25 @@ in {
     grep -q "$g/default-profile/bin/nix-env" $g/bin/activate || fail "activate does not default to its own nix-env"
   '';
 
+  beszel-unit = check "beszel-unit" ''
+    u=${hostGeneration}/units/beszel-agent.service
+    [ -f $u ] || fail "no beszel-agent.service"
+    for want in \
+      'HUB_URL=http://[2600:2b00:9b16:6d01::228]:8091' \
+      'KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds' \
+      'DATA_DIR=/volume1/docker/beszel-agent/data' \
+      'SYS_SENSORS=/volume1/docker/beszel-agent/sensors' \
+      'PRIMARY_SENSOR=k10temp' \
+      'EXTRA_FILESYSTEMS=/volume1' \
+      'SMART_DEVICES=/dev/sata1:sat,/dev/sata2:sat,/dev/sata3:sat,/dev/sata4:sat,/dev/sata5:sat,/dev/sata6:sat,/dev/sata7:sat,/dev/sata8:sat' \
+      'EnvironmentFile=/volume1/@appdata/nix-system/secrets/beszel-agent.env' \
+      'CAP_SYS_ADMIN' 'CAP_SYS_RAWIO' 'smartmontools' 'bin/beszel-agent'; do
+      grep -qF "$want" $u || fail "missing: $want"
+    done
+    ! grep -q 'TOKEN=' $u || fail "token must not be in the store"
+    [ -e ${hostGeneration}/wants/multi-user.target/beszel-agent.service ] || fail "not started at boot"
+  '';
+
   assertions-reject = assert rejects [{environment.etc."passwd".text = "";}];
   assert rejects [{environment.etc."nix/../shadow".text = "";}];
   assert rejects [{environment.etc."nix//x".text = "";}];
