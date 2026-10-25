@@ -546,6 +546,20 @@
         ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/store-gc.sh}
       ${script}
     '';
+  # mbx-cache's eviction script on a scratch dir: blobs of 100 bytes, HIGH/LOW
+  # in bytes, a stub mbx-cache logging its arguments. `setup` fills ./data.
+  evict = name: high: low: setup: script:
+    check "evict-${name}" ''
+      mkdir data
+      blob() { head -c 100 /dev/zero > "data/$1"; touch -d "$2" "data/$1"; }
+      ${setup}
+      printf '#!${pkgs.runtimeShell}\necho "mbx-cache $*" >> %s/calls\n' "$PWD" > mbx; chmod +x mbx
+      : > calls
+      DATA_DIR=$PWD/data HIGH_BYTES=${toString high} LOW_BYTES=${toString low} MBX_CACHE=$PWD/mbx \
+        PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gawk}/bin \
+        ${pkgs.bash}/bin/bash ${../../hosts/potato-bunny/mbx-cache-evict.sh}
+      ${script}
+    '';
   genSchedule = mkGeneration [
     {
       dsm.tasks.t = {
@@ -1067,6 +1081,51 @@ in {
 
   store-gc-frees = storeGc "frees" 107374182400 ''
     grep -qx 'nix-store --gc --max-freed 536870912000' calls || fail "GC call: $(cat calls)"
+  '';
+
+  evict-under-high =
+    evict "under-high" 350 200 ''
+      blob a "30 days ago"; blob b "20 days ago"; blob c "10 days ago"
+    '' ''
+      [ "$(ls data | wc -l)" = 3 ] || fail "deleted below the high mark"
+      [ ! -s calls ] || fail "swept below the high mark"
+    '';
+
+  evict-to-low =
+    evict "to-low" 350 200 ''
+      blob a "30 days ago"; blob b "20 days ago"; blob c "10 days ago"; blob d "1 hour ago"
+    '' ''
+      [ "$(ls data | tr '\n' ' ')" = "c d " ] || fail "kept: $(ls data)"
+      grep -qx 'mbx-cache --sweep-metadata-older-than-days 11' calls || fail "sweep: $(cat calls)"
+    '';
+
+  # Only regular files count or go: directories stay, symlinks aren't followed.
+  evict-only-files =
+    evict "only-files" 350 200 ''
+      mkdir data/sub; blob sub/a "30 days ago"; blob b "20 days ago"
+      head -c 1000 /dev/zero > outside; ln -s "$PWD/outside" data/link
+    '' ''
+      [ -d data/sub ] && [ -e data/sub/a ] && [ -e data/b ] || fail "deleted under the high mark: $(find data)"
+      [ "$(stat -c %s outside)" = 1000 ] && [ -L data/link ] || fail "symlink target touched"
+    '';
+
+  mbx-units = check "mbx-units" ''
+    u=${hostGeneration}/units
+    grep -q 'port=5433' $u/nix-postgresql.service || fail "postgres port"
+    grep -q '/run/nix-postgresql' $u/nix-postgresql.service || fail "postgres socket dir"
+    ! grep -q 5432 $u/nix-postgresql.service $u/mbx-cache.service || fail "DSM's postgres port referenced"
+    grep -qx 'Requires=nix-postgresql.service' $u/mbx-cache.service || fail "mbx-cache doesn't require postgres"
+    grep -q 'host=/run/nix-postgresql' $u/mbx-cache.service || fail "mbx-cache database URL"
+    grep -q 'MBX_CACHE_DATA_DIR=/volume2/mbx-cache' $u/mbx-cache.service || fail "mbx data dir"
+    serve=$(sed -n 's/^ExecStart=//p' $u/mbx-cache-serve.service)
+    grep -q 'https=8443' $serve || fail "serve port"
+    ! grep -Eq 'https=443( |$)' $serve || fail "serve touches 443"
+    [ -e ${hostGeneration}/wants/timers.target/mbx-cache-evict.timer ] || fail "evict timer not wanted"
+    jq -e '."mbx-cache" | .volume == "/volume2" and .quotaMB == 500000 and .hidden and (.recycleBin | not) and .users == {"svc-mbx-cache": "rw"}' ${hostGeneration}/dsm-shares.json >/dev/null ||
+      fail "share: $(cat ${hostGeneration}/dsm-shares.json)"
+    if grep -lE '^(DynamicUser|StateDirectory|LoadCredential|ProtectKernel[A-Za-z]*|RandomizedDelaySec|ProtectClock|ProcSubset|ProtectProc)=' $u/* $u/*/* 2>/dev/null; then
+      fail "directives systemd 219 doesn't know"
+    fi
   '';
 
   generation-layout = check "generation-layout" ''
