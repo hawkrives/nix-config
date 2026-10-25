@@ -13,9 +13,9 @@
 #
 # HUB_URL is nutmeg's tailscale address rather than a name because it has to
 # resolve identically everywhere: nutmeg itself runs --accept-dns=false so it
-# can't resolve MagicDNS names, and the Synology's Docker agent can't resolve
-# .local. It is nutmeg's tailnet ULA rather than its CGNAT IPv4 — stable
-# per-node either way, and holds no secret.
+# can't resolve MagicDNS names, and the Synology's agent avoids .local names
+# (docs/beszel-synology.md). It is nutmeg's tailnet ULA rather than its CGNAT
+# IPv4 — stable per-node either way, and holds no secret.
 #
 # SMART monitoring is deliberately NOT enabled here — it loosens the systemd
 # sandbox, so it's opted into per host on real hardware only: nutmeg today, and
@@ -34,9 +34,9 @@
       # agent. It is the public half of /var/lib/beszel-hub/beszel_data/id_ed25519
       # on nutmeg (the hub also shows it on its Add System dialog), so it is not
       # a secret and belongs here rather than in agenix. Regenerating the hub's
-      # keypair means updating this value — and the Synology compose file
-      # carries its own copy of it (docs/beszel-synology.md, and the live
-      # docker-compose.yml on the NAS), so that needs updating too.
+      # keypair means updating this value — and the Synology's agent carries its
+      # own copy of it in hosts/potato-bunny/system.nix, so that needs updating
+      # too.
       KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINIxBO27YxooTl6NWl1Jf8v/AAanacdGhJf9VF1t2yds";
     };
     environmentFile = config.age.secrets.beszel-token.path;

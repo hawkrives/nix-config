@@ -48,4 +48,5 @@ consuming a secret on a host, env-file vs bare conventions).
   through its API (with the `hass-token` secret), not by hand-editing `.storage`**, plus
   container/systemd and networking gotchas.
 - [`docs/beszel-synology.md`](docs/beszel-synology.md) — the beszel agent on potato-bunny:
-  hand-managed DSM container, why the hub address is an IP, and how to upgrade it.
+  a native unit in the potato-bunny system layer, why the hub address is a LAN IP,
+  SMART and board-sensor setup.

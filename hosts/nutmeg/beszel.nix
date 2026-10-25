@@ -20,9 +20,8 @@
     # host (see scanner.nix). Don't "fix" this back to 8090.
     #
     # Changing this port is not just a one-liner: HUB_URL in
-    # modules/nixos/beszel-agent.nix and the Synology compose file
-    # (docs/beszel-synology.md, and the live copy on the NAS) hardcode 8091
-    # too and would need updating in step, or the whole fleet silently stops
+    # modules/nixos/beszel-agent.nix and in hosts/potato-bunny/system.nix
+    # (the Synology's agent) hardcode 8091 too and would need updating in step, or the whole fleet silently stops
     # reporting (agents just retry forever).
     port = 8091;
   };
