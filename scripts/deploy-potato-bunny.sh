@@ -47,9 +47,6 @@ if $ask; then
   [ "$answer" = y ] || { echo "aborted"; exit 1; }
 fi
 
-echo "activating system layer…"
-ssh "$host" "sudo $system/bin/activate"
-
 # DSM runs this Task Scheduler boot-up task as root at every boot: it mounts
 # /nix and /etc/nix (bind mounts of /volume1/nix, which can't move into the
 # layer since they are what makes /nix exist) and re-applies the system
@@ -74,7 +71,20 @@ else
 fi
 EOF
 
+# The boot task above is synced first, so the next boot runs this
+# generation's activate the way it expects to be run even if activation
+# fails. A failed activation (a DSM step, say) still lets home-manager
+# activate; the deploy then fails with its status.
+echo "activating system layer…"
+status=0
+ssh "$host" "sudo $system/bin/activate" || status=$?
+
 echo "activating home-manager for hawken…"
 ssh "$host" "PATH=$remote_bin:\$PATH XDG_RUNTIME_DIR=/run/user/1027 HOME_MANAGER_BACKUP_EXT=pre-hm $home/activate"
 
+
+if [ "$status" -ne 0 ]; then
+  echo "system activation failed (exit $status)" >&2
+  exit "$status"
+fi
 echo "done"

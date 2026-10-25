@@ -96,18 +96,28 @@ managed_packages() {
     | [.key, .value.package, (.value.enable | tostring), .value.volume] | @tsv' "$GEN/dsm-services.json"
 }
 
-pkg_installed() { "$SYNOPKG" list --name 2>/dev/null | grep -qxF "$1"; }
 pkg_running() { "$SYNOPKG" is_onoff "$1" >/dev/null 2>&1; }
+synopkg_quiet() { "$SYNOPKG" "$@" >/dev/null; }
 
+# Installed package ids, listed once per run. If DSM can't list them (its
+# package lock is held, say), the package steps do nothing rather than guess.
+DSM_INSTALLED=""
+DSM_PKG_LIST_OK=false
 # Packages whose install failed this run; dsm_run_state skips them.
 DSM_INSTALL_FAILED=" "
 
 dsm_packages() {
   local service id enable volume
+  [ -n "$(managed_packages)" ] || return 0
+  if ! DSM_INSTALLED=$("$SYNOPKG" list --name 2>/dev/null); then
+    dsm_fail "listing installed packages"
+    return 0
+  fi
+  DSM_PKG_LIST_OK=true
   while IFS=$'\t' read -r service id enable volume; do
     [ "$enable" = true ] || continue
-    pkg_installed "$id" && continue
-    if ! dsm_change "install $id ($service) on $volume" "$SYNOPKG" install_from_server "$id" "$volume" >/dev/null; then
+    grep -qxF "$id" <<<"$DSM_INSTALLED" && continue
+    if ! dsm_change "install $id ($service) on $volume" synopkg_quiet install_from_server "$id" "$volume"; then
       dsm_fail "installing $id ($service)"
       DSM_INSTALL_FAILED+="$id "
     fi
@@ -117,14 +127,15 @@ dsm_packages() {
 # Start enabled packages and stop disabled ones. Never uninstalls.
 dsm_run_state() {
   local service id enable volume
+  $DSM_PKG_LIST_OK || return 0
   while IFS=$'\t' read -r service id enable volume; do
     case "$DSM_INSTALL_FAILED" in *" $id "*) continue ;; esac
     if [ "$enable" = true ]; then
       if ! pkg_running "$id"; then
-        dsm_change "start $id ($service)" "$SYNOPKG" start "$id" >/dev/null || dsm_fail "starting $id ($service)"
+        dsm_change "start $id ($service)" synopkg_quiet start "$id" || dsm_fail "starting $id ($service)"
       fi
     elif pkg_running "$id"; then
-      dsm_change "stop $id ($service)" "$SYNOPKG" stop "$id" >/dev/null || dsm_fail "stopping $id ($service)"
+      dsm_change "stop $id ($service)" synopkg_quiet stop "$id" || dsm_fail "stopping $id ($service)"
     fi
   done < <(managed_packages)
 }
@@ -183,7 +194,7 @@ dsm_scheduled_tasks() {
           last_work_hour: (if $s.repeatHours == null and $s.repeatMinutes == null then $s.hour else $s.lastHour end)
         }
       }' "$GEN/dsm-tasks.json")
-    matches=$(jq -c --arg t "$task" '[.data.tasks[] | select(.name == $t and .type == "script")]' <<<"$list")
+    matches=$(jq -c --arg t "$task" '[.data.tasks[]? | select(.name == $t and .type == "script")]' <<<"$list")
     case "$(jq length <<<"$matches")" in
       0) id="" ;;
       1)

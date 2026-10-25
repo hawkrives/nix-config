@@ -285,8 +285,8 @@ in {
     config.dsm.services
     # Deploys run over ssh.
     ++ lib.optional (config.dsm.services ? ssh) {
-      assertion = config.dsm.services.ssh.enable != false;
-      message = "dsm.services.ssh.enable = false would lock out deploys, which run over ssh.";
+      assertion = config.dsm.services.ssh.enable != false && (config.dsm.services.ssh.settings.enable_ssh or true) != false;
+      message = "dsm.services.ssh: turning ssh off would lock out deploys, which run over ssh.";
     }
     # DSM's get returns these as [{name, in_use, ...}] while its set takes plain
     # name lists, so a declared value would never match and be re-set on every

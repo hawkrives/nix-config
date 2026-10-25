@@ -163,7 +163,9 @@
         case "$method" in
           list)
             echo "synowebapi $api list" >> "$ROOT/calls"
-            if ls "$d"/*.json >/dev/null 2>&1; then
+            if [ -e "$ROOT/sched-list-bare" ]; then
+              echo '{"data":{},"success":true}'
+            elif ls "$d"/*.json >/dev/null 2>&1; then
               $jq -sc '{data: {tasks: map({id, name, type, owner, real_owner, enable}), total: length}, success: true}' "$d"/*.json
             else
               echo '{"data":{"tasks":[],"total":0},"success":true}'
@@ -198,13 +200,14 @@
   '';
 
   # Package Center: packages are $ROOT/pkgs/<id>, holding "on" or "off". Any
-  # command on an id with $ROOT/pkg-fail/<id> present fails.
+  # command on an id with $ROOT/pkg-fail/<id> present fails; list fails while
+  # $ROOT/pkg-list-fail exists.
   synopkgStub = pkgs.writeShellScript "synopkg" ''
     echo "synopkg $*" >> "$ROOT/calls"
     id=''${2:-}
     [ -z "$id" ] || [ ! -e "$ROOT/pkg-fail/$id" ] || exit 1
     case "$1" in
-      list) [ "$2" = --name ] || exit 2; ls "$ROOT/pkgs" 2>/dev/null || true ;;
+      list) [ "$2" = --name ] || exit 2; [ ! -e "$ROOT/pkg-list-fail" ] || exit 1; ls "$ROOT/pkgs" 2>/dev/null || true ;;
       is_onoff) [ "$(cat "$ROOT/pkgs/$id" 2>/dev/null)" = on ] ;;
       install_from_server) mkdir -p "$ROOT/pkgs"; echo off > "$ROOT/pkgs/$id" ;;
       start) [ -e "$ROOT/pkgs/$id" ] && echo on > "$ROOT/pkgs/$id" ;;
@@ -575,6 +578,7 @@ in {
   assert rejects [{users.users.plex = {};}];
   assert !(rejects [{users.users.svc-plex = {};}]);
   assert rejects [{dsm.services.ssh.enable = false;}];
+  assert rejects [{dsm.services.ssh.settings.enable_ssh = false;}];
   assert !(rejects [{dsm.services.ssh.enable = true;}]);
   # DSM's get returns these as [{name, in_use, ...}] but set takes plain name
   # lists, so a declared value could never compare equal.
@@ -812,6 +816,50 @@ in {
   sched-not-event = scenario "sched-not-event" ''
     run ${genSched 0}
     ! called_matching '^synowebapi \(get\|create\|set\) tailscale update' || fail "scheduled task sent to EventScheduler: $(cat $ROOT/calls)"
+  '';
+
+  # The dry run shows package changes, not only task and settings changes.
+  dry-run-shows-packages = scenario "dry-run-shows-packages" ''
+    ${genPkg true}/bin/activate --root "$ROOT" --dry-run > out
+    grep -qx 'would: install Foo (foo) on /volume1' out || fail "install not shown: $(cat out)"
+    grep -qx 'would: start Foo (foo)' out || fail "start not shown: $(cat out)"
+    mkdir -p $ROOT/pkgs && echo on > $ROOT/pkgs/Foo
+    ${genPkg false}/bin/activate --root "$ROOT" --dry-run > out
+    grep -qx 'would: stop Foo (foo)' out || fail "stop not shown: $(cat out)"
+  '';
+
+  # If DSM can't list installed packages, nothing is (re)installed, started or
+  # stopped on a guess.
+  pkg-list-failure = scenario "pkg-list-failure" ''
+    mkdir -p $ROOT/pkgs && echo on > $ROOT/pkgs/Foo
+    touch $ROOT/pkg-list-fail
+    if run ${genPkg true}; then fail "activate succeeded although listing packages failed"; fi
+    ! called_matching '^synopkg \(install_from_server\|start\|stop\)' || fail "acted on a failed list: $(cat $ROOT/calls)"
+  '';
+
+  # A fresh DSM may answer list with no tasks array at all.
+  sched-list-bare = scenario "sched-list-bare" ''
+    touch $ROOT/sched-list-bare
+    run ${genSched 0}
+    called "synowebapi SYNO.Core.TaskScheduler.Root create tailscale update" || fail "not created: $(cat $ROOT/calls)"
+  '';
+
+  # A failed activation still syncs the boot task first and activates
+  # home-manager, then the deploy fails.
+  deploy-continues = check "deploy-continues" ''
+    mkdir -p repo/scripts repo/hosts/potato-bunny bin
+    cp ${../../scripts/deploy-potato-bunny.sh} repo/scripts/deploy-potato-bunny.sh
+    cp ${../../hosts/potato-bunny/boot-task.sh} repo/hosts/potato-bunny/boot-task.sh
+    export CALLS=$PWD/calls
+    printf '#!${pkgs.runtimeShell}\n[ "$1" = build ] && printf "/nix/store/sys\\n/nix/store/home\\n"; exit 0\n' > bin/nix
+    printf '#!${pkgs.runtimeShell}\necho "ssh $*" >> "$CALLS"\ncase "$*" in *"/nix/store/sys/bin/activate"*) exit 1 ;; esac\ncat >/dev/null\n' > bin/ssh
+    printf '#!${pkgs.runtimeShell}\necho builder\n' > bin/hostname
+    chmod +x bin/*
+    if PATH=$PWD/bin:${pkgs.coreutils}/bin:${pkgs.bash}/bin bash repo/scripts/deploy-potato-bunny.sh; then fail "deploy succeeded although activate failed"; fi
+    grep -q '/nix/store/home/activate' calls || fail "home-manager not activated: $(cat calls)"
+    boot=$(grep -n 'sudo bash -s' calls | cut -d: -f1)
+    act=$(grep -n '/nix/store/sys/bin/activate' calls | cut -d: -f1)
+    [ -n "$boot" ] && [ "$boot" -lt "$act" ] || fail "boot task not synced before activate: $(cat calls)"
   '';
 
   generation-layout = check "generation-layout" ''
