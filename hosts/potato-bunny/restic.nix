@@ -38,7 +38,9 @@
     "de3044@de3044.rsync.net -s sftp"
   ];
 
-  # Back up, then apply this host's retention. Same policy as nutmeg's.
+  # Back up, then apply this host's retention (same policy as nutmeg's) to its
+  # own snapshots. No --prune: that repacks the whole shared repository under
+  # an exclusive lock, and nutmeg's nightly prune already reclaims the space.
   job = name: repository:
     pkgs.writeShellScript "restic-${name}" ''
       set -euo pipefail
@@ -47,7 +49,7 @@
       export HOME=${home}
       r() { ${pkgs.restic}/bin/restic -o sftp.command=${lib.escapeShellArg sftpCommand} "$@"; }
       r backup --host potato-bunny ${lib.escapeShellArgs paths}
-      r forget --host potato-bunny --prune ${lib.concatStringsSep " " pruneOpts}
+      r forget --host potato-bunny ${lib.concatStringsSep " " pruneOpts}
       # The heartbeat: Uptime Kuma alerts if this stops arriving (uptime-kuma.nix).
       ${pkgs.curl}/bin/curl -fsS --max-time 20 -o /dev/null "http://127.0.0.1:3010/api/push/restic-pb-${name}?status=up&msg=OK" ||
         echo "restic-${name}: heartbeat push failed" >&2

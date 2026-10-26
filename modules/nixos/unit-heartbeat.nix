@@ -17,7 +17,10 @@
 # genuine successful completion, for every service type.
 #
 # The matching Push monitors are written into Kuma by its unit on potato-bunny,
-# from every NixOS host's `units` list (hosts/potato-bunny/uptime-kuma.nix).
+# from every NixOS host's `units` list (hosts/potato-bunny/uptime-kuma.nix),
+# when potato-bunny is deployed. So after adding a unit here, deploy
+# potato-bunny too (`mise run potato-bunny:ask`): until then the unit's pings
+# go to a monitor that doesn't exist, and Kuma can't alert on its silence.
 # The push token is the unit name, so the URL a unit pings is derivable from
 # its own name.
 {

@@ -384,8 +384,11 @@ while IFS= read -r name; do
     dsm_fail "secret $name: could not decrypt $file"
     continue
   fi
-  chmod "$mode" "$tmp"
-  "$CHOWN" "$owner" "$tmp"
+  if ! chmod "$mode" "$tmp" || ! "$CHOWN" "$owner" "$tmp"; then
+    rm -f "$tmp"
+    dsm_fail "secret $name: could not give it mode $mode and owner $owner"
+    continue
+  fi
   if [ -f "$dest" ] && cmp -s "$tmp" "$dest" &&
     [ "$(stat -c '%a %U' "$dest")" = "$(stat -c '%a %U' "$tmp")" ]; then
     rm -f "$tmp"

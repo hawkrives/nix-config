@@ -271,8 +271,10 @@
     [ "$1" = -u ] || exit 2
     grep -qx "$2" "$ROOT/known-users" && echo 1234
   '';
+  # chown to an owner listed in $ROOT/chown-fails fails, as for an unknown user.
   chownStub = pkgs.writeShellScript "chown" ''
     echo "chown $*" >> "$ROOT/calls"
+    ! grep -qxF "''${1%%:*}" "$ROOT/chown-fails" 2>/dev/null
   '';
 
   # A scenario: fresh scratch root with DSM-owned fixtures, then `script`,
@@ -1151,6 +1153,27 @@ in {
     [ "$(cat $ROOT/run/nix-secrets/foo)" = s3cret ] || fail "the good secret was not written"
     [ ! -e $ROOT/run/nix-secrets/bad ] || fail "a failed secret left a file"
     [ -e $ROOT/active/a.service ] || fail "units not started"
+  '';
+
+  # A secret that can't be given to its owner is reported like a failed
+  # decrypt: the rest still apply, units still start, nothing is left behind.
+  secrets-chown-failure = scenario "secrets-chown-failure" ''
+    echo svc-foo > $ROOT/chown-fails
+    if run ${genFooBar}; then fail "activate succeeded with an unownable secret"; fi
+    [ ! -e $ROOT/run/nix-secrets/foo ] || fail "the unownable secret was written"
+    [ "$(cat $ROOT/run/nix-secrets/bar)" = other ] || fail "the other secret was not written"
+    [ -e $ROOT/active/a.service ] || fail "units not started"
+    [ -z "$(find $ROOT/run/nix-secrets -name '.*' -type f)" ] || fail "temporary file left behind"
+  '';
+
+  # The NAS's restic jobs share both repositories with nutmeg, which prunes
+  # them; a second prune would lock nutmeg's backups out.
+  restic-no-prune = check "restic-no-prune" ''
+    for j in nas offsite; do
+      s=$(sed -n 's/^ExecStart=//p' ${hostGeneration}/units/restic-pb-$j.service)
+      grep -q 'forget --host potato-bunny' $s || fail "$j: no forget for its own snapshots"
+      ! grep -q -- '--prune' $s || fail "$j: prunes the shared repository"
+    done
   '';
 
   # A dry run decrypts nothing.
