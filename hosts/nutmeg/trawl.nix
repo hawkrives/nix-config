@@ -15,7 +15,7 @@
     # with `skopeo inspect --format '{{.Digest}}' docker://<image>`. The
     # -baseline variant is required: nutmeg's Ivy Bridge CPU has no AVX2.
     # renovate: datasource=docker depName=ghcr.io/germondai/trawl versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)-baseline$
-    image = "ghcr.io/germondai/trawl:1.9.2-baseline@sha256:51c8554d9da8833045ce1c35c852c817c99ec13f22d3c086ef2604b389a510c4";
+    image = "ghcr.io/germondai/trawl:1.9.3-baseline@sha256:d03ab70d3f93ff05aa4cc99ec9fe2ba0cac18df59e174bac2c8b3c1b41abecd9";
     autoStart = true;
     ports = [
       "127.0.0.1:8191:8191" # API
