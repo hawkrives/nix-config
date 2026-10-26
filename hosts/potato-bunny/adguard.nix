@@ -2,7 +2,7 @@
 # resolution survives nutmeg rebooting or dying. Clients get both from the
 # router's DHCP (set in SRM, not here).
 #
-#   :53 on 192.168.1.194 and the NAS's stable LAN IPv6   (DNS)
+#   :53 on 192.168.1.194 and 2600:2b00:9b16:6d01::194   (DNS)
 #   https://ag2.vaquita-woodpecker.ts.net                (tsnsrv.nix, web UI)
 #     -> 127.0.0.1:5380 adguardhome, data in /volume2/@appdata/adguardhome
 #
@@ -21,9 +21,13 @@
   data = "/volume2/@appdata/adguardhome";
   conf = "${data}/AdGuardHome.yaml";
   origin = "http://192.168.1.228:5380";
-  # The NAS's LAN addresses. The IPv6 one is EUI-64 (from its MAC), so stable
-  # for as long as the ISP keeps delegating 2600:2b00:9b16:6d01::/64.
-  bindHosts = ["192.168.1.194" "2600:2b00:9b16:6d01:9209:d0ff:fe15:4261"];
+  # The addresses the router's DHCP and router advertisements name as the
+  # LAN's second DNS server. ::194 mirrors .194 the way nutmeg's ::228 mirrors
+  # .228; SLAAC only gives the NAS its EUI-64 address, so nix-lan-dns-address
+  # adds it. It is inside 2600:2b00:9b16:6d01::/64, which the ISP delegates:
+  # if that rotates, this and the router setting both need the new prefix.
+  dnsV6 = "2600:2b00:9b16:6d01::194";
+  bindHosts = ["192.168.1.194" dnsV6];
 
   # AdGuard rewrites its own config, so the parts that belong to this host are
   # set on every start. A first start gets just these and the sync fills in the
@@ -42,6 +46,20 @@
 in {
   tsnsrv.services.ag2.upstream = "http://127.0.0.1:5380";
 
+  systemd.units."nix-lan-dns-address.service".text = ''
+    [Unit]
+    Description=The LAN DNS address ${dnsV6} on ovs_eth0
+    OnFailure=notify-failure@%n.service
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=${pkgs.iproute2}/bin/ip -6 addr replace ${dnsV6}/128 dev ovs_eth0 nodad
+    ExecStop=${pkgs.iproute2}/bin/ip -6 addr del ${dnsV6}/128 dev ovs_eth0
+  '';
+
   # Root: it binds :53.
   systemd.units."adguardhome.service".text = ''
     [Unit]
@@ -50,6 +68,8 @@ in {
     OnFailure=notify-failure@%n.service
     After=network-online.target
     Wants=network-online.target
+    Wants=nix-lan-dns-address.service
+    After=nix-lan-dns-address.service
 
     [Service]
     ExecStartPre=${preStart}
