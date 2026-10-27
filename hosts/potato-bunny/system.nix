@@ -11,6 +11,12 @@
   ...
 }: let
   lix = perSystem.self.lix-dsm;
+  # The agent, patched to read btrfs members and their error counters through
+  # the btrfs ioctls: DSM's Linux 4.4 predates the sysfs devinfo/ beszel reads,
+  # so without it each volume shows health UNKNOWN and no devices.
+  beszelAgent = pkgs.beszel.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [./beszel-btrfs-ioctl-devices.patch];
+  });
 in {
   imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix ./adguard.nix ./paperless.nix ./restic.nix ./scanner.nix];
 
@@ -172,7 +178,7 @@ in {
     RequiresMountsFor=/volume1
 
     [Service]
-    ExecStart=${pkgs.beszel}/bin/beszel-agent
+    ExecStart=${beszelAgent}/bin/beszel-agent
     EnvironmentFile=${config.age.secrets.beszel-token.path}
     Environment=PATH=${pkgs.smartmontools}/bin:/usr/bin:/bin
     Environment="HUB_URL=http://[::1]:8091"

@@ -1,0 +1,240 @@
+diff --git a/agent/btrfs/btrfs_ioctl_linux.go b/agent/btrfs/btrfs_ioctl_linux.go
+new file mode 100644
+index 0000000..16c20f2
+--- /dev/null
++++ b/agent/btrfs/btrfs_ioctl_linux.go
+@@ -0,0 +1,117 @@
++//go:build linux
++
++package btrfs
++
++import (
++	"errors"
++	"os"
++	"strconv"
++	"unsafe"
++
++	"golang.org/x/sys/unix"
++)
++
++// ioctlDevice is one member as BTRFS_IOC_DEV_INFO and BTRFS_IOC_GET_DEV_STATS
++// report it. These ioctls predate sysfs devinfo/ (Linux 5.10), so they cover
++// older kernels such as Synology DSM's 4.4.
++type ioctlDevice struct {
++	Devid          uint64
++	TotalBytes     uint64
++	Missing        bool // known to the filesystem, but with no device path
++	ReadErrs       uint64
++	WriteErrs      uint64
++	CorruptionErrs uint64
++}
++
++// addIoctlDevices records members found through the ioctls: their recorded
++// capacity, error counters, and DEGRADED health when one is missing.
++func addIoctlDevices(fs *Filesystem, members []ioctlDevice) {
++	for _, m := range members {
++		dev := Device{
++			Name:           "devid " + strconv.FormatUint(m.Devid, 10),
++			State:          "ONLINE",
++			ReadErrs:       m.ReadErrs,
++			WriteErrs:      m.WriteErrs,
++			CorruptionErrs: m.CorruptionErrs,
++		}
++		if m.Missing {
++			dev.State = "MISSING"
++			fs.Health = "DEGRADED"
++		}
++		fs.Size += m.TotalBytes
++		fs.Devices = append(fs.Devices, dev)
++	}
++}
++
++// _IOR/_IOWR(0x94, nr, size), with the platform's direction bits taken from
++// FS_IOC_GETFLAGS (an _IOR) as MountID does.
++func btrfsIoctl(write bool, nr, size uintptr) uintptr {
++	dir := uintptr(unix.FS_IOC_GETFLAGS & 0xe0000000)
++	if write {
++		dir |= dir >> 1 // asm-generic _IOC_WRITE sits just below _IOC_READ
++	}
++	return dir | size<<16 | 0x94<<8 | nr
++}
++
++// queryDevices lists the members of the btrfs filesystem mounted at mountpoint.
++func queryDevices(mountpoint string) ([]ioctlDevice, error) {
++	if mountpoint == "" {
++		return nil, errors.New("no accessible mountpoint")
++	}
++	f, err := os.Open(mountpoint)
++	if err != nil {
++		return nil, err
++	}
++	defer f.Close()
++
++	var info struct {
++		MaxID      uint64
++		NumDevices uint64
++		FSID       [16]byte
++		Reserved   [992]byte
++	}
++	if err := ioctl(f, btrfsIoctl(false, 31, unsafe.Sizeof(info)), unsafe.Pointer(&info)); err != nil {
++		return nil, err
++	}
++
++	var members []ioctlDevice
++	for devid := uint64(1); devid <= info.MaxID && uint64(len(members)) < info.NumDevices; devid++ {
++		var dev struct {
++			Devid      uint64
++			UUID       [16]byte
++			BytesUsed  uint64
++			TotalBytes uint64
++			Unused     [379]uint64
++			Path       [1024]byte
++		}
++		dev.Devid = devid
++		if err := ioctl(f, btrfsIoctl(true, 30, unsafe.Sizeof(dev)), unsafe.Pointer(&dev)); err != nil {
++			if errors.Is(err, unix.ENODEV) {
++				continue // a removed member leaves a gap in the IDs
++			}
++			return nil, err
++		}
++		m := ioctlDevice{Devid: devid, TotalBytes: dev.TotalBytes, Missing: dev.Path[0] == 0}
++
++		var stats struct {
++			Devid   uint64
++			NrItems uint64
++			Flags   uint64
++			Values  [5]uint64 // write, read, flush, corruption, generation
++			Unused  [121]uint64
++		}
++		stats.Devid, stats.NrItems = devid, 5
++		if ioctl(f, btrfsIoctl(true, 52, unsafe.Sizeof(stats)), unsafe.Pointer(&stats)) == nil {
++			m.WriteErrs, m.ReadErrs, m.CorruptionErrs = stats.Values[0], stats.Values[1], stats.Values[3]
++		}
++		members = append(members, m)
++	}
++	return members, nil
++}
++
++func ioctl(f *os.File, request uintptr, arg unsafe.Pointer) error {
++	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, f.Fd(), request, uintptr(arg)); errno != 0 {
++		return errno
++	}
++	return nil
++}
+diff --git a/agent/btrfs/btrfs_ioctl_linux_test.go b/agent/btrfs/btrfs_ioctl_linux_test.go
+new file mode 100644
+index 0000000..678b3b6
+--- /dev/null
++++ b/agent/btrfs/btrfs_ioctl_linux_test.go
+@@ -0,0 +1,75 @@
++//go:build testing && linux
++
++package btrfs
++
++import (
++	"errors"
++	"os"
++	"path/filepath"
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++)
++
++// Kernels before 5.10 have no devinfo/ in sysfs; members and their error
++// counters then come from the btrfs ioctls on the mountpoint.
++func TestFilesystemsWithoutDevinfo(t *testing.T) {
++	root := t.TempDir()
++	oldSysfs, oldMounts, oldMountinfo := sysfsPath, mountsPath, mountinfoPath
++	sysfsPath, mountsPath, mountinfoPath = root, filepath.Join(root, "mounts"), filepath.Join(root, "mountinfo")
++	oldUsage, oldDevices := filesystemUsage, ioctlDevices
++	t.Cleanup(func() {
++		sysfsPath, mountsPath, mountinfoPath = oldSysfs, oldMounts, oldMountinfo
++		filesystemUsage, ioctlDevices = oldUsage, oldDevices
++	})
++	filesystemUsage = func(string) (uint64, uint64, error) { return 0, 0, os.ErrNotExist }
++
++	fsDir := filepath.Join(root, "2b141e1e-f908-4a54-b8e0-1212f109a345")
++	write := func(rel, content string) {
++		path := filepath.Join(fsDir, rel)
++		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
++		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
++	}
++	write("label", "vol\n")
++	write("devices/dm-7/size", "1000\n")
++	write("devices/dm-7/stat", "1 0 2 0 3 0 4 0 0 0 0\n")
++	require.NoError(t, os.WriteFile(mountsPath, []byte("/dev/dm-7 /volume2 btrfs rw 0 0\n"), 0o644))
++
++	var askedAt string
++	ioctlDevices = func(mountpoint string) ([]ioctlDevice, error) {
++		askedAt = mountpoint
++		return []ioctlDevice{
++			{Devid: 1, TotalBytes: 300000, ReadErrs: 2, WriteErrs: 1, CorruptionErrs: 5},
++			{Devid: 3, TotalBytes: 200000},
++		}, nil
++	}
++	filesystems, err := Filesystems()
++	require.NoError(t, err)
++	require.Len(t, filesystems, 1)
++	assert.Equal(t, "/volume2", askedAt)
++	assert.Equal(t, "ONLINE", filesystems[0].Health)
++	assert.Equal(t, uint64(500000), filesystems[0].Size)
++	assert.Equal(t, []Device{
++		{Name: "devid 1", State: "ONLINE", ReadErrs: 2, WriteErrs: 1, CorruptionErrs: 5},
++		{Name: "devid 3", State: "ONLINE"},
++	}, filesystems[0].Devices)
++
++	// A member the kernel knows but has no path for is missing.
++	ioctlDevices = func(string) ([]ioctlDevice, error) {
++		return []ioctlDevice{{Devid: 1, TotalBytes: 300000}, {Devid: 2, Missing: true}}, nil
++	}
++	filesystems, err = Filesystems()
++	require.NoError(t, err)
++	assert.Equal(t, "DEGRADED", filesystems[0].Health)
++	assert.Equal(t, "MISSING", filesystems[0].Devices[1].State)
++
++	// When the ioctls fail too, health stays unknown and capacity falls back
++	// to the backing devices.
++	ioctlDevices = func(string) ([]ioctlDevice, error) { return nil, errors.New("ENOTTY") }
++	filesystems, err = Filesystems()
++	require.NoError(t, err)
++	assert.Equal(t, "UNKNOWN", filesystems[0].Health)
++	assert.Empty(t, filesystems[0].Devices)
++	assert.Equal(t, uint64(512000), filesystems[0].Size)
++}
+diff --git a/agent/btrfs/btrfs_linux.go b/agent/btrfs/btrfs_linux.go
+index b900153..d173949 100644
+--- a/agent/btrfs/btrfs_linux.go
++++ b/agent/btrfs/btrfs_linux.go
+@@ -21,6 +21,7 @@ var (
+ 	mountinfoPath   = "/proc/self/mountinfo"
+ 	mountUUID       = MountID
+ 	deviceSize      = ioctlDeviceSize
++	ioctlDevices    = queryDevices
+ 	filesystemUsage = statfsUsage
+ )
+ 
+@@ -87,6 +88,14 @@ func readFilesystem(dir string, mounts map[string]string) (Filesystem, error) {
+ 	}
+ 	capacityAvailable := len(devids) > 0
+ 	healthKnown := len(devids) > 0
++	members := len(devids)
++	// Kernels before 5.10 have no devinfo/; ask the filesystem instead.
++	if errors.Is(err, os.ErrNotExist) {
++		if found, err := ioctlDevices(mountpoint); err == nil && len(found) > 0 {
++			addIoctlDevices(&fs, found)
++			capacityAvailable, healthKnown, members = true, true, len(found)
++		}
++	}
+ 	for _, devid := range devids {
+ 		devDir := filepath.Join(dir, "devinfo", devid.Name())
+ 		// Replacement targets do not add filesystem capacity.
+@@ -136,7 +145,7 @@ func readFilesystem(dir string, mounts map[string]string) (Filesystem, error) {
+ 		fs.Health = "ONLINE"
+ 	}
+ 	fs.MountID = mountUUID(mountpoint)
+-	if len(devices) == 1 && len(devids) == 1 && fs.Health == "ONLINE" {
++	if len(devices) == 1 && members == 1 && fs.Health == "ONLINE" {
+ 		fs.IODevice = devices[0].Name()
+ 	}
+ 	fs.Raw = true
