@@ -22,8 +22,8 @@
   # The tag must sit directly above the sha256 of the macos-arm64 .tar.gz:
   # Renovate's regex in renovate.json5 matches the pair.
   # renovate: datasource=github-release-attachments depName=jdx/mise
-  tag = "v2026.10.19";
-  sha256 = "a8a581e115f4ebdbe2931c237949dbac7624bd8b4024bf3eb9da7981bde490c9";
+  tag = "v2026.10.21";
+  sha256 = "d67b6006cb1144131910ce80d6cf52134f55b9c7da55648bd717df36b3f238d6";
 
   version = lib.removePrefix "v" tag;
 in
