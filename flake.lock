@@ -410,11 +410,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792894203,
-        "narHash": "sha256-0KOv1M/Oj7cbf80ipsVSVY15U4WJpqyvwC5WrQILToo=",
+        "lastModified": 1792982406,
+        "narHash": "sha256-4rxUniYSpfOBUE5I9AWixLZXMt84PXZ4pYChi9MDA1k=",
         "ref": "refs/heads/main",
-        "rev": "f4494cd9b94c9898d26d53b03ffff7c179162a03",
-        "revCount": 413,
+        "rev": "f2688326ba213dcd0bfe285ced88faefdc167393",
+        "revCount": 457,
         "type": "git",
         "url": "https://github.com/hawkrives/slime2-twitch-chat"
       },
