@@ -1,0 +1,153 @@
+diff --git a/agent/gpu_intel.go b/agent/gpu_intel.go
+index b0813ff..8729f4b 100644
+--- a/agent/gpu_intel.go
++++ b/agent/gpu_intel.go
+@@ -1,7 +1,6 @@
+ package agent
+ 
+ import (
+-	"bufio"
+ 	"encoding/json"
+ 	"io"
+ 	"log/slog"
+@@ -93,38 +92,22 @@ func (gm *GPUManager) collectIntelStats() (err error) {
+ 
+ // parseIntelJSONStream decodes samples from intel_gpu_top -J output and
+ // aggregates them. Since v1.28 the samples are wrapped in an array ("[", then
+-// comma separated objects, and "]" only when the process exits). Older
+-// versions print the same comma separated objects without the opening "[", so
+-// it is added here to let both formats decode as an array.
++// comma separated objects, and "]" only when the process exits); 2.x drops
++// the commas, and versions before 1.28 the opening "[". topLevelValues turns
++// all of these into a plain stream of objects.
+ func (gm *GPUManager) parseIntelJSONStream(r io.Reader) error {
+ 	er := &eofReader{r: r}
+-	br := bufio.NewReader(er)
+-	first, err := peekNonSpace(br)
+-	if err != nil {
+-		if err == io.EOF {
+-			return errNoValidData
+-		}
+-		return err
+-	}
+-	var src io.Reader = br
+-	if first != '[' {
+-		src = io.MultiReader(strings.NewReader("["), br)
+-	}
+-
+-	dec := json.NewDecoder(src)
+-	if _, err := dec.Token(); err != nil { // opening "["
+-		return err
+-	}
++	dec := json.NewDecoder(&topLevelValues{r: er})
+ 	var hadDataRow bool
+ 	// skip first data row because it sometimes has erroneous data
+ 	var skippedFirstDataRow bool
+ 	// Decode reads one object and skips the commas between them. The array is
+ 	// usually never closed, so output ending mid-array or mid-sample (the
+ 	// process was killed) is the normal end of the stream rather than an error.
+-	for dec.More() {
++	for {
+ 		var sample intelGpuJSONSample
+ 		if err := dec.Decode(&sample); err != nil {
+-			if er.eof {
++			if err == io.EOF || er.eof {
+ 				break
+ 			}
+ 			return err
+@@ -163,22 +146,6 @@ func (e *eofReader) Read(p []byte) (int, error) {
+ 	return n, err
+ }
+ 
+-// peekNonSpace discards leading JSON whitespace and returns the next byte without consuming it.
+-func peekNonSpace(br *bufio.Reader) (byte, error) {
+-	for {
+-		b, err := br.Peek(1)
+-		if err != nil {
+-			return 0, err
+-		}
+-		switch b[0] {
+-		case ' ', '\t', '\n', '\r':
+-			_, _ = br.ReadByte()
+-		default:
+-			return b[0], nil
+-		}
+-	}
+-}
+-
+ // intelGpuJSONSample is a single sample from intel_gpu_top -J output. Only the
+ // needed fields are mapped.
+ type intelGpuJSONSample struct {
+@@ -226,3 +193,51 @@ func intelEngineClass(key string) string {
+ 	}
+ 	return key
+ }
++
++// topLevelValues passes intel_gpu_top's output through as a plain stream of
++// JSON objects: it drops the brackets and commas between samples, outside any
++// object or string, so samples decode one at a time whether or not the
++// version prints them.
++type topLevelValues struct {
++	r        io.Reader
++	depth    int
++	inString bool
++	escaped  bool
++}
++
++func (t *topLevelValues) Read(p []byte) (int, error) {
++	for {
++		n, err := t.r.Read(p)
++		out := p[:0]
++		for _, b := range p[:n] {
++			if t.inString {
++				switch {
++				case t.escaped:
++					t.escaped = false
++				case b == '\\':
++					t.escaped = true
++				case b == '"':
++					t.inString = false
++				}
++				out = append(out, b)
++				continue
++			}
++			switch b {
++			case '"':
++				t.inString = true
++			case '{':
++				t.depth++
++			case '}':
++				t.depth--
++			case '[', ']', ',':
++				if t.depth == 0 {
++					continue
++				}
++			}
++			out = append(out, b)
++		}
++		if len(out) > 0 || err != nil {
++			return len(out), err
++		}
++	}
++}
+diff --git a/agent/gpu_test.go b/agent/gpu_test.go
+index 0636dc2..1d9d298 100644
+--- a/agent/gpu_test.go
++++ b/agent/gpu_test.go
+@@ -1823,6 +1823,16 @@ func TestParseIntelJSONStream(t *testing.T) {
+ 			wantPkg:     2.5,
+ 			wantEngines: map[string]float64{"Render/3D": 12, "Blitter": 1, "Video": 10, "VideoEnhance": 2},
+ 		},
++		{
++			// intel_gpu_top 2.x opens the array but separates samples with
++			// newlines only, no commas
++			name:        "array without commas between samples",
++			input:       "[\n" + strings.Join([]string{first, classView[0], classView[1]}, "\n"),
++			wantCount:   2,
++			wantPower:   3,
++			wantPkg:     5,
++			wantEngines: classViewWant,
++		},
+ 		{
+ 			// energy counter read lower than the previous sample in intel_gpu_top
+ 			name: "sample with invalid power is skipped",
