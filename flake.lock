@@ -43,6 +43,21 @@
         "type": "github"
       }
     },
+    "crane": {
+      "locked": {
+        "lastModified": 1792350552,
+        "narHash": "sha256-292lvpvxTGKryKxh3/3tcIVi85CwYGdl4oOi113Sob8=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "e675a36b7377bebe41d548388a2501cbb16d380d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -405,16 +420,17 @@
     },
     "slime-chat": {
       "inputs": {
+        "crane": "crane",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1793125075,
-        "narHash": "sha256-gscuideksDmRcjBOR7jCOkE11WLGPySE6fnI07dM+1Q=",
+        "lastModified": 1793144002,
+        "narHash": "sha256-owYHvu+xqkXV225ET9JDTcb/s560kAnYJRmgUh0HgRE=",
         "ref": "refs/heads/main",
-        "rev": "7845b1ac1074156f2aa774f70c3f1825acdd6832",
-        "revCount": 458,
+        "rev": "5d521af826e5987cc559fda169c21211befee38d",
+        "revCount": 460,
         "type": "git",
         "url": "https://github.com/hawkrives/slime2-twitch-chat"
       },
