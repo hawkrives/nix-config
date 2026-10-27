@@ -12,8 +12,8 @@
   # The tag must sit directly above the sha256 of the darwin_arm64 .tar.gz:
   # Renovate's regex in renovate.json5 matches the pair.
   # renovate: datasource=github-release-attachments depName=wesm/agentsview
-  tag = "v0.45.0";
-  sha256 = "c2b5a24d4fc4455a656c54f16b0e281f894c648f8a039fa52e76a47e1e18315b";
+  tag = "v0.46.1";
+  sha256 = "83cd9872acf5bf59e77c149504431e317eed74537169a27f48d732db6f941415";
 
   version = lib.removePrefix "v" tag;
 in
