@@ -1,0 +1,144 @@
+diff --git a/agent/systemd.go b/agent/systemd.go
+index d731ded..a6dc1cc 100644
+--- a/agent/systemd.go
++++ b/agent/systemd.go
+@@ -188,7 +188,7 @@ func (sm *systemdManager) getServiceStats(conn *dbus.Conn, refresh bool) []*syst
+ 		defer conn.Close()
+ 	}
+ 
+-	units, err := conn.ListUnitsByPatternsContext(context.Background(), []string{"loaded"}, sm.patterns)
++	units, err := listUnitsMatching(conn, []string{"loaded"}, sm.patterns)
+ 	if err != nil {
+ 		slog.Error("Error listing systemd service units", "err", err)
+ 		return nil
+diff --git a/agent/systemd_compat.go b/agent/systemd_compat.go
+new file mode 100644
+index 0000000..40dffa8
+--- /dev/null
++++ b/agent/systemd_compat.go
+@@ -0,0 +1,49 @@
++//go:build linux
++
++package agent
++
++import (
++	"context"
++	"path"
++	"slices"
++	"strings"
++
++	"github.com/coreos/go-systemd/v22/dbus"
++)
++
++// unitLister is the part of *dbus.Conn that lists units.
++type unitLister interface {
++	ListUnitsByPatternsContext(ctx context.Context, states, patterns []string) ([]dbus.UnitStatus, error)
++	ListUnitsContext(ctx context.Context) ([]dbus.UnitStatus, error)
++}
++
++// listUnitsMatching is ListUnitsByPatterns, which systemd added in 230. Older
++// managers (Synology DSM ships 219) answer "Unknown method", so it then lists
++// every unit and filters them the same way here: a unit matches when its load,
++// active or sub state is one of states, and its name one of the glob patterns.
++func listUnitsMatching(conn unitLister, states, patterns []string) ([]dbus.UnitStatus, error) {
++	ctx := context.Background()
++	units, err := conn.ListUnitsByPatternsContext(ctx, states, patterns)
++	if err == nil || !strings.Contains(err.Error(), "Unknown method") {
++		return units, err
++	}
++	all, err := conn.ListUnitsContext(ctx)
++	if err != nil {
++		return nil, err
++	}
++	var matched []dbus.UnitStatus
++	for _, u := range all {
++		if len(states) > 0 && !slices.Contains(states, u.LoadState) &&
++			!slices.Contains(states, u.ActiveState) && !slices.Contains(states, u.SubState) {
++			continue
++		}
++		if len(patterns) > 0 && !slices.ContainsFunc(patterns, func(p string) bool {
++			ok, _ := path.Match(p, u.Name)
++			return ok
++		}) {
++			continue
++		}
++		matched = append(matched, u)
++	}
++	return matched, nil
++}
+diff --git a/agent/systemd_compat_test.go b/agent/systemd_compat_test.go
+new file mode 100644
+index 0000000..6d7e585
+--- /dev/null
++++ b/agent/systemd_compat_test.go
+@@ -0,0 +1,70 @@
++//go:build linux && testing
++
++package agent
++
++import (
++	"context"
++	"errors"
++	"testing"
++
++	"github.com/coreos/go-systemd/v22/dbus"
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++)
++
++type fakeUnitLister struct {
++	byPatternsErr error
++	all           []dbus.UnitStatus
++	listedAll     bool
++}
++
++func (f *fakeUnitLister) ListUnitsByPatternsContext(context.Context, []string, []string) ([]dbus.UnitStatus, error) {
++	if f.byPatternsErr != nil {
++		return nil, f.byPatternsErr
++	}
++	return []dbus.UnitStatus{{Name: "from-patterns.service"}}, nil
++}
++
++func (f *fakeUnitLister) ListUnitsContext(context.Context) ([]dbus.UnitStatus, error) {
++	f.listedAll = true
++	return f.all, nil
++}
++
++func TestListUnitsMatching(t *testing.T) {
++	// A manager that has ListUnitsByPatterns is asked directly.
++	direct := &fakeUnitLister{}
++	units, err := listUnitsMatching(direct, []string{"loaded"}, []string{"*.service"})
++	require.NoError(t, err)
++	assert.Equal(t, []dbus.UnitStatus{{Name: "from-patterns.service"}}, units)
++	assert.False(t, direct.listedAll)
++
++	// systemd before 230 (Synology DSM ships 219) has no ListUnitsByPatterns;
++	// every unit is listed and filtered here the same way.
++	old := &fakeUnitLister{
++		byPatternsErr: errors.New("Unknown method 'ListUnitsByPatterns' or interface 'org.freedesktop.systemd1.Manager'."),
++		all: []dbus.UnitStatus{
++			{Name: "paperless-web.service", LoadState: "loaded", ActiveState: "active", SubState: "running"},
++			{Name: "gone.service", LoadState: "not-found", ActiveState: "inactive", SubState: "dead"},
++			{Name: "backup.timer", LoadState: "loaded", ActiveState: "active", SubState: "waiting"},
++			{Name: "nix-tsnsrv-ag2.service", LoadState: "loaded", ActiveState: "failed", SubState: "failed"},
++		},
++	}
++	units, err = listUnitsMatching(old, []string{"loaded"}, []string{"*.service"})
++	require.NoError(t, err)
++	assert.True(t, old.listedAll)
++	names := []string{}
++	for _, u := range units {
++		names = append(names, u.Name)
++	}
++	assert.Equal(t, []string{"paperless-web.service", "nix-tsnsrv-ag2.service"}, names)
++
++	units, err = listUnitsMatching(old, []string{"loaded"}, []string{"paperless-*.service", "*.timer"})
++	require.NoError(t, err)
++	assert.Len(t, units, 2)
++
++	// Any other error is returned as is.
++	broken := &fakeUnitLister{byPatternsErr: errors.New("connection reset")}
++	_, err = listUnitsMatching(broken, []string{"loaded"}, []string{"*.service"})
++	assert.EqualError(t, err, "connection reset")
++	assert.False(t, broken.listedAll)
++}

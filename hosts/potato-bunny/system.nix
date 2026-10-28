@@ -11,11 +11,13 @@
   ...
 }: let
   lix = perSystem.self.lix-dsm;
-  # The agent, patched to read btrfs members and their error counters through
-  # the btrfs ioctls: DSM's Linux 4.4 predates the sysfs devinfo/ beszel reads,
-  # so without it each volume shows health UNKNOWN and no devices.
+  # The agent, patched for DSM's old kernel and systemd:
+  # - btrfs members and error counters through the btrfs ioctls, since Linux
+  #   4.4 predates the sysfs devinfo/ beszel reads.
+  # - services listed with ListUnits, since systemd 219 predates
+  #   ListUnitsByPatterns (230).
   beszelAgent = pkgs.beszel.overrideAttrs (old: {
-    patches = (old.patches or []) ++ [./beszel-btrfs-ioctl-devices.patch];
+    patches = (old.patches or []) ++ [./beszel-btrfs-ioctl-devices.patch ./beszel-systemd-list-units-fallback.patch];
   });
 in {
   imports = [./nix-cache.nix ./mbx-cache.nix ./watch.nix ./tailscale.nix ./tsnsrv.nix ./beszel-hub.nix ./uptime-kuma.nix ./appdata-backup.nix ./adguard.nix ./paperless.nix ./restic.nix ./scanner.nix];
