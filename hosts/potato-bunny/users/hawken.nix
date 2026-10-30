@@ -23,6 +23,7 @@
     pkgs.fish
     pkgs.git
     pkgs.helix
+    pkgs.herdr
     pkgs.htop
     pkgs.iftop
     pkgs.iotop-c
