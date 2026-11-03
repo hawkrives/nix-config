@@ -19,7 +19,6 @@
   home.packages =
     [
       pkgs.awscli2
-      pkgs.podman
       # pkgs.lima
       pkgs.nomad
     ]
