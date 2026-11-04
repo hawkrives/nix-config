@@ -21,6 +21,11 @@
       pkgs.awscli2
       # pkgs.lima
       pkgs.nomad
+      # Only timeout: the whole of coreutils would shadow macOS's BSD ls, date, etc.
+      (pkgs.runCommand "timeout" {} ''
+        mkdir -p $out/bin
+        ln -s ${pkgs.coreutils}/bin/timeout $out/bin/timeout
+      '')
     ]
     ++ # language servers for zed
     [
